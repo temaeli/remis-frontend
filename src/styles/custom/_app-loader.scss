@@ -1,0 +1,49 @@
+/* Spinner */
+.app-loader-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 30px;
+  height: 30px;
+  border: 5px solid var(--color-secondary-faded); //#d1d5db; /* gray-300 */
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Overlay element */
+.app-loader-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: var(--color-white-faded);
+
+  backdrop-filter: blur(1px);
+  z-index: 10;
+  display: none;
+  border-radius: inherit;
+}
+
+/* Hide content while loading */
+.app-loading-hide-content > *:not(.app-loader-spinner):not(.app-loader-overlay) {
+  opacity: 0;
+}
+
+/* When loading: show spinner */
+.app-loading .app-loader-spinner {
+  display: block;
+}
+
+/* When loading: show overlay */
+.app-loading.app-loading-overlay .app-loader-overlay {
+  display: block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

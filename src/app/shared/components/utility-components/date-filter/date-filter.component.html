@@ -1,0 +1,90 @@
+<span class="{{ inputContainerClass }} {{ animation }}" [style.--order]="order">
+  @if (keys.length) {
+    <data-input
+      type="select"
+      [maxWidth]="maxWidth"
+      [suffixIcon]="keySuffixIcon"
+      [toolTip]="keyToolTip"
+      [order]="order + 1.5"
+      [options]="keys"
+      [value]="selectedKey | any"
+      (change)="selectedKeyChange.emit($event)"
+      [inContainer]="false"
+      [multiple]="false"
+    />
+  }
+
+  @if (dateRange && keys.length) {
+    <span class="very-faded top--2 px-1"> | </span>
+  }
+
+  <mat-form-field
+    appearance="fill"
+    [matTooltip]="toolTip"
+    class="custom-fill hide-arrow bg-none material-form py-[2px]"
+    [style.max-width]="maxWidth"
+  >
+    @if (!date) {
+      <span matPrefix class="faded">
+        {{ dateRange ? startDateLabel : (selectedKey | any | camelToTitleCase) }}
+      </span>
+    }
+    <input
+      [matDatepicker]="date_"
+      [(ngModel)]="date"
+      matInput
+      (dateChange)="onDateChange($event)"
+    />
+    <mat-datepicker-toggle [for]="date_" matSuffix />
+    <mat-datepicker #date_ />
+  </mat-form-field>
+
+  @if (dateRange) {
+    <span class="very-faded top--2 px-1"> | </span>
+
+    <mat-form-field
+      appearance="fill"
+      [matTooltip]="endDateToolTip"
+      class="custom-fill hide-arrow bg-none material-form py-[2px]"
+      [style.max-width]="maxWidth"
+    >
+      @if (!endDate) {
+        <span matPrefix class="faded"> {{ endDateLabel }} </span>
+      }
+      <input
+        [matDatepicker]="date_"
+        (dateChange)="onEndDateChange($event)"
+        [(ngModel)]="endDate"
+        matInput
+      />
+      <mat-datepicker-toggle [for]="date_" matSuffix />
+      <mat-datepicker #date_ />
+    </mat-form-field>
+  }
+
+  @if (label || subLabel || icon) {
+    <data-label
+      [order]="order + 1"
+      [active]="active"
+      [inContainer]="false"
+      [toolTip]="labelToolTip | any"
+      [label]="label"
+      [icon]="icon"
+      [iconClass]="iconClass"
+      (click)="onLabelClick.emit(true)"
+    />
+  }
+
+  @if (date || endDate) {
+    <span
+      [style.--order]="order + 1"
+      style="height: fit-content"
+      (click)="onCancel.emit(true)"
+      class="px-2 p-2 ms-1 rounded-lg border-slightly-faded
+    text-black cursor-pointer animate bg-slightly-faded-gradient flex items-center
+    bg-hover-slightly-gradient border-on-hover{{ animation }}"
+    >
+      <mat-icon class="icon-small text-danger" svgIcon="cancel" />
+    </span>
+  }
+</span>

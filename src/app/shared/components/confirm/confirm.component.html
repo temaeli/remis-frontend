@@ -1,0 +1,80 @@
+<div class="p-6 bg-secondar-300">
+  <!-- Icon/Image Section -->
+  <div class="flex justify-center mb-4">
+    <div class="w-20 h-20 rounded-full relative flex items-center justify-center">
+      <div
+        class="absolute rounded-[inherit] top-0 left-0 size-full opacity-15
+         !bg-{{ data?.confirmButtonColor ?? 'primary' }}-600"
+      ></div>
+      @if (!!data?.icon) {
+        <app-icon
+          [icon]="data?.icon"
+          class="{{ 'inline-block has-icon-full size-12' | mergeClasses: data?.iconClass }}"
+        />
+      } @else {
+        <img
+          [src]="data?.imgSrc ?? '/assets/images/delete.png'"
+          alt="Confirmation"
+          class="w-12 h-12 object-contain"
+        />
+      }
+    </div>
+  </div>
+
+  <!-- Title -->
+  <h3 class="text-xl font-bold text-center mb-2">
+    {{ data?.title ?? 'Confirm' }}
+  </h3>
+
+  <!-- Subtitle (optional) -->
+  @if (data?.subTitle) {
+    <p class="text-sm font-medium text-gray-600 text-center mb-2">
+      {{ data?.subTitle }}
+    </p>
+  }
+
+  <!-- Message -->
+  <p class="text-sm text-gray-600 text-center mb-6 leading-relaxed" [innerHTML]="data?.message"></p>
+
+  <!-- Action Buttons -->
+  @if (data?.confirmText) {
+    <div class="flex gap-3">
+      <button
+        mat-stroked-button
+        (click)="onClose()"
+        class="flex-1 !border-gray-300 ! hover:!bg-gray-50 !py-2.5 !rounded-lg !font-medium transition-colors"
+      >
+        {{ data?.cancelText ?? 'Cancel' }}
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="onConfirm()"
+        class=" {{
+          'flex-1 !text-white !py-2.5 !rounded-lg !font-medium !shadow-sm transition-colors '
+            | mergeClasses: data?.confirmButtonClass
+        }}"
+        [class.!bg-primary-600]="!data?.confirmButtonColor"
+        [class.!bg-primary-600]="data?.confirmButtonColor === 'primary'"
+        [class.!bg-secondary-600]="data?.confirmButtonColor === 'secondary'"
+        [class.!bg-red-600]="data?.confirmButtonColor === 'red'"
+        [class.hover:!bg-red-700]="data?.confirmButtonColor === 'red'"
+        [class.!bg-green-600]="data?.confirmButtonColor === 'green'"
+        [class.hover:!bg-green-700]="data?.confirmButtonColor === 'green'"
+      >
+        {{ data?.confirmText ?? 'Confirm' }}
+      </button>
+    </div>
+  } @else {
+    <div>
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="onClose()"
+        class="w-full !bg-cyan-600 hover:!bg-cyan-700 !text-white !py-2.5 !rounded-lg !font-medium !shadow-sm transition-colors"
+      >
+        {{ data?.completeText ?? 'Done' }}
+      </button>
+    </div>
+  }
+</div>

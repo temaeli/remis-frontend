@@ -1,0 +1,62 @@
+<div class="size-full flex-1 flex flex-col">
+  @if (showTitle) {
+    <details-header
+      [title]="title"
+      [actionButtons]="attachmentButtons"
+      containerClass="p-1"
+      class="flex w-full flex-wrap border-b-[2px] border-gray-300"
+      [data]="this"
+    />
+  }
+
+  @if (baseAttachment?.data) {
+    <!-- <iframe
+      class="grow flex-1 w-full px-0"
+      id="myIframe"
+      [src]="'extended-pdf-viewer/iframe/' + componentUid | safeUrl"
+      style="background-color: transparent !important"
+    ></iframe> -->
+
+    <ngx-extended-pdf-viewer
+      class="grow flex-1 w-full px-0"
+      [base64Src]="baseAttachment?.data"
+      [backgroundColor]="colorValue"
+      [handTool]="false"
+      [customToolbar]="customToolbarTpl"
+      [showHandToolButton]="true"
+    />
+  } @else {
+    <no-content
+      icon="attachment"
+      class="block h-full flex items-center justify-center"
+      outerClass="h-full rounded-none flex items-center justify-center"
+      label="No Attachment"
+    />
+  }
+</div>
+
+<ng-template #customToolbarTpl>
+  <div id="toolbarViewer" [style.background-color]="colorValue" class="py-1">
+    <div id="toolbarViewerLeft">
+      <pdf-toggle-sidebar />
+      <!-- <div class="toolbarButtonSpacer"></div> -->
+      <pdf-find-button [showFindButton]="true" [textLayer]="true" />
+      <pdf-paging-area />
+    </div>
+
+    <pdf-zoom-toolbar />
+    <!-- toolbar viewer middle -->
+
+    <div id="toolbarViewerRight">
+      <pdf-open-file />
+      <pdf-presentation-mode />
+      <pdf-print />
+      <!-- <app-open-in-new-tab/>  -->
+      <pdf-download />
+
+      <div class="verticalToolbarSeparator hiddenSmallView"></div>
+
+      <pdf-toggle-secondary-toolbar />
+    </div>
+  </div>
+</ng-template>

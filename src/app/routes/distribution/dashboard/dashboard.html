@@ -1,0 +1,286 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div
+            class="h-10 w-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center"
+          >
+            <span class="text-white font-bold text-lg">DT</span>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Distribution</h1>
+            <p class="text-xs text-gray-500">Dashboard & Analytics</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Period</p>
+          <p class="text-sm font-semibold text-gray-900">{{ periodLabel }}</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center h-[60vh]">
+      <div class="text-center">
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-orange-500 mx-auto mb-4"
+        ></div>
+        <p class="text-gray-600 font-medium">Loading dashboard...</p>
+      </div>
+    </div>
+  } @else {
+    <main class="p-6 max-w-7xl mx-auto">
+      <!-- Summary Cards -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div
+          class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden"
+        >
+          <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3">
+            <p class="text-blue-100 text-sm font-medium">Customers</p>
+          </div>
+          <div class="p-6">
+            <div class="flex items-baseline justify-between mb-4">
+              <span class="text-4xl font-bold text-gray-900">{{ totalCustomers() }}</span>
+              <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full"
+                >Total</span
+              >
+            </div>
+            <p class="text-xs text-gray-600">
+              Across {{ customerCategoryBreakdown().length }} categories
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden"
+        >
+          <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-3">
+            <p class="text-purple-100 text-sm font-medium">Construction SOPs</p>
+          </div>
+          <div class="p-6">
+            <div class="flex items-baseline justify-between mb-4">
+              <span class="text-4xl font-bold text-gray-900">{{ totalConstructionSops() }}</span>
+              <span
+                class="text-xs font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-full"
+                >Records</span
+              >
+            </div>
+            <div class="text-xs text-gray-600">
+              <span class="font-semibold text-gray-900">{{ openConstructionSops() }}</span> open •
+              <span class="font-semibold text-gray-900">{{ approvedConstructionSops() }}</span>
+              approved •
+              <span class="font-semibold text-gray-900">{{ rejectedConstructionSops() }}</span>
+              rejected
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden"
+        >
+          <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3">
+            <p class="text-emerald-100 text-sm font-medium">Weekly Reports</p>
+          </div>
+          <div class="p-6">
+            <div class="flex items-baseline justify-between mb-4">
+              <span class="text-4xl font-bold text-gray-900">{{ totalWeeklyReports() }}</span>
+              <span
+                class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full"
+                >Filed</span
+              >
+            </div>
+            <p class="text-xs text-gray-600">
+              <span class="font-semibold text-gray-900">{{ approvedWeeklyReports() }}</span>
+              approved ({{
+                (approvedWeeklyReports() / (totalWeeklyReports() || 1)) * 100 | number: '1.0-0'
+              }}%)
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Non-Conformity & Approval Stats -->
+      <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+            Open Non-Conformities
+          </p>
+          <span class="text-2xl font-bold text-gray-900">{{ openNonConformities() }}</span>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Due Soon</p>
+          <span class="text-2xl font-bold text-amber-600">{{ dueSoonNonConformities() }}</span>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Overdue</p>
+          <span class="text-2xl font-bold text-red-600">{{ overdueNonConformities() }}</span>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+            Avg. Days to Approve
+          </p>
+          <span class="text-2xl font-bold text-gray-900"
+            >{{ averageDaysToApprove() | number: '1.0-1' }}</span
+          >
+        </div>
+      </section>
+
+      <!-- Customers by Category -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Customers by Category</h2>
+        @if (customerCategoryBreakdown().length > 0) {
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            @for (item of customerCategoryBreakdown(); track item.categoryUid) {
+              <div
+                class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-5 border border-slate-200"
+              >
+                <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                  {{ item.category }}
+                </p>
+                <div class="flex items-baseline justify-between">
+                  <span class="text-3xl font-bold text-gray-900">{{ item.count }}</span>
+                  <p class="text-xs font-semibold text-gray-600">
+                    {{ (item.count / (totalCustomers() || 1)) * 100 | number: '1.0-0' }}%
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="text-center py-8 text-gray-500">
+            <p>No customer category data available</p>
+          </div>
+        }
+      </section>
+
+      <!-- Construction SOP Breakdown -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Construction SOP Status</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-6">
+          @for (item of constructionSopBreakdown(); track item.status) {
+            <div
+              class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-5 border border-slate-200"
+            >
+              <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                {{ item.status }}
+              </p>
+              <div class="mb-3">
+                <span class="text-3xl font-bold text-gray-900">{{ item.count }}</span>
+                <p class="text-xs text-gray-600 mt-1">
+                  {{ item.openNonConformities }} non-conformities
+                </p>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-1.5">
+                <div
+                  class="h-1.5 rounded-full {{ sopStatusBarClass(item.status) }}"
+                  [style.width.%]="(item.count / (totalConstructionSops() || 1)) * 100"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Recent SOP Records -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Recent Construction SOP Records</h2>
+        @if (recentSopRecords().length > 0) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Reference</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">SOP</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Location</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Field Engineer</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Open NCs</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (record of recentSopRecords(); track record.uid) {
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="py-4 px-4 font-medium text-gray-900">
+                      {{ record.referenceNumber }}
+                    </td>
+                    <td class="py-4 px-4 text-gray-700">{{ record.sopCode }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ record.location }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ record.fieldEngineerFullName }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ record.status }}</td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ record.openNonConformities }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="text-center py-8 text-gray-500">
+            <p>No recent records</p>
+          </div>
+        }
+      </section>
+
+      <!-- Weekly Reports by Region -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Weekly Reports by Region</h2>
+        @if (regionBreakdown().length > 0) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Region</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Reports Filed</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Approved</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">
+                    Consumption (MMscf)
+                  </th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">HSE (LTI/NM/FA)</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">
+                    Maintenance (PM/CM)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (region of regionBreakdown(); track region.region) {
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="py-4 px-4 font-medium text-gray-900">{{ region.region }}</td>
+                    <td class="py-4 px-4 text-right text-gray-700">{{ region.reports }}</td>
+                    <td class="py-4 px-4 text-right">
+                      <span
+                        class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium"
+                      >
+                        {{ region.approvedReports }}/{{ region.reports }}
+                      </span>
+                    </td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ region.totalConsumptionMmscf | number: '1.0-0' }}
+                    </td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ region.lostTimeInjuries }}/{{ region.nearMissCount }}/{{
+                        region.firstAidCases
+                      }}
+                    </td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ region.preventiveMaintenanceCompleted }}/{{
+                        region.correctiveMaintenanceCompleted
+                      }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="text-center py-8 text-gray-500">
+            <p>No regional data available</p>
+          </div>
+        }
+      </section>
+    </main>
+  }
+</div>

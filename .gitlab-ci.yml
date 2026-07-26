@@ -1,0 +1,4 @@
+include:
+  - project: 'deployment/ci-templates'
+    ref: main
+    file: 'angular-gitlab-ci.yml'

@@ -1,0 +1,300 @@
+@if (user(); as user) {
+  <div class="max-w-4xl mx-auto w-full px-4 py-8 flex flex-col gap-6">
+    <!-- ── Header card ── -->
+    <div class="rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-gray-900">
+      <!-- Cover banner -->
+      <div class="h-36 bg-gradient-to-br from-primary-900 via-primary-700 to-primary-400"></div>
+
+      <!-- Identity row -->
+      <div class="px-6 pb-6 flex flex-wrap items-end gap-4">
+        <!-- Avatar -->
+        <div class="relative -mt-14 shrink-0">
+          @if (user.avatar) {
+            <img
+              [src]="user.avatar"
+              [alt]="fullName()"
+              class="w-28 h-28 rounded-full border-4 border-white dark:border-gray-900 object-cover shadow-md"
+              width="112"
+              height="112"
+            />
+          } @else {
+            <div
+              class="w-28 h-28 rounded-full border-4 border-white dark:border-gray-900 bg-primary text-white flex items-center justify-center text-4xl font-bold shadow-md select-none"
+              aria-hidden="true"
+            >
+              {{ initials() }}
+            </div>
+          }
+          @if (user.active) {
+            <span
+              class="absolute bottom-2 right-2 w-4 h-4 rounded-full bg-success border-2 border-white dark:border-gray-900"
+              matTooltip="Active"
+              aria-label="Active"
+            ></span>
+          }
+        </div>
+
+        <!-- Name & badges -->
+        <div class="flex-1 min-w-0 pb-1 flex flex-col gap-1">
+          <h1
+            class="text-2xl font-bold text-gray-800 dark:text-gray-100 m-0 leading-tight truncate"
+          >
+            {{ fullName() }}
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">
+            {{ user.username ? '@' + user.username : user.email }}
+          </p>
+          <div class="flex flex-wrap gap-2 mt-1">
+            @if (user.isStaff) {
+              <span
+                class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-100"
+              >
+                <mat-icon
+                  svgIcon="icon_roles"
+                  class="!w-3.5 !h-3.5 !text-sm leading-none"
+                />
+                Staff
+              </span>
+            }
+            @if (user.active) {
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success">
+                Active
+              </span>
+            } @else {
+              <span
+                class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-500"
+              >
+                Inactive
+              </span>
+            }
+            @if (user.accountNonLocked === false) {
+              <span
+                class="px-3 py-1 rounded-full text-xs font-semibold bg-secondary-50 text-secondary-800 border border-secondary-100"
+              >
+                Locked
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Body grid ── -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <!-- Personal Information -->
+      <section
+        class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden"
+        aria-label="Personal Information"
+      >
+        <h2
+          class="flex items-center gap-2 m-0 px-5 py-4 text-xs font-semibold uppercase tracking-widest text-primary"
+        >
+          <mat-icon svgIcon="user" class="!w-4 !h-4 shrink-0" />
+          Personal Information
+        </h2>
+        <mat-divider />
+
+        <dl class="m-0 divide-y divide-gray-100 dark:divide-gray-800">
+          <div class="flex justify-between items-center gap-4 px-5 py-3">
+            <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">First Name</dt>
+            <dd class="text-sm font-medium text-gray-800 dark:text-gray-200 m-0 text-right">
+              {{ user.firstName || '—' }}
+            </dd>
+          </div>
+          @if (user.middleName) {
+            <div class="flex justify-between items-center gap-4 px-5 py-3">
+              <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+                Middle Name
+              </dt>
+              <dd class="text-sm font-medium text-gray-800 dark:text-gray-200 m-0 text-right">
+                {{ user.middleName }}
+              </dd>
+            </div>
+          }
+          <div class="flex justify-between items-center gap-4 px-5 py-3">
+            <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">Last Name</dt>
+            <dd class="text-sm font-medium text-gray-800 dark:text-gray-200 m-0 text-right">
+              {{ user.lastName || '—' }}
+            </dd>
+          </div>
+          <div class="flex justify-between items-center gap-4 px-5 py-3">
+            <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">Email</dt>
+            <dd class="text-sm font-medium m-0 text-right">
+              <a [href]="'mailto:' + user.email" class="text-primary hover:underline break-all">
+                {{ user.email || '—' }}
+              </a>
+            </dd>
+          </div>
+          <div class="flex justify-between items-center gap-4 px-5 py-3">
+            <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">Phone</dt>
+            <dd class="text-sm font-medium text-gray-800 dark:text-gray-200 m-0 text-right">
+              {{ user.phoneNumber || '—' }}
+            </dd>
+          </div>
+          <div class="flex justify-between items-center gap-4 px-5 py-3">
+            <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+              National ID
+            </dt>
+            <dd class="text-sm font-medium text-gray-800 dark:text-gray-200 m-0 text-right">
+              {{ user.nationalId || '—' }}
+            </dd>
+          </div>
+          <div class="flex justify-between items-center gap-4 px-5 py-3">
+            <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">Username</dt>
+            <dd class="text-sm font-medium text-gray-800 dark:text-gray-200 m-0 text-right">
+              {{ user.username || '—' }}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Right column -->
+      <div class="flex flex-col gap-6">
+        <!-- Roles -->
+        <section
+          class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden"
+          aria-label="Roles and Permissions"
+        >
+          <h2
+            class="flex items-center gap-2 m-0 px-5 py-4 text-xs font-semibold uppercase tracking-widest text-primary"
+          >
+            <mat-icon svgIcon="icon_roles" class="!w-4 !h-4 shrink-0" />
+            Roles
+          </h2>
+          <mat-divider />
+
+          <div class="p-5 flex flex-col gap-3">
+            @if (roleList().length) {
+              <mat-chip-set aria-label="User roles">
+                @for (role of roleList(); track role) {
+                  <mat-chip>{{ role | replace: '_' : ' ' }}</mat-chip>
+                }
+              </mat-chip-set>
+              @if (roleList().length > 10) {
+                <button
+                  type="button"
+                  class="self-start inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                  (click)="showAllRoles.set(!showAllRoles())"
+                >
+                  <mat-icon class="!w-3.5 !h-3.5 !text-sm">
+                    {{ showAllRoles() ? 'expand_less' : 'expand_more' }}
+                  </mat-icon>
+                  {{ showAllRoles() ? 'Show less' : 'Show ' + (roleList().length - 10) + ' more' }}
+                </button>
+              }
+            } @else {
+              <p class="text-sm text-gray-400 m-0">No roles assigned.</p>
+            }
+          </div>
+        </section>
+
+        <!-- Account Status -->
+        <section
+          class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden"
+          aria-label="Account Status"
+        >
+          <h2
+            class="flex items-center gap-2 m-0 px-5 py-4 text-xs font-semibold uppercase tracking-widest text-primary"
+          >
+            <mat-icon svgIcon="shield_passed" class="!w-4 !h-4 shrink-0" />
+            Account Status
+          </h2>
+          <mat-divider />
+
+          <dl class="m-0 divide-y divide-gray-100 dark:divide-gray-800">
+            <div class="flex justify-between items-center gap-4 px-5 py-3">
+              <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+                Account Status
+              </dt>
+              <dd class="m-0">
+                @if (user.active) {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success"
+                  >
+                    Active
+                  </span>
+                } @else {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger/10 text-danger"
+                  >
+                    Inactive
+                  </span>
+                }
+              </dd>
+            </div>
+            <div class="flex justify-between items-center gap-4 px-5 py-3">
+              <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+                Account Locked
+              </dt>
+              <dd class="m-0">
+                @if (user.accountNonLocked === false) {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary-50 text-secondary-800"
+                  >
+                    Locked
+                  </span>
+                } @else {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success"
+                  >
+                    Unlocked
+                  </span>
+                }
+              </dd>
+            </div>
+            <div class="flex justify-between items-center gap-4 px-5 py-3">
+              <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+                Account Expired
+              </dt>
+              <dd class="m-0">
+                @if (user.accountNonExpired === false) {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger/10 text-danger"
+                  >
+                    Expired
+                  </span>
+                } @else {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success"
+                  >
+                    Valid
+                  </span>
+                }
+              </dd>
+            </div>
+            <div class="flex justify-between items-center gap-4 px-5 py-3">
+              <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+                Password Expired
+              </dt>
+              <dd class="m-0">
+                @if (user.passwordExpired) {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger/10 text-danger"
+                  >
+                    Expired
+                  </span>
+                } @else {
+                  <span
+                    class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success"
+                  >
+                    Valid
+                  </span>
+                }
+              </dd>
+            </div>
+            @if (user.failedAttempt) {
+              <div class="flex justify-between items-center gap-4 px-5 py-3">
+                <dt class="text-xs font-medium text-gray-500 whitespace-nowrap shrink-0">
+                  Failed Attempts
+                </dt>
+                <dd class="m-0 text-sm font-bold text-secondary-800">
+                  {{ user.failedAttempt }}
+                </dd>
+              </div>
+            }
+          </dl>
+        </section>
+      </div>
+    </div>
+  </div>
+}

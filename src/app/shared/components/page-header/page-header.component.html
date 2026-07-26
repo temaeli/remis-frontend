@@ -1,0 +1,56 @@
+<div
+  class="{{ animation }} --order-2 {{
+    'w-full rounded-lg bg-white text-black p-[4px] flex items-center justify-between flex-wrap'
+      | mergeClasses: headerClass
+  }}"
+>
+  <div class="flex h-full flex-wrap items-center">
+    <div class="h-full flex flex-wrap items-center p-1 pe-3">
+      <ng-container *ngIf="showBackBtn">
+        <span
+          (click)="goBack()"
+          matTooltip="Go Back "
+          class="size-[40px] rounded-md ms-1 mx-2 inline-flex justify-center items-center bg-hover-gradient-faded border border-gray-100 has-hover-move-left cursor-pointer"
+        >
+          <div
+            class="size-full inline-flex justify-center items-center
+            {{ animation }} --order-2  "
+          >
+            <mat-icon class="hover-move-left text-accent" svgIcon="arrow_left" />
+          </div>
+        </span>
+
+        <!-- <span class="px-2 faded {{ animation }} --order-4"> | </span> -->
+      </ng-container>
+      <div class="flex flex-col p-1">
+        <span class="page-title text-xl font-bold {{ animation }} --order-3">{{ title }} </span>
+        <span class="faded {{ animation }} --order-4"> {{ subtitle }} </span>
+      </div>
+    </div>
+
+    <breadcrumb *ngIf="showBreadcrumb" [nav]="nav" />
+  </div>
+
+  <div class="flex items-center flex-wrap gap-2  {{ animation }} --order-4">
+    <data-inputs
+      [dataInputs]="dataInputs"
+      [animation]="animation"
+      [model]="model"
+      class="inline-flex flex-wrap pe-3 {{ dataInputsClass }}"
+    />
+
+    <action-buttons
+      [actionButtons]="actionButtons"
+      [data]="data"
+      class="{{ 'inline-flex flex-wrap gap-2' | mergeClasses: actionButtonsClass }}"
+    />
+
+    <toggle-buttons
+      [class]="toggleButtonsClass"
+      [toggleButtons]="toggleButtons"
+      [initialValue]="initialValue"
+      [valueKey]="valueKey"
+      (value)="valueChanged($event)"
+    />
+  </div>
+</div>

@@ -1,0 +1,36 @@
+<div class="pm">
+  <div #mapHost class="pm__map" role="application" aria-label="Pipeline spatial map"></div>
+
+  <header class="pm__header">
+    <span class="pm__eyebrow">Spatial</span>
+    <h2 class="pm__title">{{ title }}</h2>
+    @if (subtitle) {
+      <span class="pm__subtitle">{{ subtitle }}</span>
+    }
+  </header>
+
+  @if (hasData) {
+    <aside class="pm__hud" aria-live="polite">
+      <div class="pm__hud-cell">
+        <span class="pm__hud-label">Sections</span>
+        <span class="pm__hud-value">{{ stats.sectionCount }}</span>
+      </div>
+      <div class="pm__hud-cell">
+        <span class="pm__hud-label">Total length</span>
+        <span class="pm__hud-value">{{ formatLength(stats.totalLengthMeters) }}</span>
+      </div>
+      <div class="pm__hud-cell pm__hud-cell--accent">
+        <span class="pm__hud-label">SRS</span>
+        <span class="pm__hud-value">EPSG:4326</span>
+      </div>
+    </aside>
+  } @else {
+    <div class="pm__empty" role="status">
+      <div class="pm__empty-frame">
+        <span class="pm__empty-pulse"></span>
+        <h3 class="pm__empty-title">{{ emptyTitle }}</h3>
+        <p class="pm__empty-body">{{ emptyBody }}</p>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,58 @@
+<mat-button-toggle-group
+  scrollableToggleGroup
+  slidingToggleIndicator
+  [value]="initialValue_"
+  [multiple]="multiple"
+  [vertical]="vertical"
+  [hideSingleSelectionIndicator]="true"
+  (valueChange)="onValueChange($event)"
+  class=" {{ groupClass | mergeClasses: 'd-flex flex-wrap' }} {{ animation }} --order-3  "
+>
+  <!--  this emits an undifined value if value is not a key -->
+
+  @for (option of buttons; track option[valueKey] ?? $index; let i = $index) {
+    <ng-container *hasPermission="option.permissions ?? []">
+      <mat-button-toggle
+        [value]="option[valueKey]"
+        [disabled]="option.disabled"
+        (click)="option?.click ? option?.click?.() : ''"
+        [matTooltip]="option?.toolTip"
+      >
+        <!-- class=" {{ animation }} --order-{{ i + 2 }} " -->
+        <!-- onValueChange(option[valueKey]); -->
+
+        <div class="relative size-full {{ buttonClass | mergeClasses: ' flex items-center' }}">
+          @if (option.icon && !hideIcons && !option.hideIcon) {
+            <app-icon [icon]="option.icon" iconClass="{{ 'me-2 ' | mergeClasses: iconClass }}" />
+          }
+
+          <span
+            class=" {{
+              labelClass | mergeClasses: 'col px-0 small flex items-center justify-between '
+            }}"
+            [innerHTML]="
+              (labelMapper ? (labelMapper(option) | toObservable | async) : option[labelKey])
+                | safeHtml
+            "
+          ></span>
+
+          @if (option.badge | isValue) {
+            @let badgeValue = option.badge | toObservable | async;
+            @let badgeClass1 = badgeValue > 0 ? 'bg-secondary/85' : 'bg-gray-400/20';
+            @let badgeClass2 = badgeValue > 0 ? 'bg-primary/30' : 'bg-gray-400/20';
+
+            <span
+              class=" {{ option[valueKey] === initialValue ? badgeClass1 : badgeClass2 }}
+               {{
+                '   size-[22px] small inline-flex items-center justify-center rounded-full ms-2   '
+                  | mergeClasses: badgeClass
+              }}"
+            >
+              <number-counter [number]="badgeValue" />
+            </span>
+          }
+        </div>
+      </mat-button-toggle>
+    </ng-container>
+  }
+</mat-button-toggle-group>

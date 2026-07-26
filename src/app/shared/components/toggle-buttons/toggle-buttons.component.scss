@@ -1,0 +1,139 @@
+.mat-button-toggle-group {
+  flex-wrap: wrap;
+  //
+  .mat-button-toggle {
+    &.text-start,
+    &.text-left {
+      .mat-button-toggle-button {
+        text-align: left;
+      }
+    }
+  }
+
+  .mat-button-toggle-label-content {
+    width: 100%;
+
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    margin: 0px !important;
+  }
+}
+
+.mat-button-toggle-standalone.mat-button-toggle-appearance-standard,
+.mat-button-toggle-group-appearance-standard {
+  border-radius: var(--border-radius) !important;
+}
+
+.mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+  line-height: 40px !important;
+  padding-right: 0px !important;
+  padding-left: 0px !important;
+}
+
+.custom-toggle-group,
+.toggle-scroll-container {
+  position: relative;
+}
+
+.toggle-scroll-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  height: 90%;
+  width: calc(var(--indicator-width, 100px) - 10px);
+  left: 5px;
+  border-radius: var(--border-radius, 8px);
+  transform: translateX(var(--indicator-x));
+  background: var(--color-primary);
+  transition:
+    transform 300ms ease,
+    width 300ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.custom-toggle-group .mat-button-toggle {
+  position: relative;
+  z-index: 1;
+}
+
+// hide default selection styling
+.custom-toggle-group .mat-button-toggle-checked {
+  background-color: transparent !important;
+  color: var(--color-white_);
+}
+
+.toggle-scroll-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px; // Space between buttons and scroll container
+  width: fit-content; // Wrapper grows to fit content + buttons
+  max-width: 100%; // Don't exceed parent width
+}
+
+.custom-toggle-group {
+  border: none;
+}
+
+.toggle-scroll-container {
+  border: 1px solid var(--color-neutral);
+  border-radius: var(--border-radius);
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none; // Firefox
+  -ms-overflow-style: none; // IE/Edge
+  flex: 1;
+  min-width: 0; // Allow container to shrink
+
+  &::-webkit-scrollbar {
+    display: none; // Chrome/Safari
+  }
+}
+
+.toggle-scroll-button {
+  flex-shrink: 0; // Don't allow buttons to shrink
+  width: 40px;
+  height: 100%; // Match the height of toggle group
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: var(--border-radius, 8px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.toggle-scroll-button-disabled) {
+    background: var(--color-white);
+  }
+
+  &:active:not(.toggle-scroll-button-disabled) {
+    background: var(--color-neutral);
+  }
+
+  &.toggle-scroll-button-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  mat-icon {
+    color: #6b7280;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Ensure toggle buttons don't wrap
+mat-button-toggle-group[scrollableToggleGroup] {
+  flex-wrap: nowrap !important;
+}
+
+mat-button-toggle-group[scrollableToggleGroup] .mat-button-toggle {
+  flex-shrink: 0;
+}

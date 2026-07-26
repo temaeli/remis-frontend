@@ -1,0 +1,35 @@
+:root {
+  --progress: 50;
+}
+
+.circle-progress {
+  transform: rotate(-45deg);
+
+  circle {
+    stroke: var(--color-primary-400);
+    stroke-linecap: round;
+    stroke-width: var(--strokeWidth);
+    fill: rgba(#fff, 0);
+
+    stroke-miterlimit: 10;
+    stroke-dasharray: 100;
+    stroke-dashoffset: calc(100 - var(--progress));
+    transition: stroke-dashoffset calc(calc(var(--order) * 200ms) + 250ms);
+  }
+
+  .circle-bg {
+    animation: dash calc(calc(var(--order) * 200ms) + 250ms) 300ms ease forwards;
+  }
+}
+
+.circle-progress-bg circle {
+  fill: rgba(#fff, 0);
+  stroke: var(--color-neutral);
+  stroke-width: var(--strokeWidth);
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 100;
+  }
+}

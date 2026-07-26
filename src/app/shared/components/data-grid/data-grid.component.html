@@ -1,0 +1,922 @@
+<div
+  [class.has-filters-container]="!showFiltersInToolbar && canShowFilters"
+  [class.has-full-grid]="contentClass.includes('full-grid')"
+  [class.has-paginator]="canShowPaginator"
+  [class.has-no-toolbar]="!canShowToolbar"
+  [class.has-table-scrollbar]="hasScrollbar"
+  [class.no-data]="!displayedData.length && !(hasTouchedPageInput && !isFetching)"
+  class="--order-3   {{ animation_ }} {{ appearance }} data-loader
+    {{ 'flex-1   flex flex-col relative overflow-x-hidden  ' | mergeClasses: containerClass }} "
+>
+  @if ((!isLoading && !isFetching) || hasActiveStates()) {
+    <!-- data filters -->
+    <ng-container *ngIf="!showFiltersInToolbar && canShowFilters">
+      <div
+        class="--order-{{ 3 }} {{ animation_ }} flex-shrink-0 filters-container
+        {{
+          'flex flex-wrap items-center justify-between px-1 top-4 bg-white rounded-lg'
+            | mergeClasses: filtersClass
+        }}"
+      >
+        <div class="flex items-center flex-wrap col px-0">
+          <ng-container [ngTemplateOutlet]="inputsTpl" />
+          <ng-container [ngTemplateOutlet]="tableNameTpl" />
+          <!-- search is alway on toolbar unles not displayed -->
+          <ng-container *ngIf="!showToolbar" [ngTemplateOutlet]="searchInputTpl" />
+          <ng-container [ngTemplateOutlet]="searchStatesTpl" />
+          <ng-container [ngTemplateOutlet]="dateFilterTpl" />
+        </div>
+        <div *ngIf="headerButtons.length || gridOptions.length" class="flex items-center flex-wrap">
+          <action-buttons class="ps-2" [actionButtons]="headerButtons" />
+          <span class="px-2 mx-1 faded" *ngIf="headerButtons.length && gridOptions.length">
+            |
+          </span>
+          <ng-container [ngTemplateOutlet]="gridOptionsTpl" />
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- more table options -->
+    <div
+      *ngIf="showTableControls"
+      class="{{ 'border-0 flex-shrink-0' | mergeClasses: filtersContainerClass }}
+     {{ animation_ }} mt-1"
+      [style.--order]="2.2"
+    >
+      <ng-container *ngFor="let field of tableTogglesFields; let index = index">
+        <mat-checkbox (change)="toggleChange(field.key, $event.checked)">
+          {{ field.label | label }}
+        </mat-checkbox>
+      </ng-container>
+    </div>
+    <!--  -->
+
+    <ng-container
+      *ngIf="
+        displayedData.length || canShowToolbar || (hasTouchedPageInput && !isFetching);
+        else loadingOrNoDataTmpl
+      "
+    >
+      <ng-container
+        *ngIf="
+          contentClass + ' ' + (canShowPaginator ? 'has-footer' : '')
+            | mergeClasses: ' overflow-x-hidden transition-height  ' as tableClass
+        "
+      >
+        <ng-container *ngIf="['table', 'default'].includes(renderType)">
+          <div
+            class="hybrid-table {{ tableClass }} flex-1 flex flex-col justify-between text-[14px]"
+            [class.has-nested-cells]="hasNestedCells"
+          >
+            <div class="flex-1 flex flex-col overflow-x-hidden h-full">
+              @if (showToolbar && canShowToolbar) {
+                <ng-container
+                  [ngTemplateOutlet]="toolbarTemplate"
+                  [ngTemplateOutletContext]="{
+                    class: 'table-toolbar flex-shrink-0',
+                    columnsControls: true,
+                  }"
+                />
+              }
+
+              <div
+                scrollbarDetector
+                (scrollbarChange)="setHasScrollbar($event)"
+                [class.has-scrollbar]="hasScrollbar"
+                class="table-main relative scrollable-container
+                 {{ gridClass }} flex-1 flex flex-col w-full
+                {{
+                  !isTableUpdating && displayedData.length ? 'overflow-x-auto' : 'overflow-hidden'
+                }}
+                "
+              >
+                @if (showBgIconMark) {
+                  <bg-icon-mark class="size-full absolute top-0 left-0" />
+                }
+
+                @if (displayedData.length) {
+                  <ng-container [ngTemplateOutlet]="tableTpl" />
+                } @else {
+                  <ng-container *ngTemplateOutlet="loadingOrNoDataTmpl" />
+                }
+              </div>
+            </div>
+
+            <div class="table-footer flex-shrink-0 {{ footerClass }} relative">
+              <ng-container [ngTemplateOutlet]="paginatorTpl" />
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- view items in a list -->
+        <ng-container #listTpl *ngIf="renderType === 'list'">
+          @if (displayedData.length) {
+            <ng-container *ngFor="let data of displayedData; let index = index">
+              <ng-container *ngTemplateOutlet="listItem; context: { data, index }" />
+            </ng-container>
+
+            <ng-container
+              [ngTemplateOutlet]="paginatorTpl"
+              [ngTemplateOutletContext]="{ class: 'mt-[3px] rounded-lg' }"
+            />
+          } @else {
+            <ng-container *ngTemplateOutlet="loadingOrNoDataTmpl" />
+          }
+        </ng-container>
+      </ng-container>
+    </ng-container>
+
+    <ng-template #menuTpl> <mat-icon svgIcon="location" /> </ng-template>
+
+    <div
+      class="absolute box-20 m-1 me-2 top-0 right-0 hover:bg-[var(--color-primary-very-faded)] round cursor-pointer animate"
+      (click)="toggleControls()"
+    ></div>
+    <!--  -->
+    <div
+      class="absolute box-20 m-1 ms-2 top-0 left-0 hover:bg-[var(--color-primary-very-faded)] round cursor-pointer animate"
+      (click)="toggleFilters()"
+    ></div>
+  } @else {
+    <ng-container *ngTemplateOutlet="loadingOrNoDataTmpl" />
+  }
+</div>
+
+<ng-template #tableTpl>
+  <table
+    class="border-collapse h-fullll"
+    style="table-layout: fixed; min-width: 100%"
+    [style.width]="hasResizedColumn ? 'max-content' : 'auto'"
+  >
+    <thead>
+      <!-- Multi-level header rows -->
+      <tr *ngFor="let headerRow of headerRows; let level = index">
+        <ng-container *ngFor="let col of columns; let colIdx = index">
+          <ng-container *ngIf="getHeaderCell(level, colIdx) as cell">
+            <ng-container *ngIf="(!col.hide && !cell) || (cell.rowspan > 0 && cell.colspan > 0)">
+              <th
+                class="relative group {{ cell.column?.class || '' }}"
+                [class.merged-cell]="headerRows.length > 1"
+                [attr.rowspan]="cell.rowspan"
+                [attr.colspan]="cell.colspan"
+                [class.pinned-left]="cell.column?.pinned === 'left'"
+                [class.pinned-right]="cell.column?.pinned === 'right'"
+                [style.z-index]="cell.column?.pinned ? 20 : 1"
+                [style.width]="cell.column?.width"
+                [style.min-width]="cell.column?.minWidth"
+                [style.max-width]="cell.column?.maxWidth"
+                [class.resizing]="cell.column?.['resizing']"
+                [matTooltip]="cell.column?.headerTooltip"
+                [matTooltipPosition]="'above'"
+                [class.bordered-cell]="borderedColumns"
+              >
+                <div class="size-full flex items-center">
+                  <!-- Checkbox for first cell of first row only -->
+                  <ng-container
+                    *ngIf="
+                      rowSelectable && multiSelectable && level === 0 && colIdx === 0 && !checkBoxFn
+                    "
+                  >
+                    <mat-checkbox
+                      class="left-[-5px] relative"
+                      (change)="selectDeselectAll($event.checked)"
+                      [checked]="displayedData.length === selectedRows.length"
+                      [indeterminate]="selectedRows.length > 0"
+                    />
+                  </ng-container>
+
+                  <!-- Header content -->
+                  <ng-container *ngIf="cell.isLeaf && cell.column">
+                    <!-- Use custom header template if available -->
+                    <ng-container
+                      [ngTemplateOutlet]="defaultHeaderTpl"
+                      [ngTemplateOutletContext]="{ column: cell.column, level }"
+                    />
+                  </ng-container>
+
+                  <ng-container *ngIf="!cell.isLeaf">
+                    <!-- Group header - just show the label -->
+                    <span class="font-semibold">{{ cell.label }}</span>
+                  </ng-container>
+
+                  <!-- Resize handle only for leaf cells -->
+                  <span
+                    *ngIf="cell.isLeaf && cell.column"
+                    class="absolute column-resizer top-0 right-0 h-full w-1 cursor-col-resize"
+                    (mousedown)="startResize($event, cell.column)"
+                  ></span>
+                </div>
+              </th>
+            </ng-container>
+          </ng-container>
+        </ng-container>
+      </tr>
+    </thead>
+
+    <tbody class="table-body">
+      @for (
+        item of displayedData;
+        track $index + '_' + (item.id ?? item.uid);
+        let rowIndex = $index
+      ) {
+        <tr
+          (click)="rowClick({ rowData: item, index: rowIndex })"
+          [ngClass]="item | rowClasses: rowIndex : rowClassFormatter"
+          class="{{ animationRow }} {{ item?.['rowProps']?.class }}"
+        >
+          @for (col of columns; track col.field + '_' + $index; let j = $index) {
+            <ng-container *ngIf="spanTracker.get(rowIndex + '-' + j) as cell">
+              <td
+                *ngIf="!col.hide && cell[0] > 0"
+                class="table-cell {{ col.class }}
+              {{ (col?.class | typeOfIs: 'function') ? (col.class | any)?.(item, col) : col.class }}
+              {{ cell[0] > 1 ? 'merged-cell' : '' }} {{ item?.['cellsProps']?.[col.field]?.class }}
+              {{ col['hasMergedCells'] ? 'in-merged-column' : '' }}"
+                [attr.rowspan]="cell[0]"
+                [attr.colspan]="cell[1]"
+                [class.pinned-left]="col.pinned === 'left'"
+                [class.pinned-right]="col.pinned === 'right'"
+                [style.z-index]="col.pinned ? 20 : 1"
+                [style.width]="col.width"
+                [style.min-width]="col.minWidth"
+                [style.max-width]="col.maxWidth"
+                [class.resizing]="col['resizing']"
+                [class.bordered-cell]="borderedColumns"
+              >
+                <div
+                  class=" {{
+                    'size-full flex items-center'
+                      | mergeClasses: item?.['cellsProps']?.[col.field]?.innerClass
+                  }}  "
+                >
+                  <ng-container *ngIf="rowSelectable && j === 0">
+                    @if (!!checkBoxFn ? checkBoxFn(item) : true) {
+                      <mat-checkbox
+                        [value]="item"
+                        (change)="rowSelectionChange_(item, $event.checked)"
+                        [checked]="isSelected(item)"
+                      />
+                    }
+                  </ng-container>
+
+                  <ng-container
+                    *ngIf="cellsTemplates[col.field] ?? defaultCellTpl as tpl"
+                    [ngTemplateOutlet]="tpl"
+                    [ngTemplateOutletContext]="{
+                      item,
+                      colDef: col,
+                      index: rowIndex,
+                      indexClass: 'ps-3',
+                    }"
+                  />
+                </div>
+              </td>
+            </ng-container>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</ng-template>
+
+<ng-template #paginatorTpl let-class="class">
+  <mat-paginator
+    [hidden]="!canShowPaginator"
+    class="block {{ paginatorClass | mergeClasses: class }}"
+    [length]="dataLength"
+    [pageSizeOptions]="pageSizeOptions"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [showFirstLastButtons]="true"
+    (page)="handlePage($event)"
+  />
+</ng-template>
+
+<!-- templates -->
+<mat-paginator [hidden]="true" />
+
+<!-- index column -->
+<ng-template #defaultIndexTpl let-row let-index="index" let-indexClass="indexClass">
+  <span class="faded  {{ indexClass }} text-nowrap"> {{ index + 1 + pageIndex * pageSize }} </span>
+</ng-template>
+
+<!-- row expansion contents -->
+<ng-template #defaultExpansionTpl let-row let-index="index" let-col="colDef">
+  <div class="ms-4 ms-lg-4 p-3">
+    <ng-container
+      *ngIf="expansion; else allDetailsTpl"
+      [ngTemplateOutletContext]="{ data: row }"
+      [ngTemplateOutlet]="expansion"
+    />
+
+    <ng-template #allDetailsTpl>
+      <!-- Commented out to remove circular dependency with details component -->
+      <!-- <app-details [entity]="row" [showFieldsInGroups]="true"></app-details> -->
+    </ng-template>
+  </div>
+</ng-template>
+
+<!-- sidebar template -->
+<ng-template #defaultSidebarTpl>
+  <ng-container [ngTemplateOutlet]="sidebar" [ngTemplateOutletContext]="{}" />
+</ng-template>
+
+<!-- action column -->
+<ng-template #defaultActionsTpl let-row let-index="index" let-col="colDef" let-item="item">
+  <div class="overflow-hidden">
+    <ng-container *ngIf="actionButtons.length; else viewActions">
+      <action-buttons
+        class="flex justify-center"
+        [animation]="undefined"
+        [actionButtons]="actionButtons"
+        [data]="row ?? item"
+      />
+    </ng-container>
+  </div>
+
+  <ng-template
+    #viewActions
+    [ngTemplateOutlet]="actions"
+    [ngTemplateOutletContext]="{ data: row, index: index, col: col }"
+  />
+</ng-template>
+
+<!-- nested lists -->
+<ng-template #defaultNestedListsTpl let-row let-item="item" let-col="colDef">
+  <ng-container *ngIf="row ?? item | pathValue: col.field as items">
+    <div class="flex w-full flex-col">
+      <div
+        *ngFor="let item of items; let index = index"
+        class="last-no-border  {{ col?.['nestedClass'] }} nested-cell"
+      >
+        <div
+          class="flex justify-between items-center min-h-[44px]"
+          [ngClass]="{
+            'p-4': !cellsButtons[col.field]?.length,
+            'p-1': cellsButtons[col.field]?.length,
+          }"
+        >
+          <div class="">
+            <span *ngIf="col?.showIndex !== false" class="ps-2 p-1 faded">
+              {{ index + 1 | intToRoman }}.
+            </span>
+            <span>{{ item | label }} </span>
+          </div>
+
+          <!-- <data-input *ngIf="index === 3" [value]="item"></data-input> -->
+
+          <action-buttons
+            [data]="item"
+            [animation]="animation_"
+            class="flex justify-center"
+            [actionButtons]="cellsButtons[col.field]"
+          />
+        </div>
+        <mat-divider />
+      </div>
+    </div>
+  </ng-container>
+</ng-template>
+
+<!-- defaultCellTpl -->
+<ng-template #defaultCellTpl let-row let-item="item" let-index="index" let-col="colDef">
+  <!-- row is from mtx but item is from table -->
+  <ng-container *ngIf="row ?? item as row">
+    <div
+      [matTooltip]="col?.toolTip ?? col?.toolTipMapper?.(row)"
+      class="{{
+        col?.innerClass ?? col?.innerClassMapper?.(row) | mergeClasses: 'flex items-center p-1 px-2'
+      }}"
+    >
+      <span class="{{ col?.valueClass ?? col?.valueClassMapper?.(row) }}">
+        <ng-container [ngTemplateOutlet]="cellValue" />
+      </span>
+
+      <mat-icon
+        [svgIcon]="col?.icon ?? col?.iconMapper?.(row)"
+        class=" {{ col?.iconClass ?? col?.iconClassMapper?.(row) | mergeClasses: 'ms-2 ' }}"
+      />
+    </div>
+
+    <ng-template #cellValue>
+      <ng-container [ngSwitch]="col.semanticType ?? col.type">
+        <!-- valueFn -->
+        @let value1 = col.valueFn ? col.valueFn(row) : (row | pathValue: col?.field);
+
+        <!--
+        @let value2 = col.replace ? (value1 | replace: col.replace) : value1;
+        @let value = col.fetchedItem ? (value2 | fetch: col.fetchedItem | async) : value2; -->
+
+        <ng-container [ngTemplateOutlet]="valueTpl" [ngTemplateOutletContext]="{ value: value1 }" />
+
+        <!-- value renders -->
+        <ng-template #valueTpl let-value="value">
+          <ng-container *ngSwitchCase="'hexColorCode'">
+            <div
+              *ngIf="value"
+              class="rounded-slight inline-block border-slightly-faded p-1 px-3 min-w-[90px]"
+              [style.background]="value"
+              [style.color]="value | contrastGray"
+            >
+              {{ value }}
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'actionButtons'">
+            <action-buttons [actionButtons]="col?.actionButtons" [data]="row" />
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'date'"> {{ value | date }} </ng-container>
+          <ng-container *ngSwitchCase="'count'"> {{ value?.length | number }} </ng-container>
+
+          <ng-container *ngSwitchCase="'dateTime'">
+            {{ value | date: ' dd MMM y | HH:mm' }}
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'number'"> {{ value | number }}</ng-container>
+
+          <span *ngSwitchCase="'html'" [innerHTML]="value | safeHtml"></span>
+
+          <!-- <ng-container *ngSwitchCase="'filePath'">
+            @if (value) {
+              <action-buttons [actionButtons]="attachmentButtons" [data]="value" />
+            } @else {
+              {{ undefinedValue }}
+            }
+          </ng-container> -->
+
+          <!-- <ng-container *ngSwitchCase="'imagePath'">
+            @if (value) {
+              <img
+                [src]="'data:image/png;base64,' + (value | fileByPath | async)"
+                class="w-[40px] h-[auto] object-cover rounded-md"
+              />
+            } @else {
+              {{ undefinedValue }}
+            }
+          </ng-container> -->
+
+          <ng-container *ngSwitchCase="'status'">
+            <div class="inline-flex items-center">
+              <span
+                [class.bg-primary-400]="(value + '' | lowercase) === 'active'"
+                [class.bg-secondary-400]="(value + '' | lowercase) !== 'active'"
+                class="inline-block opacity-50 size-[10px] rounded-full mr-2"
+              ></span>
+
+              {{ value === true ? 'YES' : value === false ? 'NO' : value }}
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchDefault>
+            {{ (value | label: false | truncate: col.truncate) ?? '--' }}
+          </ng-container>
+        </ng-template>
+      </ng-container>
+    </ng-template>
+  </ng-container>
+</ng-template>
+
+<!-- defaultCellTpl -->
+<ng-template #defaultCellTpl let-row let-item="item" let-index="index" let-col="colDef">
+  <!-- row is from mtx but item is from table -->
+  <ng-container *ngIf="row ?? item as row">
+    <div
+      [matTooltip]="col?.toolTip ?? col?.toolTipMapper?.(row)"
+      class="{{
+        col?.innerClass ?? col?.innerClassMapper?.(row) | mergeClasses: 'flex items-center p-1 px-2'
+      }}"
+    >
+      <span class="{{ col?.valueClass ?? col?.valueClassMapper?.(row) }}">
+        <ng-container [ngTemplateOutlet]="cellValue" />
+      </span>
+
+      <mat-icon
+        [svgIcon]="col?.icon ?? col?.iconMapper?.(row)"
+        class=" {{ col?.iconClass ?? col?.iconClassMapper?.(row) | mergeClasses: 'ms-2 ' }}"
+      />
+    </div>
+
+    <ng-template #cellValue>
+      <ng-container [ngSwitch]="col.semanticType ?? col.type">
+        <ng-container
+          [ngTemplateOutlet]="valueTpl"
+          [ngTemplateOutletContext]="{
+            value: col.valueFn ? col.valueFn(row) : (row | pathValue: col?.field),
+          }"
+        />
+
+        <!-- value renders -->
+        <ng-template #valueTpl let-value="value">
+          <ng-container *ngSwitchCase="'hexColorCode'">
+            <div
+              *ngIf="value"
+              class="rounded-slight inline-block border-slightly-faded p-1 px-3 min-w-[90px]"
+              [style.background]="value"
+              [style.color]="value | contrastGray"
+            >
+              {{ value }}
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'actionButtons'">
+            <action-buttons [actionButtons]="col?.actionButtons" [data]="row" />
+          </ng-container>
+
+          <ng-container *ngSwitchCase="'date'"> {{ value | date }}</ng-container>
+          <ng-container *ngSwitchCase="'count'"> {{ value?.length | number }}</ng-container>
+          <ng-container *ngSwitchCase="'dateTime'">
+            {{ value | date: ' dd MMM y | HH:mm' }}
+          </ng-container>
+          <ng-container *ngSwitchCase="'number'"> {{ value | number }}</ng-container>
+          <ng-container *ngSwitchCase="'status'">
+            <div class="inline-flex items-center">
+              <span
+                [class.bg-primary-400]="(value | lowercase) === 'active'"
+                [class.bg-secondary-400]="(value | lowercase) !== 'active'"
+                class="inline-block opacity-50 size-[10px] rounded-full mr-2"
+              ></span>
+
+              {{ value }}
+            </div>
+          </ng-container>
+
+          <ng-container *ngSwitchDefault>
+            {{ (value | label: false | truncate: col.truncate) ?? '--' }}</ng-container
+          >
+        </ng-template>
+      </ng-container>
+    </ng-template>
+  </ng-container>
+</ng-template>
+
+<ng-template #defaultHeaderTpl let-col let-column="column" let-level="level">
+  <!-- col is from mtx but column is from table -->
+  <ng-container *ngIf="col ?? column as col">
+    <!-- only handle sort if from custom table -->
+    <div
+      class="flex justify-between items-center w-full relative"
+      matSort
+      [matSortDirection]="matSort?.direction"
+      (matSortChange)="!!column ? sortData($event) : null"
+    >
+      <!-- [matSortActive]="matSort?.active" TODO:fix matsort acitve -->
+      <span> {{ col?.headers?.[level]?.header ?? col?.header }} </span>
+      <div
+        *ngIf="col?.sortable"
+        mat-sort-header="{{ col.field }}"
+        class="box-20 absolute border-pale has-hover-hide round flex items-center justify-center sort-icon"
+        style="right: -22px"
+      >
+        <div
+          *ngIf="matSort?.active !== col.field || !matSort?.direction"
+          class="box-6 round bg-pale hover-hide sort-dot"
+        ></div>
+      </div>
+
+      <action-buttons
+        class="flex justify-center"
+        [actionButtons]="headerCellsButtons[col?.field]"
+        [data]="col"
+      />
+    </div>
+  </ng-container>
+</ng-template>
+
+<!-- toolbar template -->
+<ng-template #toolbarTemplate let-class="class" let-columnsControls="columnsControls">
+  <div
+    [class]="
+      'mb-2 flex flex-wrap items-center justify-between p-1 gap-1 min-h-[40px] ' + class
+        | mergeClasses: toolbarClass
+    "
+  >
+    <div class="flex flex-wrap items-center col px-0">
+      <ng-container *ngIf="showFiltersInToolbar">
+        <ng-container [ngTemplateOutlet]="tableNameTpl" />
+      </ng-container>
+
+      <ng-container [ngTemplateOutlet]="searchInputTpl" />
+
+      <ng-container *ngIf="showFiltersInToolbar">
+        <ng-container [ngTemplateOutlet]="searchStatesTpl" />
+        <ng-container [ngTemplateOutlet]="dateFilterTpl" />
+        <ng-container *ngIf="!optionsOnRight" [ngTemplateOutlet]="gridOptionsTpl" />
+      </ng-container>
+
+      <ng-container [ngTemplateOutlet]="paginatorButtonsTpl" />
+      <ng-container [ngTemplateOutlet]="tableToolsTpl" />
+    </div>
+
+    <div class="flex justify-between items-center gap-1">
+      <div *ngIf="showFiltersInToolbar" class="flex flex-wrap items-center gap-1">
+        <action-buttons [actionButtons]="headerButtons" class="flex flex-wrap gap-2" />
+
+        <span
+          class="px-2 mx-1 faded"
+          *ngIf="headerButtons.length && optionsOnRight && gridOptions.length"
+        >
+          |
+        </span>
+        <ng-container *ngIf="optionsOnRight" [ngTemplateOutlet]="gridOptionsTpl" />
+      </div>
+
+      <div *ngIf="columnsControls" class="relative {{ animation_ }}">
+        <button class="cursor-pointer" mat-button [matMenuTriggerFor]="columnsMenu">
+          <mat-icon svgIcon="menu" />
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<mat-menu #columnsMenu="matMenu" [overlapTrigger]="false" class="columns-menu">
+  <div
+    cdkDropList
+    [cdkDropListData]="columns"
+    (cdkDropListDropped)="drop($event)"
+    class="menu-list p-3"
+    matMenuContent
+  >
+    <div class="animate" *ngFor="let col of columns" cdkDrag (click)="$event.stopPropagation()">
+      <!-- item tpl -->
+      <ng-template #itemTpl let-class="class">
+        <div
+          class="menu-item flex justify-between items-stretch backdrop-blur-[2px] space-x-2
+           {{ class }}
+           animate w-full"
+        >
+          <div class="flex items-center">
+            <!-- Drag handle -->
+            <mat-icon cdkDragHandle svgIcon="drag_handle" class="cursor-move" />
+
+            <!-- Checkbox for visibility -->
+            <mat-checkbox clas="col px-0" [checked]="!col.hide" (change)="col.hide = !col.hide">
+              {{ col.header }}
+            </mat-checkbox>
+          </div>
+
+          <div class="flex items-center">
+            <!-- Pin / Unpin (cycles through left, right, none) -->
+            <span
+              (click)="togglePin(col)"
+              matRipple
+              class="cursor-pointer size-[30px] p-1 rounded-lg flex items-center justify-center hover:bg-[var(--color-light)]"
+            >
+              <mat-icon
+                *ngIf="col.pinned"
+                [svgIcon]="
+                  ({ left: 'pin_left', right: 'pin_right' } | pathValue: col.pinned) ?? 'pin_slash'
+                "
+              />
+            </span>
+
+            <!-- sorting -->
+            <span
+              class="relative size-[30px] p-1 rounded-lg flex items-center justify-center hover:bg-[var(--color-light)]"
+            >
+              <div
+                matSort
+                *ngIf="originalFieldsKeys.includes(col.field); else notSortable"
+                [matSortDirection]="matSort?.direction"
+                (matSortChange)="col.sortable = true; sortData($event)"
+              >
+                <!-- [matSortActive]="matSort?.active" -->
+                <div
+                  class="size-[24px] border-pale has-hover-hide round flex items-center justify-center sort-icon"
+                >
+                  <div mat-sort-header="{{ col.field }}" class="pe-[6px]"></div>
+                  <div
+                    *ngIf="matSort?.active !== col.field || !matSort?.direction"
+                    class="box-6 absolute m-auto top-left bottom-right round bg-pale hover-hide sort-dot"
+                  ></div>
+                </div>
+              </div>
+
+              <ng-template #notSortable>
+                <div
+                  class="size-[24px] absolute border-pale has-hover-hide round flex items-center justify-center sort-icon"
+                ></div>
+              </ng-template>
+            </span>
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- item -->
+      <ng-container *ngTemplateOutlet="itemTpl" />
+
+      <!--   This is what moves with the mouse -->
+      <ng-template cdkDragPreview>
+        <ng-container
+          *ngTemplateOutlet="
+            itemTpl;
+            context: {
+              class: 'border-top-faded border-bottom-faded border-color-primary px-2 cursor-move',
+            }
+          "
+        />
+      </ng-template>
+
+      <!--   This is what stays in the list as a placeholder -->
+      <ng-template cdkDragPlaceholder>
+        <ng-container *ngTemplateOutlet="itemTpl; context: { class: 'opacity-0 ' }" />
+      </ng-template>
+    </div>
+  </div>
+</mat-menu>
+
+<!-- search States -->
+<ng-template #searchStatesTpl>
+  <search-states
+    class="{{ searchStatesClass | mergeClasses: 'ms-0 ps-0' }}"
+    [showSearchStates]="!!searchStates.length"
+    [states]="searchStates"
+    (onChange)="searchCustomState($event)"
+    (clearSearchStates)="clearSearchCustomState()"
+  />
+</ng-template>
+
+<!-- search Input -->
+<ng-template #searchInputTpl>
+  <!-- hasTouchedSearchInput -->
+  @if (showSearchInput && canShowSearchInput) {
+    <search-fields
+      class="{{ searchInputClass | mergeClasses: 'ms-0 ps-0' }}"
+      [searchKeys]="searchCombinationType === 'Or' ? [] : searchKeys"
+      [animation]="animation_"
+      [searchFields]="searchCombinationType === 'Or' ? [] : searchInputStates"
+      [searchByMultipleKeys]="searchByMultipleKeys"
+      [delay]="isPageable ? 300 : 0"
+      (searchFieldChange)="updateSearchInputStates($event)"
+    />
+  }
+</ng-template>
+
+<!-- table Options -->
+<ng-template #gridOptionsTpl>
+  <toggle-buttons
+    class="{{ animation_ }} --order-3"
+    [toggleButtons]="gridOptions"
+    (value)="gridOptionChanged($event)"
+    [initialValue]="selectedGridOption?.title"
+    [valueKey]="'title'"
+  />
+</ng-template>
+
+<!-- date filters -->
+<ng-template #dateFilterTpl>
+  <!--date Range filter -->
+  <date-filter
+    *ngIf="showDateRangeFilter"
+    type="select"
+    [order]="5.5"
+    label="Search Range"
+    icon="search"
+    iconClass="icon-small text-primary top-2"
+    [keys]="dateFilterKeys"
+    [dateRange]="true"
+    [date]="startDateValue"
+    [endDate]="endDateValue"
+    [selectedKey]="selectedDateRangeKey"
+    (onLabelClick)="filterByDateRange()"
+    (selectedKeyChange)="selectedDateRangeKey = $event"
+    (onCancel)="clearDateRangeFilter()"
+    (startDateChange)="startDateValue = $event; log($event)"
+    (endDateChange)="endDateValue = $event"
+  />
+
+  <!-- date filter -->
+  <date-filter
+    *ngIf="showDateFilter"
+    [order]="5.5"
+    type="select"
+    [selectedKey]="selectedDateKey"
+    [keys]="dateFilterKeys"
+    [date]="dateValue"
+    (selectedKeyChange)="selectedDateKey = $event"
+    (onCancel)="clearFilterDate()"
+    (onChange)="filterByDate($event)"
+  />
+</ng-template>
+
+<!-- inputs -->
+<ng-template #inputsTpl />
+
+<!-- view header tpl -->
+<ng-template #tableNameTpl>
+  <span
+    *ngIf="!(autoHideTitle && canShowSearchInput && ((title && showTitle) || (showIcon && icon)))"
+    class="d-inline-flex items-center rounded-medium   mr-3 --order-3 {{ animation_ }}
+    padding-1 top-1"
+  >
+    <details-header
+      [title]="title"
+      innerClass="pb-0"
+      [titleClass]="headerClass"
+      [animation]="animation"
+      [subtitle]="showTotal ? dataLength : undefined"
+      [icon]="showIcon ? icon : undefined"
+    />
+  </span>
+</ng-template>
+
+<!-- paginator buttons -->
+<ng-template #paginatorButtonsTpl>
+  <ng-container *ngIf="showPaginator && showPaginatorButtons">
+    <!-- data count -->
+    <data-label
+      class="small"
+      [order]="2.5"
+      [label]="dataLength"
+      icon="numbers"
+      [animation]="animation_"
+      toolTip="Total Available Records"
+    />
+
+    <!-- page index -->
+    <data-input
+      [order]="2.5"
+      class="small me-1"
+      type="number"
+      [min]="1"
+      [max]="pagesLength | toFixed | round"
+      label="Pages"
+      maxWidth="200px"
+      toolTip="Set in Page Number"
+      [value]="displayedPageIndex"
+      [animation]="animation_"
+      subLabel="({{ pagesLength | toFixed | round }})"
+      (onChange)="setPageIndex($event)"
+    />
+
+    <!-- page size -->
+    <data-input
+      [order]="3"
+      class="small"
+      type="number"
+      [min]="1"
+      [max]="dataLength"
+      [animation]="animation_"
+      label="Size"
+      maxWidth="150px"
+      toolTip="Fill in Page Size"
+      [value]="pageSize"
+      (onChange)="setPageSize($event)"
+    />
+  </ng-container>
+</ng-template>
+
+<!-- table tools -->
+<ng-template #tableToolsTpl>
+  <!-- export data -->
+
+  <!-- labelToolTip="Export Excel"
+    icon="excel" -->
+  <data-input
+    *ngIf="canExportData"
+    toolTip="Select Exported Fields"
+    [order]="4.5"
+    type="select"
+    labelPosition="after"
+    class="inline-block px-1"
+    [options]="allFieldsKeys"
+    [value]="selectedExportKeys"
+    [actionButtons]="exportButtons"
+    [animation]="animation_"
+    (onLabelClick)="exportExel()"
+    (onChange)="selectedExportKeys = $event"
+  />
+
+  <!-- change columns -->
+  <data-input
+    *ngIf="canChangeDisplayedColumns"
+    [order]="5"
+    type="select"
+    icon="table"
+    labelToolTip="Change Displayed Columns"
+    toolTip="Select Displayed Columns"
+    class="inline-block px-1"
+    [options]="allFieldsKeys"
+    [value]="selectedColumnsKeys"
+    [animation]="animation_"
+    (onChange)="changeDisplayedColumns($event)"
+  />
+</ng-template>
+
+<!-- data loading / no data -->
+<ng-template #loadingOrNoDataTmpl>
+  <div class="flex-1 flex flex-col pt-2 items-center justify-center bg-white rounded-lg">
+    @if (noContentLabel ? noContentLabel : 'No ' + ((title | signal) ?? 'data'); as label) {
+      <no-content
+        [icon]="icon"
+        [animation]="animation"
+        [outerClass]="'min-w-[230px]' | mergeClasses: noContentClass"
+        [slim]="appearance === 'plain'"
+        (onClick)="noContentClick ? noContentClick($event) : null"
+        [label]="isFetching ? 'Loading' : label"
+      />
+    }
+  </div>
+</ng-template>
+<!--  -->

@@ -1,0 +1,23 @@
+<div class="flex size-full items-center justify-center">
+  <div
+    [loading]="loading"
+    class="mx-auto max-w-[500px]  {{
+      animation
+    }} --order-3 w-full my-4 sm:my-6 lg:my-12 p-4 sm:p-6 lg:p-12 z-10 rounded-lg bg-white backdrop-blur-sm border-gray-100"
+  >
+    <!-- <div
+      class="w-full h-50 bottom-0 left-0 absolute animate bg-gradient-to-t from-[#00448b70] to-[#002d5c00] opacity-80"
+    ></div> -->
+
+    <h2
+      class="text-lg font-semibold text-center text-gray-600 mt-5 relative -top-5
+       {{ animation }} --order-4"
+    >
+      {{ !token ? 'Enter Account Email' : 'Fill in New Password' }}
+    </h2>
+
+    @if (fp) {
+      <app-form [fp]="fp" class="block  {{ animation }} --order-6" />
+    }
+  </div>
+</div>

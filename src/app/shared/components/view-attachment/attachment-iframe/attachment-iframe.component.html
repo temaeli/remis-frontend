@@ -1,0 +1,36 @@
+@if (base64) {
+  <ngx-extended-pdf-viewer
+    [base64Src]="base64"
+    [backgroundColor]="colorValue"
+    [height]="'100vh'"
+    [handTool]="false"
+    [customToolbar]="customToolbarTpl"
+    [showHandToolButton]="true"
+  />
+}
+
+<ng-template #customToolbarTpl>
+  <div id="toolbarViewer" [style.background-color]="colorValue" class="py-1">
+    <div id="toolbarViewerLeft">
+      <pdf-toggle-sidebar />
+      <!-- <div class="toolbarButtonSpacer"></div> -->
+      <pdf-find-button [showFindButton]="true" [textLayer]="true" />
+      <pdf-paging-area />
+    </div>
+
+    <pdf-zoom-toolbar />
+    <!-- toolbar viewer middle -->
+
+    <div id="toolbarViewerRight">
+      <pdf-open-file />
+      <pdf-presentation-mode />
+      <pdf-print />
+      <!-- <app-open-in-new-tab/>  -->
+      <pdf-download />
+
+      <div class="verticalToolbarSeparator hiddenSmallView"></div>
+
+      <pdf-toggle-secondary-toolbar />
+    </div>
+  </div>
+</ng-template>

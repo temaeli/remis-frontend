@@ -1,0 +1,32 @@
+<mat-toolbar class="bg-primary border-b border-gray-200">
+  @if (showToggle()) {
+    <button matIconButton (click)="toggleSidenav.emit()">
+      <mat-icon svgIcon="menu" class="text-white_" />
+    </button>
+  }
+
+  @if (showBranding()) {
+    <app-branding />
+  }
+
+  <span class="grow"></span>
+
+  <!-- <app-translate /> -->
+
+  <button matIconButton class="hide-small text-white_" (click)="toggleFullscreen()">
+    <mat-icon svgIcon="full_screen" />
+  </button>
+
+  <action-buttons
+    [actionButtons]="st.actionButtons"
+    [animation]="animation"
+    [data]="this"
+    class="flex flex-center gap-2 flex-wrap"
+  />
+
+  <app-user />
+  <!--
+  <button matIconButton class="hide-small" (click)="toggleSidenavNotice.emit()">
+    <mat-icon svgIcon="menu" class="text-white_" />
+  </button> -->
+</mat-toolbar>

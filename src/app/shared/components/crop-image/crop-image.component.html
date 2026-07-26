@@ -1,0 +1,127 @@
+@if (dialogRef) {
+  @if (photoProps?.title || photoProps?.icon) {
+    <details-header
+      cdkDrag
+      cdkDragHandle
+      cdkDragRootElement=".cdk-overlay-pane"
+      [title]="photoProps?.title ?? 'Image' | truncate: 100"
+      [icon]="photoProps?.icon"
+      class="border-b border-b-gray-200 cursor-drag"
+    />
+  }
+
+  <mat-dialog-content>
+    <ng-container [ngTemplateOutlet]="contentTpl" />
+  </mat-dialog-content>
+
+  @if (photoProps?.showFooter !== false) {
+    <mat-dialog-actions>
+      <action-buttons
+        class="inline-flex flex-wrap gap-2"
+        [data]="this"
+        [actionButtons]="dialogButtons.concat(footerButtons)"
+      />
+    </mat-dialog-actions>
+  }
+  <!--  -->
+} @else {
+  <ng-container [ngTemplateOutlet]="contentTpl" />
+
+  @if (photoProps?.showFooter !== false) {
+    <action-buttons
+      class="{{ 'flex flex-wrap gap-2 mx-1 ' | mergeClasses: photoProps?.footerClass }}"
+      [actionButtons]="footerButtons"
+    />
+  }
+}
+
+<ng-template #contentTpl>
+  <div class="lg:px-4 mx-0 min-h-[200px] flex-col items-center">
+    <div class="mt-3 mb-2 {{ animation }} --order-2">
+      @if (attachment) {
+        <action-buttons
+          class="inline-flex items-center gap-2 bg-light flex-wrap rounded-xl border border-gray-300/20 p-1 px-2"
+          [data]="this"
+          [actionButtons]="utilityButtons"
+        />
+      } @else {
+        <div class="size-full flex items-center justify-center min-h-[200px]">
+          <action-buttons
+            class="flex items-center justify-center mx-auto max-w-[320px] p-10  border-on-hover rounded-lg border
+           border-gray-200/30 border-[4px] hover:bg-[var(--color-primary-very-faded)]
+             {{ animation }}  --order-5"
+            [data]="this"
+            [actionButtons]="[fileButton]"
+          />
+        </div>
+      }
+    </div>
+
+    @if (attachment?.fileName) {
+      <div class="grid grid-cols-1 lg:grid-cols-12">
+        <div class="lg:col-span-6 {{ animation }} --order-4">
+          <div class="attached-image">
+            <image-cropper
+              class="block p-0 r rounded-lg overflow-hidden"
+              [imageChangedEvent]="imageChangedEvent"
+              [maintainAspectRatio]="maintainAspectRatio"
+              [containWithinAspectRatio]="containWithinAspectRatio"
+              [aspectRatio]="aspectRatio"
+              [resizeToWidth]="imageWidth"
+              [cropperMinWidth]="256"
+              [onlyScaleDown]="true"
+              [roundCropper]="false"
+              [canvasRotation]="canvasRotation"
+              [transform]="transform"
+              [alignImage]="'left'"
+              [style.display]="showCropper ? null : 'none'"
+              [format]="format"
+              (imageCropped)="imageCropped($event)"
+              (imageLoaded)="imageLoaded()"
+              (cropperReady)="cropperReady($event)"
+              (loadImageFailed)="loadImageFailed()"
+            />
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 {{ animation }} --order-6 p-[5px]">
+          <div class="preview-image text-center">
+            <img [src]="attachment?.dataUrl" class="rounded box-shadow" />
+          </div>
+
+          @if (imageData) {
+            <div class="my-3 flex-center">
+              <div
+                class="inline-block mx-auto bg-white border border-gray-300/20 rounded-lg p-2 --order-4
+            {{ animation }}"
+              >
+                <span class="faded"> Width:</span>
+                <span class="font-bold"> &nbsp; {{ imageData.width }},</span>
+                <span class="faded"> &nbsp; Height:</span>
+                <span class="font-bold"> &nbsp; {{ imageData.height }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      @if (base64Image) {
+        <div class="col-span-full flex justify-center {{ animation }} --order-5">
+          <div
+            class="passport-image rounded-lg border border-gray-300/20 min-w-[280px]"
+            (click)="openFileSelector()"
+            matRipple
+            matTooltip="Upload Photo"
+            matTooltipPosition="above"
+          >
+            <img
+              class="rounded-lg w-full"
+              src="data:image/png;base64,{{ base64Image }}"
+              alt="Photo"
+            />
+          </div>
+        </div>
+      }
+    }
+  </div>
+</ng-template>

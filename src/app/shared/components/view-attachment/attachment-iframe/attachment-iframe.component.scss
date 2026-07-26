@@ -1,0 +1,29 @@
+// ngx pdf viewer
+pdf-toolbar {
+  .toolbar {
+    #toolbarContainer {
+      #toolbarViewer {
+        padding: 0;
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        // #toolbarViewerLeft {
+        // }
+        // pdf-zoom-toolbar {
+        //   #toolbarViewerMiddle {
+        //   }
+        // }
+        // #toolbarViewerRight {
+        // }
+
+        #toolbarViewerLeft,
+        #toolbarViewerMiddle,
+        #toolbarViewerRight,
+        pdf-paging-area {
+          display: flex;
+          align-items: center;
+        }
+      }
+    }
+  }
+}

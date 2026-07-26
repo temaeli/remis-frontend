@@ -1,0 +1,43 @@
+// ** == The styles to control the appearance of the notifications == ** //
+.mdc-snackbar {
+  &.notification-success {
+    --mat-snack-bar-container-color: #078928;
+    --mat-mdc-snack-bar-button-color: #fff;
+    --mdc-snackbar-supporting-text-color: #fff;
+    .mdc-button__label {
+      color: white;
+      font-size: 18px;
+    }
+  }
+
+  &.notification-info {
+    --mat-snack-bar-container-color: #2196f3;
+    --mat-mdc-snack-bar-button-color: #fff;
+    --mdc-snackbar-supporting-text-color: #fff;
+    .mdc-button__label {
+      color: white;
+      font-size: 18px;
+    }
+  }
+
+  &.notification-warn {
+    --mat-snack-bar-container-color: #ffde03;
+    --mat-mdc-snack-bar-button-color: #000000;
+    --mdc-snackbar-supporting-text-color: #000000;
+    color: #000000;
+    .mdc-button__label {
+      color: rgb(32, 32, 32);
+      font-size: 18px;
+    }
+  }
+
+  &.notification-error {
+    --mat-snack-bar-container-color: #dc3545;
+    --mat-mdc-snack-bar-button-color: #fff;
+    --mdc-snackbar-supporting-text-color: #fff;
+    .mdc-button__label {
+      color: white;
+      font-size: 18px;
+    }
+  }
+}

@@ -1,0 +1,43 @@
+@if (showHeader()) {
+  <div class="app-sidebar-header">
+    <mat-toolbar class="border-b border-gray-300/30">
+      <app-branding [showName]="!toggleChecked()" />
+
+      <span class="grow"></span>
+
+      @if (showToggle()) {
+        <!-- hide the togle btn -->
+        <!-- <mat-slide-toggle hideIcon [checked]="toggleChecked()" (change)="toggleCollapsed.emit()" /> -->
+      } @else {
+        <button mat-icon-button (click)="closeSidenav.emit()">
+          <mat-icon svgIcon="cancel" />
+        </button>
+      }
+    </mat-toolbar>
+  </div>
+}
+
+<div class="app-sidebar-main">
+  @if (showUser()) {
+    <app-user-panel />
+  }
+
+  @if (module(); as menu) {
+    <!-- SIDEBAR MENU LIST-->
+    <div class=" {{ animation }} delay-500 --order-3 text-gray text-bold">
+      <div class="w-full p-4 overflow-hidden bg-light rounded-lg relative min-h-[40px]">
+        <div
+          class="absolute right-0 bottom-[-20px] w-[70px] h-[70px] opacity-5 delay-1000 --order-4"
+        >
+          @if (menu.icon) {
+            <mat-icon [svgIcon]="menu.icon" class="size-full icon-full {{ animation }}" />
+          }
+        </div>
+
+        <span class="faded"> {{ menu?.name }} </span>
+      </div>
+    </div>
+  }
+
+  <app-sidemenu />
+</div>

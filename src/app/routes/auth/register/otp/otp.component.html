@@ -1,0 +1,89 @@
+<div class="flex size-full items-center justify-center">
+  <div
+    class="mx-auto max-w-[500px]  w-full my-4   {{ animation }} --order-3
+    sm:my-6 lg:my-12 p-4 sm:p-6 lg:p-12 z-10 rounded-lg bg-white/90 backdrop-blur-[3px] border-gray-100"
+  >
+    <!-- <div
+      class="w-full h-50 bottom-0 left-0 absolute animate bg-gradient-to-t from-[#00448b70] to-[#002d5c00] opacity-80"
+    ></div> -->
+
+    <h2 class="text-lg font-semibold text-center mt-5 relative -top-5  {{ animation }} --order-4">
+      {{ isRequesting ? 'Request OTP' : 'Account Verification, Enter OTP  ' }}
+    </h2>
+
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      class="space-y-7 block  {{ animation }} --order-5"
+    >
+      <!-- Full Name -->
+      @if (isRequesting) {
+        <mat-form-field appearance="outline" class="w-full  {{ animation }} --order-4">
+          <mat-label>National Id</mat-label>
+          <input matInput formControlName="nationalId" />
+          <mat-error *ngIf="invalid('nationalId')">National Id is required</mat-error>
+        </mat-form-field>
+
+        <!-- Phone Number -->
+        <mat-form-field appearance="outline" class="w-full  {{ animation }} --order-7">
+          <mat-label>Phone Number</mat-label>
+          <input matInput formControlName="phoneNumber" />
+          <mat-error *ngIf="invalid('phoneNumber')"> Enter a valid phone number </mat-error>
+        </mat-form-field>
+      }
+
+      <!-- OTP Section -->
+      @if (!isRequesting) {
+        <div class="space-y-2  {{ animation }} --order-6">
+          <!-- <label class="block font-medium ">OTP Code</label> -->
+          <div class="flex justify-between gap-2">
+            @for (ctrl of otpControls; track $index; let i = $index) {
+              <input
+                #otpInput
+                [formControl]="ctrl"
+                maxlength="1"
+                type="text"
+                class="w-12 h-12 text-center border rounded-lg text-xl focus:ring focus:ring-blue-300
+                {{ animation }} --order-{i*2+4}"
+                (input)="onOtpInput(i)"
+                (keydown)="onOtpKey($event, i)"
+              />
+            }
+          </div>
+
+          <p *ngIf="otpInvalid" class="text-red-600 text-sm mt-1">Enter 6-digit OTP.</p>
+        </div>
+      }
+
+      <div class="flex flex-col justify-between  {{ animation }} --order-8">
+        <button
+          mat-raised-button
+          [loading]="loading"
+          [class.bg-primary]="!(isRequesting ? form.invalid : otpInvalid)"
+          class="w-full py-2 !text-white"
+          [disabled]="isRequesting ? form.invalid : otpInvalid"
+        >
+          Submit
+        </button>
+      </div>
+
+      <div class="flex justify-center  {{ animation }} --order-9">
+        @if (isRequesting) {
+          <a
+            (click)="isRequesting = false"
+            class="font-semibold cursor-pointer text-center text-gray-400 mt-5 relative lg:-top-5 hover:text-[var(--color-primary)]"
+          >
+            Already have OTP? Enter OTP.
+          </a>
+        } @else {
+          <a
+            (click)="isRequesting = true"
+            class="font-semibold cursor-pointer text-center text-gray-400 mt-5 relative lg:-top-5 hover:text-[var(--color-primary)]"
+          >
+            Re-request OTP?
+          </a>
+        }
+      </div>
+    </form>
+  </div>
+</div>

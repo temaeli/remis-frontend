@@ -1,0 +1,77 @@
+<div class="step-indicator w-full d-block" style="border-radius: inherit">
+  @if (title) {
+    <div class="title text-center">
+      <h3>{{ title }}</h3>
+    </div>
+  }
+
+  <div
+    [ngClass]="{ '': mode === 'outline', 'bg-dark-light py-2': mode === 'fill' }"
+    class="sequence-container relative min-height-40 overflow-hidden"
+    style="border-radius: inherit"
+  >
+    <div
+      *ngIf="mode === 'fill'"
+      [ngClass]="{
+        'rounded-right-medium': progress < getStepsLength() - 1,
+      }"
+      class="
+        main-progress-line  position-absolute box-shadow-slight h-full left-0
+        d-flex align-items-center w-{{ round(((progress + 1) * 100) / getStepsLength()) }}
+      "
+      style="border-radius: inherit"
+    >
+      <!-- {{round((progress+1)*100/steps.length)}} -->
+    </div>
+
+    <ng-container *ngFor="let step of steps; let i = index">
+      <div
+        *ngIf="hideInActive ? step?.active !== false : true"
+        class="
+          step-container cursor-pointer col d-flex align-items-center
+          relative {{ animation }}
+        "
+        [ngClass]="{
+          'flex-column ': mode === 'outline',
+          'justify-content-center my-1': mode === 'fill',
+        }"
+        (click)="goToStep_(i); goToSlug_(step?.routeSlug)"
+        [style.--order]="i / 2 + 2"
+      >
+        <ng-container *ngIf="mode === 'outline' ? steps.length > i + 1 : steps.length > i">
+          <div
+            [ngClass]="{ 'height-1': mode === 'outline', 'h-full left-0 d-none': mode === 'fill' }"
+            class="line position-absolute"
+          ></div>
+          <div
+            [ngClass]="{ '': mode === 'outline', 'd-none': mode === 'fill' }"
+            [class.w-full]="mode === 'outline' ? progress >= i + 1 : progress >= i"
+            [style.--order]="i + 2 + 3"
+            class="progress-line height-2 position-absolute"
+          ></div>
+        </ng-container>
+
+        <div
+          class="step-index-container"
+          [ngClass]="{ '': mode === 'outline', 'left-30000': mode === 'fill' }"
+          [class.cleared]="progress >= i"
+          [class.active]="progress == i"
+          [style.--order]="i + 1 + 3"
+        >
+          <span [class.d-none]="step === ''"> {{ i + 1 + startIndex }}</span>
+        </div>
+
+        <div
+          [ngClass]="{
+            'mt-3 top-20 position-absolute': mode === 'outline',
+            'ps-2': mode === 'fill',
+          }"
+          class="step-name-container d-none d-lg-block displ faded small text-center cursor-pointer"
+        >
+          <span class="" *ngIf="step?.name; else showString">{{ step.name }} </span>
+          <ng-template #showString> {{ step }} </ng-template>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

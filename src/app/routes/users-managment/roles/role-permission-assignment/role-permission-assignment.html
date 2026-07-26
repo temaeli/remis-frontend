@@ -1,0 +1,76 @@
+<div class="size-full flex flex-col gap-3">
+  <page-header [title]="title" [subtitle]="subtitle" [actionButtons]="actionButtons" />
+
+  <!-- Controls bar -->
+  <div class="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-gray-50 p-3">
+    <div class="flex items-center gap-4">
+      <mat-slide-toggle [checked]="expanded()" (change)="expanded.set($event.checked)">
+        Expand All
+      </mat-slide-toggle>
+      <span class="text-sm text-gray-500">
+        Assign Permissions:&nbsp;<strong>{{ title }}</strong>
+      </span>
+    </div>
+
+    <mat-form-field appearance="outline" class="w-72">
+      <mat-label>Search permissions</mat-label>
+      <input
+        matInput
+        #searchInput
+        [value]="searchKey()"
+        (input)="filter(searchInput.value)"
+        placeholder="Type to filter..."
+      />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+  </div>
+
+  @if (loading()) {
+    <div class="flex flex-1 items-center justify-center">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (filteredGroups().length === 0) {
+    <div class="flex flex-1 items-center justify-center">
+      <p class="text-gray-400">No matching permissions found.</p>
+    </div>
+  } @else {
+    <mat-accordion class="block overflow-auto">
+      @for (group of filteredGroups(); track group.groupName; let i = $index) {
+        <mat-expansion-panel class="mb-1" [expanded]="expanded()">
+          <mat-expansion-panel-header>
+            <mat-panel-title class="flex items-center gap-2">
+              <span class="text-sm text-gray-500">{{ i + 1 }}.</span>
+              <mat-checkbox
+                [indeterminate]="partiallySelected(group)"
+                [checked]="hasAllSelected(group)"
+                (click)="$event.stopPropagation()"
+                (change)="toggleGroupPermissions(group, $event.checked)"
+              />
+              <strong>{{ group.groupName }}</strong>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="grid grid-cols-1 gap-2 p-2 sm:grid-cols-2 md:grid-cols-3">
+            @for (perm of group.permissions; track perm.uid) {
+              <mat-checkbox
+                [checked]="hasPermission(perm.uid)"
+                (change)="onChange(perm, $event.checked)"
+              >
+                {{ perm.displayName }}
+              </mat-checkbox>
+            }
+          </div>
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  }
+</div>
+
+<!-- Floating save button -->
+@if (formChanged()) {
+  <div class="fixed bottom-6 right-6 z-50">
+    <button mat-fab color="primary" matTooltip="Save permission changes" (click)="saveChanges()">
+      <mat-icon>save</mat-icon>
+    </button>
+  </div>
+}

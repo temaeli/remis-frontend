@@ -1,0 +1,50 @@
+<div
+  *ngIf="'flex px-3 p-2 min-h-[50px] w-full justify-between items-center flex-wrap  ' as class"
+  class=" {{ class | mergeClasses: containerClass }}"
+>
+  <div class="inline-flex items-center justify-center opacity-60">
+    <ng-container *ngIf="icon || title">
+      <mat-icon
+        *ngIf="icon"
+        class="{{ 'me-2' | mergeClasses: iconClass }}    {{ animation }} --order-3"
+        [svgIcon]="icon"
+      />
+
+      <div class="flex items-center h-full">
+        <span
+          *ngIf="title"
+          class=" {{ ' font-bold text-lg ' | mergeClasses: titleClass }}
+         {{ animation }} --order-4"
+        >
+          {{ title | signal }}
+        </span>
+        <span
+          *ngIf="subtitle"
+          class="{{
+            'ms-2 px-2 bg-primary text-white rounded-lg small ' | mergeClasses: subtitleClass
+          }}
+          {{ animation }} --order-5"
+        >
+          {{ subtitle }}
+        </span>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="inline-flex items-center flex-wrap">
+    <ng-container *ngIf="dataInputs.length">
+      <div class="inline-flex flex-wrap pe-3 {{ animation }} --order-3">
+        <!-- <data-input class="ps-2" *ngFor="let input of dataInputs" [dataInput]="input"></data-input> -->
+      </div>
+
+      <span class="px-2 {{ animation }} --order-4"> | </span>
+    </ng-container>
+
+    <action-buttons
+      class="inline-flex flex-wrap {{ animation }} --order-4"
+      [data]="data"
+      [actionButtons]="actionButtons"
+      [animation]="animation"
+    />
+  </div>
+</div>

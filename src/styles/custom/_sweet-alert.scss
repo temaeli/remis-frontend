@@ -1,0 +1,81 @@
+html body.swal2-height-auto {
+  height: 100% !important;
+}
+
+.popup-class {
+  border-radius: var(--border-radius) !important;
+}
+
+.confirm-button-class {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius) !important;
+
+  .swal2-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+.cancel-button-class {
+  background-color: var(--color-neutral) !important;
+  color: white !important;
+  border: 1px solid var(--color-neutral) !important;
+  border-radius: var(--border-radius) !important;
+
+  .swal2-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+.title-class {
+  font-size: 14px !important;
+}
+
+.icon-class {
+  font-size: 10px !important;
+}
+
+.swal2-actions .swal2-confirm {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.swal2-actions .swal2-cancel {
+  border-color: var(--color-neutral) !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.swal2-confirm:focus,
+.swal2-cancel:focus {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.swal2-actions button:hover {
+  border: none !important;
+}
+
+.swal2-container {
+  z-index: 999999 !important;
+  position: fixed !important;
+}
+
+.swal2-overlay {
+  z-index: 999998 !important;
+}
+
+// Override Angular CDK overlay z-index
+
+.swal2-shown {
+  .cdk-overlay-container,
+  .cdk-global-overlay-wrapper,
+  .cdk-overlay-pane {
+    visibility: hidden;
+  }
+}

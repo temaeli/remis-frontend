@@ -1,0 +1,30 @@
+#numberCounter {
+  --line-height: 20px;
+
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  height: var(--line-height);
+  transition: width 1.5s ease;
+
+  .digit-container {
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    line-height: var(--line-height);
+    transition: all 2s ease;
+  }
+
+  .digit-container.visible {
+    position: static;
+    opacity: 1;
+    flex-shrink: 1;
+  }
+
+  .digit-value {
+    display: block;
+  }
+}

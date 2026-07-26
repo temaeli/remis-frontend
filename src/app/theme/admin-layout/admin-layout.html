@@ -1,0 +1,110 @@
+<div
+  class="app-container-wrap size-full"
+  [class.app-sidenav-collapsed]="settings.sidenavCollapsed && settings.navPos !== 'top'"
+  [class.app-navbar-side]="settings.navPos === 'side'"
+  [class.app-navbar-top]="settings.navPos === 'top'"
+  [class.app-header-above]="settings.headerPos === 'above'"
+  [class.app-header-fixed]="settings.headerPos === 'fixed'"
+  [dir]="$any(settings.dir)"
+>
+  <ng-progress ngProgressRouter />
+
+  <div class="flex w-full h-full overflow-hidden">
+    <!-- Module Menu Sidebar -->
+    <div
+      class="module-menu relative flex-none h-full overflow-y-auto scrollbar-hide scrollbar-slim bg-white border-r border-gray-400/10 p-4 bg-gradient-to-r from-[var(--color-primary-very-faded)] to-gray-200/10 dark:to-gray-600/10"
+    >
+      <ul class="relative z-10">
+        <li class="mb-4">
+          <a
+            class="bg-white module-link border overflow-hidden relative border-[var(--color-neutral)] border-opacity-10 p-2 flex justify-center items-center rounded-md"
+            [matTooltip]="'Home'"
+            [matTooltipPosition]="'right'"
+            (click)="homeClick()"
+          >
+            <mat-icon class="module-icon opacity-60" svgIcon="home" />
+          </a>
+        </li>
+
+        @for (menu of modules(); track $index + module.name) {
+          <li class="mb-4">
+            <a
+              class="bg-white module-link border border-[var(--color-neutral)] border-opacity-10 overflow-hidden relative p-2 flex justify-center items-center rounded-md"
+              [routerLink]="['', menu.route]"
+              routerLinkActive="active"
+              [matTooltip]="menu.name"
+              [matTooltipPosition]="'right'"
+              [class.active]="module()?.route === menu.route"
+            >
+              <mat-icon
+                class="module-icon relative z-10 opacity-60 dark:opacity-60"
+                [svgIcon]="menu.icon"
+              />
+            </a>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+      <!-- Header Above -->
+      @if (settings.showHeader && settings.headerPos === 'above') {
+        <app-header
+          class="flex-none"
+          (toggleSidenav)="sidenav.toggle()"
+          (toggleSidenavNotice)="sidenavNotice.toggle()"
+          [showBranding]="true"
+        />
+      }
+
+      <mat-sidenav-container class="flex-1 min-h-0 overflow-hidden" autosize autoFocus>
+        <mat-sidenav
+          #sidenav
+          class="app-sidenav"
+          [mode]="isOver ? 'over' : 'side'"
+          [opened]="settings.navPos === 'side' && settings.sidenavOpened && !isOver"
+          (openedChange)="onSidenavOpenedChange($event)"
+          (closedStart)="onSidenavClosedStart()"
+        >
+          <app-sidebar
+            [showToggle]="!isOver"
+            [showUser]="false"
+            [showHeader]="settings.headerPos !== 'above'"
+            [toggleChecked]="!!settings.sidenavCollapsed"
+            (toggleCollapsed)="toggleCollapsed()"
+            (closeSidenav)="sidenav.close()"
+          />
+        </mat-sidenav>
+
+        <mat-sidenav #sidenavNotice position="end" mode="over">
+          <app-sidebar-notice />
+        </mat-sidenav>
+
+        <mat-sidenav-content #content class="">
+          <div class="flex flex-col h-full overflow-hidden">
+            @if (settings.showHeader && settings.headerPos !== 'above') {
+              <app-header
+                class="flex-none"
+                [showToggle]="!settings.sidenavCollapsed && settings.navPos !== 'top'"
+                [showBranding]="settings.navPos === 'top'"
+                (toggleSidenav)="sidenav.toggle()"
+                (toggleSidenavNotice)="sidenavNotice.toggle()"
+              />
+            }
+
+            @if (settings.navPos === 'top') {
+              <app-topmenu class="flex-none" />
+            }
+
+            <div
+              class="flex-1 grow min-h-0 min-w-0 p-3 overflow-auto bg-gray-200 dark:bg-[var(--color-light)]"
+            >
+              <router-outlet />
+            </div>
+          </div>
+        </mat-sidenav-content>
+      </mat-sidenav-container>
+    </div>
+  </div>
+</div>

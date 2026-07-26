@@ -1,0 +1,14 @@
+/* You can add global styles to this file, and also import other style files */
+@use 'styles/reboot';
+@use 'styles/themes';
+@use 'styles/grid';
+@use 'styles/plugins';
+@use 'styles/custom';
+
+/* Leaflet + plugins (must be global — leaflet's selectors are unscoped) */
+@import '../node_modules/leaflet/dist/leaflet.css';
+@import '../node_modules/leaflet-fullscreen/dist/leaflet.fullscreen.css';
+@import '../node_modules/leaflet-measure/dist/leaflet-measure.css';
+
+/* IBM Plex family for the pipeline map HUD (industrial cartographic theme) */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');

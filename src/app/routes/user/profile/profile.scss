@@ -1,0 +1,6 @@
+/* ── Material chip override (MDC internals can't be targeted inline) ── */
+mat-chip {
+  --mdc-chip-elevated-container-color: var(--color-primary-50);
+  --mdc-chip-label-text-color: var(--color-primary-800);
+}
+

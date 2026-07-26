@@ -1,0 +1,218 @@
+<!-- Main buttons container -->
+<ng-container *ngFor="let button of actionButtons; let i = index; trackBy: trackByFn">
+  <ng-container *hasPermission="button.permissions ?? []">
+    <ng-container *ngIf="shouldShowButton(button)">
+      <ng-container *ngIf="!button?.buttons?.length">
+        <!-- Simple button without menu -->
+        <input
+          hidden
+          #inputFile
+          type="file"
+          (change)="fileChange(button, $event, i)"
+          [accept]="button.allowedExtensions ?? 'image/png, image/gif, image/jpeg'"
+        />
+        <div
+          [loading]="button.loading | toObservable | async"
+          (click)="handleButtonClick($event, button, inputFile, i)"
+          [matTooltip]="button.toolTip"
+          [class]="getButtonHolderClass(button, i)"
+        >
+          <ng-container *ngTemplateOutlet="buttonContent; context: { button: button, index: i }" />
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="button?.buttons?.length">
+        <!-- Button with menu -->
+        <div
+          [matMenuTriggerFor]="menu"
+          [matTooltip]="button.toolTip"
+          [class]="getButtonHolderClass(button, i)"
+        >
+          <ng-container *ngTemplateOutlet="buttonContent; context: { button: button, index: i }" />
+        </div>
+
+        <mat-menu #menu="matMenu" [class]="button.menuClass ?? ''">
+          <div [class]="button.innerMenuClass ?? 'mx-1  flex flex-col gap-1'">
+            <!-- Menu items (non-recursive) -->
+            <ng-container *ngFor="let menuButton of button.buttons; let j = index">
+              <ng-container *hasPermission="menuButton.permissions ?? []">
+                <ng-container *ngIf="shouldShowButton(menuButton)">
+                  <input
+                    hidden
+                    #menuInputFile
+                    type="file"
+                    (change)="fileChange(menuButton, $event, j)"
+                    [accept]="menuButton.allowedExtensions ?? 'image/png, image/gif, image/jpeg'"
+                  />
+                  <div
+                    (click)="handleButtonClick($event, menuButton, menuInputFile, j)"
+                    [matTooltip]="menuButton.toolTip"
+                  >
+                    <ng-container
+                      *ngTemplateOutlet="
+                        buttonContent;
+                        context: { button: menuButton, index: j, isMenu: true }
+                      "
+                    />
+                  </div> </ng-container
+              ></ng-container>
+            </ng-container>
+          </div>
+        </mat-menu>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</ng-container>
+
+<!-- Reusable button content template -->
+<ng-template #buttonContent let-button="button" let-index="index" let-isMenu="isMenu">
+  <ng-container [ngSwitch]="button.type || 'button'">
+    <!-- Standard button -->
+    <ng-container *ngSwitchCase="'button'">
+      <button
+        mat-stroked-button
+        [disabled]="isDisabled(button)"
+        class=" {{ isMenu ? 'w-full' : '' }} {{ getButtonClass(button, isMenu) }}"
+      >
+        <ng-container *ngTemplateOutlet="buttonInner; context: { button: button, index: index }" />
+      </button>
+    </ng-container>
+
+    <!-- FAB button -->
+    <ng-container *ngSwitchCase="'fab'">
+      <button mat-fab [disabled]="isDisabled(button)" [class]="getButtonClass(button, isMenu)">
+        <ng-container *ngTemplateOutlet="iconOnly; context: { button: button, iconClass: '' }" />
+      </button>
+    </ng-container>
+
+    <!-- Mini FAB button -->
+    <ng-container *ngSwitchCase="'mini-fab'">
+      <button mat-mini-fab [disabled]="isDisabled(button)" [class]="getButtonClass(button, isMenu)">
+        <ng-container
+          *ngTemplateOutlet="iconOnly; context: { button: button, iconClass: 'icon-small' }"
+        />
+      </button>
+    </ng-container>
+
+    <!-- Icon button -->
+    <ng-container *ngSwitchCase="'icon'">
+      <button
+        mat-icon-button
+        [disabled]="isDisabled(button)"
+        [class]="getButtonClass(button, isMenu)"
+      >
+        <ng-container *ngTemplateOutlet="iconOnly; context: { button: button, iconClass: '' }" />
+      </button>
+    </ng-container>
+
+    <!-- Mini icon button -->
+    <ng-container *ngSwitchCase="'mini-icon'">
+      <button
+        mat-mini-fab
+        [disabled]="isDisabled(button)"
+        [class]="getButtonClass(button, isMenu) + ' bg-none shadow-none'"
+      >
+        <ng-container
+          *ngTemplateOutlet="iconOnly; context: { button: button, iconClass: 'icon-small' }"
+        />
+      </button>
+    </ng-container>
+
+    <!-- Default case -->
+    <ng-container *ngSwitchDefault>
+      <button
+        mat-stroked-button
+        [disabled]="isDisabled(button)"
+        [class]="getButtonClass(button, isMenu)"
+      >
+        <ng-container *ngTemplateOutlet="buttonInner; context: { button: button, index: index }" />
+      </button>
+    </ng-container>
+  </ng-container>
+</ng-template>
+
+<!-- Button inner content (icon + label) -->
+<ng-template #buttonInner let-button="button" let-index="index">
+  <!-- Icon before label -->
+  <ng-container *ngIf="!button.iconPosition || button.iconPosition === 'before'">
+    <ng-container
+      *ngTemplateOutlet="
+        iconDisplay;
+        context: { button: button, class: button.label ? 'me-2' : '' }
+      "
+    />
+  </ng-container>
+
+  <!-- Label content -->
+  <ng-container *ngIf="button.isFileSelector || button.allowedExtensions?.length">
+    <ng-container *ngIf="!button.fileLabelMapper && (button.label || button.labelMapper)">
+      <span class="{{ button.labelClass }}">
+        {{ files[index]?.fileName || (button.label ?? 'Select File') }}
+      </span>
+    </ng-container>
+    <ng-container *ngIf="button.fileLabelMapper">
+      <span
+        [class]="button.labelClass"
+        [innerHTML]="button.fileLabelMapper(files[index]) | safeHtml"
+      ></span>
+    </ng-container>
+  </ng-container>
+
+  <ng-container
+    *ngIf="!(button.isFileSelector || button.allowedExtensions?.length) && button.label"
+  >
+    @if (
+      button.labelMapper ? button.labelMapper(data) : (button.label | toObservable | async);
+      as label
+    ) {
+      <span [class]="button.labelClass" [innerHTML]="label | safeHtml"></span>
+    }
+  </ng-container>
+
+  <!-- Icon after label -->
+  <ng-container *ngIf="button.iconPosition === 'after'">
+    <ng-container
+      *ngTemplateOutlet="
+        iconDisplay;
+        context: { button: button, class: button.label ? 'ms-2' : '' }
+      "
+    />
+  </ng-container>
+</ng-template>
+
+<!-- Icon only (for icon buttons) -->
+<ng-template #iconOnly let-button="button" let-iconClass="iconClass">
+  <ng-container *ngTemplateOutlet="iconDisplay; context: { button: button, class: iconClass }" />
+</ng-template>
+
+<!-- Icon display logic -->
+<ng-template #iconDisplay let-button="button" let-class="class">
+  @if (
+    button.iconMapper ? button.iconMapper(data) : (button.icon | toObservable | async);
+    as icon
+  ) {
+    @if (
+      class + ' '
+        | mergeClasses: button.iconClass + ' '
+        | mergeClasses: button?.iconClassMapper?.(data) + ' ';
+      as class_
+    ) {
+      <ng-container [ngSwitch]="button.iconType">
+        <ng-container *ngSwitchCase="'src'">
+          <img [src]="icon" class="{{ 'w-full h-auto' | mergeClasses: class_ }}" />
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'base64'">
+          <img
+            [src]="(icon | parseBase64)?.uri"
+            class="{{ 'w-full h-auto' | mergeClasses: class_ }}"
+          />
+        </ng-container>
+
+        <ng-container *ngSwitchDefault>
+          <mat-icon [svgIcon]="icon" class="{{ class_ }}" />
+        </ng-container>
+      </ng-container>
+    }
+  }
+</ng-template>

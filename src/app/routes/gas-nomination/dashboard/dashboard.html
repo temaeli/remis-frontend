@@ -1,0 +1,289 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div
+            class="h-10 w-10 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center"
+          >
+            <span class="text-white font-bold text-lg">GN</span>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Gas Nomination</h1>
+            <p class="text-xs text-gray-500">Dashboard & Analytics</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Period</p>
+          <p class="text-sm font-semibold text-gray-900">{{ periodLabel }}</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center h-[60vh]">
+      <div class="text-center">
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-primary mx-auto mb-4"
+        ></div>
+        <p class="text-gray-600 font-medium">Loading dashboard...</p>
+      </div>
+    </div>
+  } @else {
+    <main class="p-6 max-w-7xl mx-auto">
+      <!-- Primary Metrics Grid -->
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Total Nominations Card -->
+        <div
+          class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden"
+        >
+          <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3">
+            <p class="text-blue-100 text-sm font-medium">Total Nominations</p>
+          </div>
+          <div class="p-6">
+            <div class="flex items-baseline justify-between mb-4">
+              <span class="text-4xl font-bold text-gray-900">{{ totalNominations() }}</span>
+              <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full"
+                >Current</span
+              >
+            </div>
+            <p class="text-xs text-gray-600">
+              <span class="font-semibold text-gray-900">{{ completedNominations() }}</span>
+              completed
+            </p>
+          </div>
+        </div>
+
+        <!-- Requested Quantity Card -->
+        <div
+          class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden"
+        >
+          <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3">
+            <p class="text-emerald-100 text-sm font-medium">Total Requested</p>
+          </div>
+          <div class="p-6">
+            <div class="flex items-baseline justify-between mb-4">
+              <span class="text-4xl font-bold text-gray-900">{{
+                totalRequestedQuantity() | number: '1.0-0'
+              }}</span>
+              <span
+                class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full"
+                >MMscfd</span
+              >
+            </div>
+            <p class="text-xs text-gray-600">Total requested quantity across all nominations</p>
+          </div>
+        </div>
+
+        <!-- Problem Nominations Card -->
+        <div
+          class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden"
+        >
+          <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-3">
+            <p class="text-red-100 text-sm font-medium">Problem Nominations</p>
+          </div>
+          <div class="p-6">
+            <div class="flex items-baseline justify-between mb-4">
+              <span class="text-4xl font-bold text-gray-900">{{ problemNominations() }}</span>
+              <span class="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-full"
+                >Alert</span
+              >
+            </div>
+            <p class="text-xs text-gray-600">Nominations requiring attention</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Secondary Metrics -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <p class="text-sm font-medium text-gray-600 mb-2">Plant Batch Participations</p>
+          <div class="flex items-end gap-2">
+            <span class="text-3xl font-bold text-gray-900">{{ totalNominationBatches() }}</span>
+            <span class="text-xs text-gray-500 mb-1">batches</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <p class="text-sm font-medium text-gray-600 mb-2">Upstreamer Confirmation</p>
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 mb-1">Pending Reply</p>
+              <p class="text-2xl font-bold text-yellow-600">{{ pendingUpstreamerReplies() }}</p>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 mb-1">Completed</p>
+              <p class="text-2xl font-bold text-green-600">{{ completedNominations() }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Nomination Status Breakdown -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Nomination Status Breakdown</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (item of nominationStatusBreakdown(); track item.status) {
+            <div
+              class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-5 border border-slate-200"
+            >
+              <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                {{ item.status }}
+              </p>
+              <div class="flex items-baseline justify-between mb-3">
+                <span class="text-3xl font-bold text-gray-900">{{ item.count }}</span>
+                <p class="text-xs font-semibold text-gray-600">
+                  {{ (item.count / (totalNominations() || 1)) * 100 | number: '1.0-0' }}%
+                </p>
+              </div>
+              <p class="text-xs text-gray-600">
+                {{ item.totalQuantityMmscfd | number: '1.0-0' }} MMscfd
+              </p>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Nominations by Client -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Nominations by Client</h2>
+        @if (nominationsByClient().length > 0) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Client</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Nominations</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">
+                    Requested (MMscfd)
+                  </th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Issues</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (client of nominationsByClient(); track client.clientUid) {
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="py-4 px-4">
+                      <div>
+                        <p class="font-medium text-gray-900">{{ client.clientName }}</p>
+                        <p class="text-xs text-gray-500">
+                          @switch (client.clientStreamType) {
+                            @case ('UP') {
+                              Upstream
+                            }
+                            @case ('DOWN') {
+                              Downstream
+                            }
+                            @default {
+                              {{ client.clientStreamType }}
+                            }
+                          }
+                        </p>
+                      </div>
+                    </td>
+                    <td class="py-4 px-4 text-right font-semibold text-gray-900">
+                      {{ client.nominations }}
+                    </td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ client.totalRequestedMmscfd | number: '1.0-0' }}
+                    </td>
+                    <td class="py-4 px-4 text-right">
+                      <div class="flex justify-end gap-2">
+                        @if (client.belowMinimumCount > 0) {
+                          <span
+                            class="inline-block bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium"
+                          >
+                            {{ client.belowMinimumCount }} below min
+                          </span>
+                        }
+                        @if (client.aboveMaximumCount > 0) {
+                          <span
+                            class="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium"
+                          >
+                            {{ client.aboveMaximumCount }} above max
+                          </span>
+                        }
+                        @if (client.lateCount > 0) {
+                          <span
+                            class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium"
+                          >
+                            {{ client.lateCount }} late
+                          </span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="text-center py-8 text-gray-500">
+            <p>No nomination data available</p>
+          </div>
+        }
+      </section>
+
+      <!-- Nominations by Plant -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Plant Allocations & Confirmations</h2>
+        @if (nominationsByPlant().length > 0) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">Plant</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Batches</th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">
+                    Allocated (MMscfd)
+                  </th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">
+                    Confirmed (MMscfd)
+                  </th>
+                  <th class="text-right py-3 px-4 font-semibold text-gray-700">Pending Reply</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (plant of nominationsByPlant(); track plant.plantUid) {
+                  <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="py-4 px-4">
+                      <div>
+                        <p class="font-medium text-gray-900">{{ plant.plantName }}</p>
+                        <p class="text-xs text-gray-500">{{ plant.plantCode }}</p>
+                      </div>
+                    </td>
+                    <td class="py-4 px-4 text-right font-semibold text-gray-900">
+                      {{ plant.batches }}
+                    </td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ plant.totalAllocatedMmscfd | number: '1.0-0' }}
+                    </td>
+                    <td class="py-4 px-4 text-right text-gray-700">
+                      {{ plant.totalUpstreamerConfirmedMmscfd | number: '1.0-0' }}
+                    </td>
+                    <td class="py-4 px-4 text-right">
+                      @if (plant.pendingUpstreamerReply > 0) {
+                        <span
+                          class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium"
+                        >
+                          {{ plant.pendingUpstreamerReply }}
+                        </span>
+                      } @else {
+                        <span class="text-gray-400">-</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="text-center py-8 text-gray-500">
+            <p>No plant data available</p>
+          </div>
+        }
+      </section>
+    </main>
+  }
+</div>

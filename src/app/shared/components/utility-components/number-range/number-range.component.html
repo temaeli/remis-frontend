@@ -1,0 +1,64 @@
+<span
+  class="inline-flex border-slightly-faded
+  items-center m-1 px-1 padding-2 mb-0 mr-3 rounded-lg {{ animation }}"
+  [style.--order]="7"
+>
+  <data-label
+    class="d-block"
+    [label]="label"
+    (click)="onLabelClick()"
+    [inContainer]="false"
+    icon="numbers"
+  />
+
+  <div
+    class="flex items-center thin-form-fields mat-form-field-no-margin rounded-lg mat-form-field-no-padding padding-1"
+  >
+    <mat-form-field
+      appearance="fill"
+      style="width: 130px"
+      class="col ps-2 flex items-center custom-fill hide-arrow bg-none material-form"
+    >
+      <input
+        [value]="value?.[0]"
+        [min]="min ?? 0"
+        [max]="10000"
+        (keyup)="onChange_(0, $event)"
+        [placeholder]="placeholder[0]"
+        matInput
+        type="number"
+      />
+    </mat-form-field>
+
+    <span class="px-1"> | </span>
+
+    <mat-form-field
+      appearance="fill"
+      style="width: 130px"
+      class="col pe-0 flex items-center custom-fill hide-arrow bg-none material-form"
+    >
+      <input
+        [value]="value?.[1]"
+        [min]="min ?? 0"
+        [max]="max ?? 10000"
+        [placeholder]="placeholder[1]"
+        (keyup)="onChange_(1, $event)"
+        matInput
+        type="number"
+      />
+    </mat-form-field>
+
+    @if (value?.[0] || value?.[1]) {
+      <span
+        [style.--order]="order + 1"
+        style="height: fit-content"
+        (click)="onCancel.emit(true)"
+        class="px-2 p-2 ms-1 rounded-lg border-slightly-faded
+        text-black cursor-pointer animate bg-slightly-faded-gradient flex items-center
+        bg-hover-slightly-gradient border-on-hover{{ animation }}"
+      >
+        <mat-icon class="icon-small text-danger" svgIcon="cancel" />
+      </span>
+    }
+  </div>
+</span>

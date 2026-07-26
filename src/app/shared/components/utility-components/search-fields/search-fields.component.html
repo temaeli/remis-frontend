@@ -1,0 +1,83 @@
+<div class="inline-flex flex-wrap gap-1 items-center thin-form-fields fields-with-no-margin">
+  @for (
+    state of searchFields;
+    track state.key ?? state.url ?? state?.name ?? '' + index;
+    let index = $index
+  ) {
+    <ng-container *ngTemplateOutlet="stateTpl; context: { state, index }" />
+  }
+
+  @if (getUnusedKey() && !getUnfilledState()) {
+    <action-buttons class=" " [actionButtons]="[addbutton]" [animation]="animation_" />
+  }
+</div>
+
+<ng-template #stateTpl let-state="state" let-index="index">
+  <div
+    class="inline-flex bg-white border border-gray-200 items-center relative
+    rounded-xl bg-light {{ animation_ }}"
+    style="max-width: 420px"
+    [style.--order]="order"
+  >
+    @if (index) {
+      <mat-icon
+        class="icon-small size-[25px] bg-white round text-danger cursor-pointer z-index-999 absolute top-right ms-4"
+        (click)="searchFields.splice(index, 1); onCancel_(state)"
+        svgIcon="cancel"
+      />
+    }
+    @if (!!searchKeys.length) {
+      <mat-form-field
+        appearance="fill"
+        [matTooltip]="'Search by' + ' ' + (state?.key | label | camelToTitleCase)"
+        class="custom-fill hide-arrow bg-none material-form"
+        style="max-width: 420px; min-width: 110px"
+        placeholder=""
+      >
+        @if (icon) {
+          <mat-icon matSuffix class="icon-small relative" [svgIcon]="icon | any" />
+        }
+        <mat-select [(ngModel)]="state.key" (selectionChange)="onSelectionChange(state)">
+          @for (
+            key of unUsedKeys.concat(state?.key && !!state?.value ? [state.key] : []);
+            track key
+          ) {
+            <mat-option [value]="key | key"> {{ key | label | camelToTitleCase }} </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    @if (!!searchKeys.length) {
+      <span class="very-faded top--2 px-1"> | </span>
+    }
+
+    <mat-form-field
+      class="search-form-field custom-fill bg-none"
+      style="max-width: 420px; min-width: 250px"
+      appearance="fill"
+      placeholder=""
+    >
+      <mat-icon matPrefix class="icon-small" svgIcon="search" />
+
+      @if (input.value) {
+        <mat-icon
+          matSuffix
+          #cancelBtn
+          class="icon-small size-[25px] text-danger cursor-pointer z-index-999 relative"
+          (click)="onCancel_(state)"
+          svgIcon="cancel"
+        />
+      }
+
+      <input
+        (keyup)="onKeyUp(state)"
+        [(ngModel)]="state.value"
+        #input
+        autocomplete="off"
+        matInput
+        [placeholder]="'Search'"
+      />
+    </mat-form-field>
+  </div>
+</ng-template>

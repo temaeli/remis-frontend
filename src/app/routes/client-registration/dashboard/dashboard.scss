@@ -1,0 +1,39 @@
+// Dashboard-specific styles
+// Uses Tailwind CSS for most styling
+
+:host {
+  display: block;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+}
+
+// Smooth transitions
+.transition {
+  transition: all 0.3s ease-in-out;
+}
+
+// Progress bar animation
+.progress-bar-animated {
+  animation: progress 1s ease-in-out;
+}
+
+@keyframes progress {
+  0% {
+    width: 0;
+  }
+}
+
+// Card hover effects
+.card-hover {
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: hsl(var(--color-primary) / 0.3);
+  }
+}
+
+// Gradient text
+.gradient-text {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

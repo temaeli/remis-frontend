@@ -1,0 +1,9 @@
+.app-header {
+  --mat-toolbar-container-background-color: transparent;
+
+  position: relative;
+  z-index: 200;
+  display: block;
+  background-color: var(--color-white-faded);
+  backdrop-filter: blur(8px);
+}

@@ -1,0 +1,24 @@
+@keyframes home-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
+.badge-dot {
+  animation: home-pulse 2s ease-in-out infinite;
+}
+
+// CTA shimmer — ::after pseudo-element cannot be expressed in Tailwind utilities
+.cta-btn {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.15) 50%, transparent 80%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+
+  &:hover::after {
+    transform: translateX(100%);
+  }
+}

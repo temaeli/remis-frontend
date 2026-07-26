@@ -1,0 +1,46 @@
+<span
+  [style.--order]="order + ' !important'"
+  [style.width]="size + 'px !important'"
+  [style.height]="size + 'px !important'"
+  class="text-muted round flex justify-center items-center relative"
+>
+  <svg
+    viewBox="0 0 35.49 35.49"
+    [style.--strokeWidth]="strokeWidth + 'px'"
+    class="absolute circle-progress-bg size-full top-0 left-0 {{ animate ? 'animated' : '' }}"
+  >
+    <circle class="circle-bg circle stroke-neutral" cx="17.75" cy="17.75" r="14.75" />
+  </svg>
+
+  <svg
+    [style.--progress]="value"
+    [style.--strokeWidth]="strokeWidth + 'px'"
+    viewBox="0 0 35.49 35.49"
+    class=" absolute {{ 'fade-on' }} --order-{{ order + 3 }}
+    circle-progress size-full top-0 left-0
+    {{ animate ? 'animated' : '' }}"
+  >
+    <circle class="circle stroke-{{ color }}" cx="17.75" cy="17.75" r="14.75" />
+  </svg>
+
+  <span class="absolute small flex justify-center items-center">
+    @if (icon) {
+      <mat-icon class="{{ iconClass }}" [svgIcon]="icon" />
+    }
+
+    @if (label | isValue) {
+      <span class=" {{ labelClass }}">
+        @if (useDigitCouter && (label | typeOfIs: 'number')) {
+          <number-counter [number]="label | any" />
+        } @else {
+          <div [innerHTML]="label | safeHtml"></div>
+        }
+      </span>
+    }
+
+    @if (showProgress) {
+      <span>{{ value }}</span>
+      <span class="small">%</span>
+    }
+  </span>
+</span>

@@ -1,0 +1,173 @@
+@if (form) {
+  <div class="{{ outerClass }} {{ animation }} --order-2">
+    @if (isLoading) {
+      <p>{{ loadingMessage }}</p>
+    }
+
+    <form
+      [hidden]="isLoading"
+      class="dynamic-form"
+      [formGroup]="form"
+      (submit)="onSubmit($event)"
+      autocomplete="off"
+    >
+      <!-- show field in stepper -->
+      <div [hidden]="!formSteppers.length">
+        <mat-stepper
+          stepperProgressIndicator
+          [linear]="linearSteppers"
+          [orientation]="stepperOrientation"
+          [labelPosition]="stepperLabelPosition"
+          (selectionChange)="stepperIndexChange($event)"
+          #stepper
+        >
+          @for (step of formSteppers; track index; let index = $index) {
+            @if (isStepperVisible(step)) {
+              <mat-step
+                [stepControl]="$any(step.formGroup)"
+                [state]="$any(step.icon)"
+                [label]="$any(step.name)"
+                class="p-5 rounded-lg border border-gray-300"
+              >
+                <ng-container
+                  *ngTemplateOutlet="fieldsTpl; context: { formFields: step.fields, step }"
+                />
+
+                <!-- step navigations -->
+                <div class="w-full flex justify-between items-center gap-4 mt-8">
+                  <div class="flex items-center gap-3">
+                    @if (index !== 0) {
+                      <button
+                        type="button"
+                        mat-raised-button
+                        (click)="stepper.previous()"
+                        class="flex items-center justify-center px-3 py-1 text-white text-sm font-medium rounded shadow"
+                        style="background-color: #417f6a"
+                        (mouseenter)="changeButtonColor($event, '#2f6251')"
+                        (mouseleave)="changeButtonColor($event, '#417f6a')"
+                      >
+                        <mat-icon svgIcon="arrow_left" class="text-base mr-1" />
+                        <span>Back</span>
+                      </button>
+                    }
+
+                    @if (index === 0 && showStepperCancel) {
+                      <button
+                        (click)="stepperClose.emit(true)"
+                        type="button"
+                        mat-raised-button
+                        class="flex items-center justify-center px-2 py-0.5 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 shadow"
+                      >
+                        <mat-icon svgIcon="close" class="text-xs mr-0.5" />
+                        <span>Cancel</span>
+                      </button>
+                    }
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-3">
+                    @if (step?.formGroup?.touched && step?.formGroup?.invalid) {
+                      <button
+                        mat-stroked-button
+                        [matTooltip]="'View Missing Inputs'"
+                        (click)="viewInvalid(step.formGroup)"
+                        type="button"
+                        class="text-orange-600"
+                      >
+                        <mat-icon svgIcon="exclamation" class="text-lg" />
+                      </button>
+                    }
+
+                    <!-- proceed btn that saves if has onSubmit -->
+
+                    @if (index < formSteppers.length - 1) {
+                      <button
+                        type="button"
+                        mat-raised-button
+                        (click)="onProceed(step, index, stepper)"
+                        [disabled]="linearSteppers && !!!step.optional && step?.formGroup?.invalid"
+                        class="flex items-center justify-center px-3 py-1 text-white text-sm font-medium rounded shadow disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        style="background-color: #417f6a"
+                        (mouseenter)="changeButtonColor($event, '#2f6251')"
+                        (mouseleave)="changeButtonColor($event, '#417f6a')"
+                      >
+                        <span>Proceed</span>
+                        <mat-icon svgIcon="caret_right" class="text-base ml-1" />
+                      </button>
+                    }
+
+                    <!-- save button -->
+                    @if (saveButton && index === formSteppers.length - 1 && !step.onSubmit) {
+                      <span>
+                        <ng-container
+                          *ngTemplateOutlet="fieldTpl; context: { field: saveButton, index: 2 }"
+                        />
+                      </span>
+                    }
+                  </div>
+                </div>
+              </mat-step>
+            }
+          }
+          <!--  -->
+        </mat-stepper>
+      </div>
+
+      <!-- All field if no stepper -->
+      @if (!formSteppers.length) {
+        <ng-container
+          #allFieldsTpl
+          *ngTemplateOutlet="fieldsTpl; context: { formFields: fields }"
+        />
+      }
+
+      @if (form.errors?.['fieldDoesNotMatch']) {
+        <div class="text-red-500 text-sm">
+          Must match: {{ form.errors?.['fieldDoesNotMatch']?.against.join(', ') }}
+        </div>
+      }
+    </form>
+  </div>
+}
+
+<ng-template #formErrorTpl>
+  <div class="p-5">{{ 'Form Error' }}</div>
+</ng-template>
+
+<ng-template #fieldsTpl let-formFields="formFields" let-step="step">
+  <div
+    class="
+    {{
+      'w-full grid gap-3 xl:grid-cols-2 auto-rows-min  pt-3 '
+        | mergeClasses: field?.fieldsClass ?? step?.fieldClass ?? fieldsClass
+    }}"
+  >
+    <ng-container *ngFor="let field of formFields; let index = index">
+      <ng-container *ngTemplateOutlet="fieldTpl; context: { field, index }" />
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #fieldTpl let-field="field" let-index="index">
+  @if (field.visible !== false) {
+    <div
+      class="{{
+        '  w-full ' + (field.type === 'submit' ? ' col-span-ful ' : '  ') | mergeClasses: field.class
+      }}"
+    >
+      <div class="grow">
+        <ng-container
+          genericField
+          [control]="form.controls[field.key]"
+          [field]="field"
+          [formObservers]="formObservers"
+          [formSteppers]="formSteppers"
+          [group]="form"
+          (cancelForm)="cancelForm()"
+          (selectedValue)="selectedValue($event)"
+          (scrolledToTop)="scrolledToTop.emit($event)"
+          (scrolledToBottom)="scrolledToBottom.emit($event)"
+        />
+      </div>
+    </div>
+  }
+</ng-template>

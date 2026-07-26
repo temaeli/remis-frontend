@@ -1,0 +1,584 @@
+/* ─────────────────────────────────────────────────────────────
+   pipeline-map — industrial cartographic, dark control-room
+   ───────────────────────────────────────────────────────────── */
+
+:host {
+  --pm-bg: #0e1014;
+  --pm-panel: #181b22;
+  --pm-panel-2: #1f232b;
+  --pm-border: #2b3038;
+  --pm-text: #e6e9ef;
+  --pm-text-dim: #8c95a1;
+  --pm-text-mute: #5c6573;
+  --pm-accent: #ff6b1a; /* gas-flame orange */
+  --pm-accent-2: #ffd23d; /* safety yellow */
+  --pm-accent-3: #34d399; /* cool mint */
+  --pm-grid: rgba(255, 255, 255, 0.04);
+  --pm-fade-in: 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  color: var(--pm-text);
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+}
+
+.pm {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: radial-gradient(120% 100% at 0% 0%, #1a1f29 0%, var(--pm-bg) 60%);
+  background-image: linear-gradient(var(--pm-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pm-grid) 1px, transparent 1px),
+    radial-gradient(120% 100% at 0% 0%, #1a1f29 0%, var(--pm-bg) 60%);
+  background-size: 24px 24px, 24px 24px, 100% 100%;
+  box-shadow: inset 0 0 0 1px var(--pm-border);
+}
+
+/* the map itself ────────────────────────────────────────────── */
+.pm__map {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  animation: pmFadeIn var(--pm-fade-in) 60ms both;
+
+  /* leaflet container restyling */
+  &.leaflet-container {
+    background: transparent;
+    font-family: inherit;
+    outline: none;
+  }
+}
+
+/* header ribbon (top-right) ─────────────────────────────────
+   Lives top-right because the left rail now hosts all action
+   controls (zoom, fullscreen, measure). Border accent flipped
+   to the right edge so the orange marker still reads as the
+   leading edge of the card. */
+.pm__header {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 10px 14px 11px;
+  background: linear-gradient(180deg, rgba(24, 27, 34, 0.92), rgba(14, 16, 20, 0.92));
+  border: 1px solid var(--pm-border);
+  border-right: 2px solid var(--pm-accent);
+  border-radius: 4px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  text-align: right;
+  animation: pmFadeIn var(--pm-fade-in) 0ms both;
+}
+
+.pm__eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pm-accent);
+}
+
+.pm__title {
+  margin: 0;
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--pm-text);
+  line-height: 1.1;
+}
+
+.pm__subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--pm-text-dim);
+}
+
+/* HUD stats ribbon (bottom-center) ──────────────────────────
+   Pinned to the bottom-center so it doesn't fight the layer
+   control (bottom-left) or coordinate readout (bottom-right). */
+.pm__hud {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  gap: 1px;
+  padding: 0;
+  background: var(--pm-border);
+  border: 1px solid var(--pm-border);
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: 'IBM Plex Mono', monospace;
+  animation: pmFadeIn var(--pm-fade-in) 180ms both;
+  pointer-events: none;
+}
+
+.pm__hud-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px 9px;
+  min-width: 92px;
+  background: linear-gradient(180deg, rgba(31, 35, 43, 0.96), rgba(14, 16, 20, 0.96));
+
+  &--accent {
+    background: linear-gradient(180deg, rgba(255, 107, 26, 0.18), rgba(255, 107, 26, 0.06));
+    border-left: 1px solid var(--pm-accent);
+  }
+}
+
+.pm__hud-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pm-text-mute);
+}
+
+.pm__hud-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pm-text);
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+}
+
+.pm__hud-cell--accent .pm__hud-value {
+  color: var(--pm-accent-2);
+}
+
+/* empty state ──────────────────────────────────────────────── */
+.pm__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 400;
+  animation: pmFadeIn var(--pm-fade-in) 200ms both;
+}
+
+.pm__empty-frame {
+  position: relative;
+  padding: 24px 28px 22px;
+  max-width: 420px;
+  background: rgba(14, 16, 20, 0.88);
+  border: 1px solid var(--pm-border);
+  border-radius: 4px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--pm-accent);
+  }
+  &::before {
+    top: -1px;
+    left: -1px;
+    border-right: none;
+    border-bottom: none;
+  }
+  &::after {
+    bottom: -1px;
+    right: -1px;
+    border-left: none;
+    border-top: none;
+  }
+}
+
+.pm__empty-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--pm-accent);
+  box-shadow: 0 0 0 0 rgba(255, 107, 26, 0.7);
+  animation: pmPulse 1.8s ease-out infinite;
+}
+
+.pm__empty-title {
+  margin: 0 0 6px;
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--pm-text);
+}
+
+.pm__empty-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pm-text-dim);
+}
+
+/* leaflet control restyling — dark theme ───────────────────── */
+:host ::ng-deep {
+  .leaflet-bar {
+    background: var(--pm-panel);
+    border: 1px solid var(--pm-border);
+    box-shadow: none;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .leaflet-bar a,
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    background: var(--pm-panel);
+    color: var(--pm-text);
+    border-bottom-color: var(--pm-border);
+    transition: background 120ms ease;
+  }
+  .leaflet-bar a:hover {
+    background: var(--pm-panel-2);
+    color: var(--pm-accent);
+  }
+  .leaflet-bar a:focus-visible {
+    outline: 2px solid var(--pm-accent);
+    outline-offset: -2px;
+  }
+
+  .leaflet-control-layers {
+    background: rgba(24, 27, 34, 0.96);
+    color: var(--pm-text);
+    border: 1px solid var(--pm-border);
+    border-radius: 4px;
+    backdrop-filter: blur(6px);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+  .leaflet-control-layers label {
+    color: var(--pm-text);
+  }
+
+  .leaflet-control-attribution {
+    background: rgba(14, 16, 20, 0.7);
+    color: var(--pm-text-mute);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px 0 0 0;
+
+    a {
+      color: var(--pm-text-dim);
+    }
+  }
+
+  /* fullscreen control — match measure icon presence */
+  .leaflet-control-fullscreen a,
+  .leaflet-control-fullscreen-button {
+    position: relative;
+    width: 30px !important;
+    height: 30px !important;
+    background-color: var(--pm-panel) !important;
+    background-image: none !important;
+    text-indent: -9999px;
+    overflow: hidden;
+    transition: background-color 120ms ease;
+
+    &::before {
+      content: '⛶';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-indent: 0;
+      font-size: 20px;
+      line-height: 1;
+      color: var(--pm-text);
+      transition: color 120ms ease;
+    }
+
+    &:hover {
+      background-color: var(--pm-panel-2) !important;
+      &::before {
+        color: var(--pm-accent);
+      }
+    }
+  }
+  .leaflet-fullscreen-on .leaflet-control-fullscreen a::before,
+  .leaflet-fullscreen-on .leaflet-control-fullscreen-button::before {
+    content: '⤡';
+    color: var(--pm-accent);
+  }
+
+  /* measure control */
+  .leaflet-control-measure {
+    background: var(--pm-panel);
+    border: 1px solid var(--pm-border);
+  }
+  /* Override leaflet-measure's buried bitmap toggle icon with a clean glyph
+     that mirrors the fullscreen button's styling — "Measure" stands proud. */
+  .leaflet-control-measure .leaflet-control-measure-toggle {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    background-color: var(--pm-panel) !important;
+    background-image: none !important;
+    text-indent: -9999px;
+    overflow: hidden;
+    transition: background-color 120ms ease;
+
+    &::before {
+      content: '⟷';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-indent: 0;
+      font-size: 20px;
+      line-height: 1;
+      color: var(--pm-text);
+      transition: color 120ms ease;
+    }
+  }
+  .leaflet-control-measure .leaflet-control-measure-toggle:hover {
+    background-color: var(--pm-panel-2) !important;
+    &::before {
+      color: var(--pm-accent);
+    }
+  }
+  /* Mirror active state from leaflet-measure's `js-active` class on parent */
+  .leaflet-control-measure.leaflet-control-measure-on .leaflet-control-measure-toggle::before,
+  .leaflet-control-measure .leaflet-control-measure-toggle.js-active::before {
+    color: var(--pm-accent);
+  }
+  /* The interaction panel — by default leaflet-measure balloons ~300px wide
+     INLINE-RIGHT of the toggle, covering the data column. Force it narrow
+     and stack it BELOW the toggle so it doesn't occlude the map. */
+  .leaflet-control-measure .leaflet-control-measure-interaction {
+    display: block;
+    width: 220px !important;
+    min-width: 0 !important;
+    max-width: 220px !important;
+    margin: 6px 0 0 0;
+    padding: 0;
+    background: var(--pm-panel);
+    border: 1px solid var(--pm-border);
+    border-radius: 4px;
+    color: var(--pm-text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    list-style: none;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  }
+
+  .leaflet-control-measure .leaflet-control-measure-interaction li {
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--pm-border);
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .leaflet-control-measure .leaflet-control-measure-action {
+    display: block;
+    padding: 7px 12px;
+    color: var(--pm-text);
+    background: var(--pm-panel);
+    text-decoration: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    transition: background 120ms ease, color 120ms ease;
+
+    &:hover {
+      background: var(--pm-panel-2);
+      color: var(--pm-accent);
+    }
+  }
+
+  .leaflet-control-measure .results,
+  .leaflet-control-measure .startprompt {
+    padding: 10px 12px;
+    background: var(--pm-panel);
+    color: var(--pm-text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+
+    h3 {
+      margin: 0 0 6px;
+      font-family: 'IBM Plex Sans Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--pm-accent);
+    }
+    p {
+      margin: 0 0 6px;
+      color: var(--pm-text-dim);
+    }
+    .tasks {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 0;
+    }
+  }
+
+  .leaflet-control-measure .results .heading {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pm-text-mute);
+  }
+  .leaflet-control-measure .results .number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--pm-accent-2);
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* rectangle-zoom button */
+  .leaflet-rectangle-zoom-control {
+    margin-top: 6px;
+  }
+  .leaflet-rectangle-zoom-icon {
+    display: block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    font-size: 16px;
+    color: var(--pm-text);
+    cursor: pointer;
+    background: var(--pm-panel);
+  }
+  .leaflet-rectangle-zoom-icon:hover {
+    background: var(--pm-panel-2);
+    color: var(--pm-accent);
+  }
+
+  /* coordinate display (bottom-right HUD) */
+  .leaflet-coordinates-display {
+    pointer-events: none;
+    user-select: none;
+  }
+  .pm-coord {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding: 8px 12px;
+    background: rgba(14, 16, 20, 0.92);
+    border: 1px solid var(--pm-border);
+    border-radius: 3px 0 0 0;
+    backdrop-filter: blur(4px);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--pm-text);
+  }
+  .pm-coord__utm {
+    color: var(--pm-accent-2);
+    letter-spacing: 0.04em;
+  }
+  .pm-coord__ll {
+    color: var(--pm-text-dim);
+    font-size: 10px;
+  }
+
+  /* popup theming */
+  .leaflet-popup-content-wrapper.pm-popup,
+  .pm-popup .leaflet-popup-content-wrapper {
+    background: var(--pm-panel);
+    color: var(--pm-text);
+    border: 1px solid var(--pm-border);
+    border-left: 2px solid var(--pm-accent);
+    border-radius: 4px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    padding: 0;
+  }
+  .pm-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 14px 16px;
+    line-height: 1.4;
+  }
+  .pm-popup .leaflet-popup-tip {
+    background: var(--pm-panel);
+    border: 1px solid var(--pm-border);
+  }
+  .pm-popup .leaflet-popup-close-button {
+    color: var(--pm-text-mute);
+    top: 4px;
+    right: 4px;
+    &:hover {
+      color: var(--pm-accent);
+    }
+  }
+
+  .pm-popup__title {
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--pm-text);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--pm-border);
+  }
+  .pm-popup__grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 14px;
+    row-gap: 4px;
+    margin: 0;
+  }
+  .pm-popup__k {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pm-text-mute);
+    align-self: center;
+  }
+  .pm-popup__v {
+    margin: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--pm-text);
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+/* animations ───────────────────────────────────────────────── */
+@keyframes pmFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pmPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 26, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(255, 107, 26, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 26, 0);
+  }
+}

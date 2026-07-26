@@ -1,0 +1,40 @@
+@if (inContainer) {
+  <span
+    class="inline-flex border-slightly-faded
+    items-center m-1 padding-2 mr-3 rounded-lg {{ animation }}"
+    [style.--order]="order"
+  >
+    <ng-container *ngTemplateOutlet="labelTpl" />
+  </span>
+} @else {
+  <ng-container *ngTemplateOutlet="labelTpl" />
+}
+
+<ng-template #labelTpl>
+  <span
+    [matTooltip]="toolTip | any"
+    [style.--order]="order + 0.4"
+    style="height: fit-content"
+    (click)="click.emit(true)"
+    class="px-2 p-2 rounded-lg border-slightly-faded
+    cursor-pointer animate bg-slightly-faded-gradient flex items-center
+    bg-hover-slightly-gradient {{ 'scale-up' }}"
+    [ngClass]="{
+      'text-primary border-primary_ bg-gradient-faded': active,
+      'border-on-hover': !active,
+    }"
+  >
+    <span class="ps-1 inline-flex items-center text-nowrap">
+      <app-icon [icon]="icon" [iconClass]="iconClass" class="{{ label ? 'me-2' : '' }}" />
+
+      <span class="top--1">
+        @if (label) {
+          <span class="text-bold inline-block m-0 pe-1"> {{ label }}</span>
+        }
+        @if (subLabel) {
+          <span class="faded ps-1"> {{ subLabel }}</span>
+        }
+      </span>
+    </span>
+  </span>
+</ng-template>

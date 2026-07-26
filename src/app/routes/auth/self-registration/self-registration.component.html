@@ -1,0 +1,259 @@
+<div class="flex size-full items-center justify-center">
+  <div
+    class="mx-auto max-w-2xl w-full grow mt-10 sm:mt-14 lg:mt-20 mb-4 sm:mb-6 lg:mb-12 p-4 sm:p-6 lg:p-12 z-10 rounded-lg bg-white/80 backdrop-blur-[3px] border border-gray-100
+     {{ animation }} --order-3"
+  >
+    <h2 class="text-lg font-semibold text-start mt-5 relative lg:-top-5 {{ animation }} --order-4">
+      Customer Self-Registration
+    </h2>
+    <p class="text-sm text-gray-500 text-start mb-6 {{ animation }} --order-5">
+      Complete your account setup
+    </p>
+
+    <!-- Step 1: OTP Request -->
+    <div [class.hidden]="currentStep() > 1" class="space-y-4 {{ animation }} --order-6">
+      <h3 class="font-semibold text-sm">Step {{ currentStep() }}: Email & Phone Verification</h3>
+      <form [formGroup]="step1Form" (ngSubmit)="submitStep1()" *ngIf="step1Form" class="space-y-3">
+        <mat-form-field class="w-full" appearance="outline">
+          <mat-label>Email Address</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="customer@example.com" />
+          <mat-error *ngIf="step1Form.get('email')?.hasError('required')">Email is required</mat-error>
+          <mat-error *ngIf="step1Form.get('email')?.hasError('email')">Invalid email</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="w-full" appearance="outline">
+          <mat-label>Phone Number</mat-label>
+          <input matInput formControlName="phone" placeholder="07XXXXXXXX" appPhoneFormat inputmode="numeric" maxlength="10" />
+          <mat-hint>Enter Tanzania phone (07 + 8 digits)</mat-hint>
+          <mat-error *ngIf="step1Form.get('phone')?.hasError('required')">Phone is required</mat-error>
+          <mat-error *ngIf="step1Form.get('phone')?.hasError('pattern')">Invalid phone format (07XXXXXXXX)</mat-error>
+        </mat-form-field>
+
+        <div *ngIf="otpCountdown() > 0" class="p-3 bg-orange-50 border border-orange-200 rounded text-sm">
+          <p class="text-orange-800">OTP expires in: <strong>{{ formatCountdown(otpCountdown()) }}</strong></p>
+          <mat-progress-bar mode="determinate" [value]="(otpCountdown() / (expiresInSeconds() || 600)) * 100" class="mt-2" />
+        </div>
+
+        <div class="flex gap-2 pt-4">
+          <button mat-stroked-button type="submit" [disabled]="isSubmitting()" class="flex-1">
+            <span *ngIf="!isSubmitting()">Request OTP</span>
+            <span *ngIf="isSubmitting()"><mat-spinner diameter="20" /> Sending...</span>
+          </button>
+          <button mat-stroked-button routerLink="/auth/login" type="button" class="flex-1">Back</button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Step 2: OTP Verification -->
+    <div [class.hidden]="currentStep() !== 2" class="space-y-4">
+      <h3 class="font-semibold text-sm">Step {{ currentStep() }}: Verify Code</h3>
+      <p class="text-sm text-gray-500">Enter the 6-digit code sent to your email</p>
+      <form [formGroup]="step2Form" (ngSubmit)="submitStep2()" *ngIf="step2Form" class="space-y-3">
+        <div *ngIf="attemptsLeft() !== undefined" class="p-2 bg-gray-50 rounded text-sm" [class.bg-red-50]="attemptsLeft()! <= 2">
+          <p [class.text-red-700]="attemptsLeft()! <= 2">
+            Attempts remaining: <strong>{{ attemptsLeft() }}</strong>
+          </p>
+        </div>
+
+        <!-- OTP Input Grid (6 separate inputs like OtpComponent) -->
+        <div class="flex gap-2 justify-center">
+          <input
+            #otpInput
+            *ngFor="let control of otpControls; let i = index"
+            [formControl]="control"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="w-12 h-12 text-center text-lg font-semibold border-2 border-gray-300 rounded-md focus:border-blue-500 focus:outline-none transition"
+            (input)="onOtpInput(i)"
+            (keydown)="onOtpKey($event, i)"
+            [attr.aria-label]="'OTP digit ' + (i + 1)"
+            placeholder="-"
+          />
+        </div>
+
+        <div class="flex gap-2 pt-4">
+          <button mat-stroked-button type="submit" [disabled]="isSubmitting()" class="flex-1">
+            <span *ngIf="!isSubmitting()">Verify Code</span>
+            <span *ngIf="isSubmitting()"><mat-spinner diameter="20" /> Verifying...</span>
+          </button>
+          <button mat-stroked-button type="button" (click)="goBack()" class="flex-1">Back</button>
+        </div>
+
+        <p class="text-sm text-center" *ngIf="canResendOtp()">
+          <button type="button" mat-button (click)="resendOtp()" class="text-xs">Resend Code</button>
+          <span class="text-gray-500" *ngIf="resendCountdown() > 0">({{ resendCountdown() }}s)</span>
+        </p>
+      </form>
+    </div>
+
+    <!-- Step 3: Registration Form -->
+    <div [class.hidden]="currentStep() !== 3" class="space-y-4">
+      <h3 class="font-semibold text-sm">Step {{ currentStep() }}: Complete Registration</h3>
+      <form [formGroup]="step3Form" (ngSubmit)="submitStep3()" *ngIf="step3Form" class="space-y-3">
+        <div class="flex gap-3">
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>Customer Type</mat-label>
+            <mat-select formControlName="userType">
+              <mat-option value="INDIVIDUAL">Individual</mat-option>
+              <mat-option value="COMPANY">Company</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>{{ step3Form.get('userType')?.value === 'COMPANY' ? 'Company Name' : 'First Name' }}</mat-label>
+            <input matInput formControlName="firstName" />
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="flex gap-3" *ngIf="step3Form.get('userType')?.value === 'INDIVIDUAL'">
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" />
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>NIDA (National ID)</mat-label>
+            <input matInput formControlName="idNumber" placeholder="20-digit National ID Number" inputmode="numeric" maxlength="20" />
+            <mat-hint>Exactly 20 digits</mat-hint>
+            <mat-error *ngIf="step3Form.get('idNumber')?.hasError('required')">NIDA is required</mat-error>
+            <mat-error *ngIf="step3Form.get('idNumber')?.hasError('pattern')">NIDA must be exactly 20 digits</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field class="w-full" appearance="outline" *ngIf="step3Form.get('userType')?.value === 'COMPANY'">
+          <mat-label>Business Registration (TIN)</mat-label>
+          <input matInput formControlName="tin" placeholder="9 digits, e.g., 101111111" inputmode="numeric" maxlength="9" />
+          <mat-hint>Exactly 9 digits</mat-hint>
+          <mat-error *ngIf="step3Form.get('tin')?.hasError('required')">Business Registration is required</mat-error>
+          <mat-error *ngIf="step3Form.get('tin')?.hasError('pattern')">TIN must be exactly 9 digits</mat-error>
+        </mat-form-field>
+
+        <div class="flex gap-3">
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>Region</mat-label>
+            <mat-select formControlName="regionUid" (selectionChange)="onRegionChange($event.value)">
+              <mat-option *ngFor="let region of regions()" [value]="region.uid">{{ region.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="w-1/2" appearance="outline" *ngIf="step3Form.get('regionUid')?.value">
+            <mat-label>District</mat-label>
+            <mat-select formControlName="districtUid" (selectionChange)="onDistrictChange($event.value)">
+              <mat-option *ngFor="let district of districts()" [value]="district.uid">{{ district.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="flex gap-3" *ngIf="step3Form.get('districtUid')?.value">
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>Ward</mat-label>
+            <mat-select formControlName="wardUid" (selectionChange)="onWardChange($event.value)">
+              <mat-option *ngFor="let ward of wards()" [value]="ward.uid">{{ ward.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="w-1/2" appearance="outline" *ngIf="step3Form.get('wardUid')?.value">
+            <mat-label>Village</mat-label>
+            <mat-select formControlName="subWardUid">
+              <mat-option *ngFor="let village of villages()" [value]="village.uid">{{ village.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="flex gap-3">
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>Physical Address</mat-label>
+            <input matInput formControlName="physicalAddress" placeholder="Street / physical location" />
+          </mat-form-field>
+
+          <mat-form-field class="w-1/2" appearance="outline">
+            <mat-label>MMscfd</mat-label>
+            <input matInput type="number" formControlName="defaultDailyUsageMmscfd" min="0" step="0.01" />
+            <!-- <mat-hint>Optional — GASCO staff can adjust this later</mat-hint> -->
+          </mat-form-field>
+        </div>
+
+        <div class="flex items-start gap-2 my-4">
+          <mat-checkbox formControlName="consent" required></mat-checkbox>
+          <label class="text-sm text-gray-700">I agree to the GASCO Terms of Service and Privacy Policy</label>
+        </div>
+        <mat-error *ngIf="step3Form.get('consent')?.invalid" class="block text-xs mb-2">
+          You must accept the terms to continue
+        </mat-error>
+
+        <div class="flex gap-2 pt-4">
+          <button mat-stroked-button type="submit" [disabled]="isSubmitting()" class="flex-1">
+            <span *ngIf="!isSubmitting()">Continue</span>
+            <span *ngIf="isSubmitting()"><mat-spinner diameter="20" /> Processing...</span>
+          </button>
+          <button mat-stroked-button type="button" (click)="goBack()" class="flex-1">Back</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 4: Password Setup -->
+    <div [class.hidden]="currentStep() !== 4" class="space-y-4">
+      <h3 class="font-semibold text-sm">Step {{ currentStep() }}: Set Password</h3>
+      <p class="text-xs text-gray-500">Reference: <strong>{{ applicationReference() }}</strong></p>
+      <form [formGroup]="step4Form" (ngSubmit)="submitStep4()" *ngIf="step4Form" class="space-y-3">
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded text-xs space-y-1">
+          <p class="font-semibold text-blue-900">Password Requirements:</p>
+          <ul class="list-disc pl-4 text-blue-800 space-y-0.5">
+            <li>At least 8 characters</li>
+            <li>Uppercase letter (A-Z)</li>
+            <li>Lowercase letter (a-z)</li>
+            <li>Number (0-9)</li>
+            <li>Special character (! @ # $ %)</li>
+          </ul>
+        </div>
+
+        <mat-form-field class="w-full" appearance="outline">
+          <mat-label>Password</mat-label>
+          <input matInput formControlName="password" type="password" />
+          <mat-error *ngIf="step4Form.get('password')?.hasError('required')">Password is required</mat-error>
+          <mat-error *ngIf="step4Form.get('password')?.hasError('minlength')">Must be at least 8 characters</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="w-full" appearance="outline">
+          <mat-label>Confirm Password</mat-label>
+          <input matInput formControlName="confirmPassword" type="password" />
+          <mat-error *ngIf="step4Form.get('confirmPassword')?.hasError('required')">Confirm password is required</mat-error>
+          <mat-error *ngIf="step4Form.hasError('passwordMismatch')">Passwords do not match</mat-error>
+        </mat-form-field>
+
+        <button mat-stroked-button type="submit" [disabled]="isSubmitting()" class="w-full">
+          <span *ngIf="!isSubmitting()">Complete Registration</span>
+          <span *ngIf="isSubmitting()"><mat-spinner diameter="20" /> Setting...</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Success Screen -->
+    <div [class.hidden]="currentStep() !== 5" class="text-center space-y-4">
+      <mat-icon class="text-6xl text-green-600 mx-auto">check_circle</mat-icon>
+      <h3 class="font-semibold">Registration Complete!</h3>
+      <p class="text-sm text-gray-600">Your password has been set successfully.</p>
+      <div class="p-3 bg-gray-50 rounded text-sm space-y-1">
+        <p>Reference: <strong>{{ applicationReference() }}</strong></p>
+        <p>Status: <strong>{{ approvalStatus() }}</strong></p>
+        <p class="text-xs text-gray-500 italic">Your application is under review by GASCO.</p>
+      </div>
+      <button mat-stroked-button routerLink="/auth/login" class="w-full">Sign In to Your Account</button>
+    </div>
+
+    <!-- Navigation Link -->
+    <div class="flex justify-start flex-wrap col col-span-2 {{ animation }} --order-8 mt-6">
+      <a
+        routerLink="/auth/login"
+        class="font-semibold text-center text-gray-400 mt-5 relative lg:-top-5 hover:text-[var(--color-primary)]"
+      >
+        Back to Login
+      </a>
+    </div>
+  </div>
+</div>
+

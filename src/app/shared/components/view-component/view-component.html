@@ -1,0 +1,125 @@
+<!-- scroll over the header -->
+<div class="flex-1 flex flex-col size-full gap-3">
+  <ng-container *ngIf="!isLoading; else noContent">
+    <page-header
+      innerClass="p-2 mb-2"
+      valueKey="slug"
+      [headerParameter]="viewParameter"
+      [toggleButtons]="contents.length > 1 ? contents : []"
+      [data]="slugTree?.[0] ?? contents[0]?.slug"
+      (toggleValue)="onContentChange($event, 0)"
+    />
+
+    <div
+      *ngIf="viewParameter; else noContent"
+      class="{{ viewParameter.contentClass | mergeClasses: 'flex-1 flex flex-col  ' }}"
+    >
+      <ng-container *ngFor="let content of contents; let i = index">
+        <!-- no slug show the first -->
+        <ng-container
+          *ngIf="!!slugTree?.[0] ? slugTree?.[0] === content.slug : i == 0"
+          [ngTemplateOutlet]="contentTpl"
+          [ngTemplateOutletContext]="{ content: content | mergeObjects: content.mods, level: 1 }"
+        /></ng-container>
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #contentTpl let-content="content" let-parent="parent" let-level="level">
+  <div
+    *ngIf="content; else noContent"
+    class="{{
+      '  grid grid-cols-1  xl:grid-cols-[auto_auto] gap-y-4 min-h-full'
+        | mergeClasses: content.contentContainerClass
+    }}"
+  >
+    <!-- content content -->
+    <div *ngIf="content.type" class="{{ '  ' | mergeClasses: content.contentClass }}">
+      <ng-container
+        [ngTemplateOutlet]="contentContentTpl"
+        [ngTemplateOutletContext]="{ content: content, class: '' }"
+      />
+    </div>
+
+    <!-- content children container -->
+    <div
+      *ngIf="content.children?.length"
+      class=" xl:[&:not(:first-child)]:ml-3
+      {{ 'flex flex-col  ' | mergeClasses: content.contentChildrenClass }}"
+    >
+      <!-- children toggle -->
+      <toggle-buttons
+        valueKey="slug"
+        *ngIf="content?.children.length > 1"
+        [toggleButtons]="content?.children"
+        [initialValue]="slugTree?.[level] ?? content?.children[0]?.slug"
+        (value)="onContentChange($event, level)"
+        class="{{
+          'p-2 bg-white mb-2 rounded-lg inline-flex flex-wrap'
+            | mergeClasses: content.childrenToggleClass
+        }}"
+      />
+
+      <!-- TODO: remove the right gap from -->
+      <div class="{{ 'w-full ' | mergeClasses: content.childrenContentClass }}">
+        <ng-container *ngFor="let child of content.children; let i = index">
+          <!-- no slug show the first -->
+          <ng-container *ngIf="child | mergeObjects: child.mods as child">
+            <ng-container
+              *ngIf="!!slugTree?.[level] ? slugTree?.[level] === child.slug : i == 0"
+              [ngTemplateOutlet]="contentTpl"
+              [ngTemplateOutletContext]="{ parent: content, content: child, level: level + 1 }"
+            />
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+
+    <!--  -->
+  </div>
+</ng-template>
+
+<ng-template #contentContentTpl let-content="content" let-parent="parent">
+  <!-- <ng-container *ngxPermissionsOnly="content.permissions; else noContent"> -->
+  <div
+    #sectionElement
+    class="{{
+      ' size-full flex-1 flex flex-col rounded-lg p-3 px-lg-4 bg-gradient-white-transparent h-full bg-xl-gradient-white-transparent'
+        | mergeClasses: content.class
+    }}
+      {{ content.animation }} --order-{{ 3 }}  relative"
+    *ngIf="true; else noContent"
+  >
+    <bg-icon-mark [icon]="content.icon" />
+
+    <!-- details -->
+    <app-details
+      *ngIf="content.type === 'details'"
+      [detailsParameter]="content | mergeObjects: detailsParameter"
+    />
+
+    <!-- table -->
+    <data-grid
+      *ngIf="content.type === 'table'"
+      [appearance]="'plain'"
+      [gridParameter]="content | mergeObjects: tableParameter"
+      [hasActionsColumn]="content?.hasActionsColumn || !!content?.actionButtons?.length"
+    />
+
+    <!-- attachment TODO: implement view Attachment -->
+    <!-- <view-attachment
+        *ngIf="content.type === 'attachment'"
+        class="d-block col px-0 over-flow-hidden"
+        [attachmentParameter]="content"
+      ></view-attachment> -->
+  </div>
+  <!-- </ng-container> -->
+</ng-template>
+
+<ng-template #noContent>
+  <no-content
+    class="flex-1 flex flex-col no-content size-full justify-center items-center bg-white rounded-lg"
+    [icon]="icon === '' ? 'warning' : icon"
+    [label]="noContentLabel"
+  />
+</ng-template>

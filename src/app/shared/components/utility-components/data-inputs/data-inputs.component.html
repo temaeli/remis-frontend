@@ -1,0 +1,8 @@
+@for (input of dataInputs; track $index; let index = $index) {
+  <data-input
+    class="ps-2 {{ animation }} --order-{{ index }}"
+    (onChange)="onChange.emit(model ?? $event)"
+    [dataInput]="input"
+    [model]="model"
+  />
+}

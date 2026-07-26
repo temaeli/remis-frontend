@@ -1,0 +1,130 @@
+<section id="home" class="relative size-full flex items-center justify-center overflow-hidden">
+  <!-- Background decoration -->
+  <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+    <!-- Primary orb: large green, top-right -->
+    <div
+      class="absolute rounded-full -top-[180px] -right-[180px] w-[650px] h-[650px] [background:radial-gradient(circle,rgba(19,97,72,0.18)_0%,transparent_70%)]"
+    ></div>
+    <!-- Secondary orb: yellow, bottom-left -->
+    <div
+      class="absolute rounded-full -bottom-[120px] -left-[120px] w-[480px] h-[480px] [background:radial-gradient(circle,rgba(251,186,23,0.14)_0%,transparent_70%)]"
+    ></div>
+    <!-- Mid orb: faint green, center -->
+    <div
+      class="absolute rounded-full top-[40%] left-[38%] w-[300px] h-[300px] [background:radial-gradient(circle,rgba(19,97,72,0.06)_0%,transparent_70%)]"
+    ></div>
+    <!-- Dot grid -->
+    <div
+      class="absolute inset-0 [background-image:radial-gradient(circle,rgba(19,97,72,0.06)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_90%_90%_at_50%_50%,black_20%,transparent_80%)] [-webkit-mask-image:radial-gradient(ellipse_90%_90%_at_50%_50%,black_20%,transparent_80%)]"
+    ></div>
+  </div>
+
+  <!-- Content -->
+  <div
+    class="relative mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-24 lg:py-32 {{
+      animation
+    }} --order-1"
+  >
+    <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      <!-- ──────────── Left: Narrative ──────────── -->
+      <div>
+        <!-- Badge -->
+        <div class="mb-6 {{ animation }} --order-2">
+          <span
+            class="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold tracking-widest uppercase text-primary"
+          >
+            <span class="badge-dot inline-block size-1.5 rounded-full bg-secondary"></span>
+            Enterprise Platform
+          </span>
+        </div>
+
+        <!-- Headline -->
+        <h1
+          class="text-4xl sm:text-5xl xl:text-6xl font-bold leading-tight tracking-tight mb-6 {{
+            animation
+          }} --order-3"
+        >
+          Managing Gas<br />
+          <span class="text-primary">Operations</span><span class="text-secondary">.</span>
+        </h1>
+
+        <!-- Description -->
+        <p
+          class="text-sm sm:text-base leading-relaxed max-w-lg mb-10 opacity-60 {{
+            animation
+          }} --order-4"
+        >
+          A centralized, secure, and integrated digital platform designed to streamline gas
+          distribution, infrastructure management, customer services, billing, and regulatory
+          compliance across GASCO's operational network.
+        </p>
+
+        <!-- CTA -->
+        <div class="flex flex-wrap items-center gap-4 mb-12 {{ animation }} --order-5">
+          <button
+            (click)="goToLogin()"
+            class="cta-btn relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-primary text-white_ px-8 py-3.5 font-semibold shadow-[0_8px_24px_rgba(19,97,72,0.35)] hover:opacity-90 transition-opacity"
+            aria-label="Access the GASCO management system"
+          >
+            Access System
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+
+          <button
+            (click)="lodgeFeedback()"
+            class="cta-btn relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-secondary text-white_ px-8 py-3.5 font-semibold shadow-[0_8px_24px_rgba(19,97,72,0.35)] hover:opacity-90 transition-opacity"
+            aria-label="Lodge Feedback"
+          >
+            Lodge Feedback
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-6 pt-8 border-t border-black/10 {{ animation }} --order-6">
+          @for (stat of stats; track $index) {
+            <div>
+              <div class="text-2xl sm:text-3xl font-bold text-primary mb-1">{{ stat.value }}</div>
+              <div class="text-xs opacity-55 leading-snug">{{ stat.label }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ──────────── Right: Feature Cards ──────────── -->
+      <div class="grid gap-4 {{ animation }} --order-7">
+        @for (feature of features; track $index) {
+          <div
+            class="group rounded-2xl border border-black/10 bg-primary/5 backdrop-blur-sm p-5 transition-[transform,border-color,background-color] duration-300 ease-[var(--ease-out)] hover:translate-x-1.5 hover:border-primary/40 hover:bg-primary/10 cursor-default"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                class="shrink-0 rounded-xl bg-primary p-3 shadow-[0_4px_14px_rgba(19,97,72,0.3)] transition-[transform,box-shadow] duration-300 ease-[var(--ease-out)] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_8px_20px_rgba(19,97,72,0.4)]"
+              >
+                <mat-icon [svgIcon]="feature.icon" class="text-white_" />
+              </div>
+              <div>
+                <h3 class="font-semibold text-sm mb-1.5">{{ feature.title }}</h3>
+                <p class="opacity-55 text-xs leading-relaxed">{{ feature.description }}</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Trust / Compliance card -->
+        <div
+          class="rounded-2xl border border-secondary/30 bg-secondary/10 backdrop-blur-sm p-5 flex items-center gap-4"
+        >
+          <div class="shrink-0 rounded-xl bg-secondary/20 p-3">
+            <mat-icon class="text-secondary">verified_user</mat-icon>
+          </div>
+          <div>
+            <div class="font-semibold text-sm mb-0.5">Safety &amp; Compliance First</div>
+            <div class="opacity-55 text-xs leading-relaxed">
+              100% aligned with industry regulations, safety protocols, and operational standards.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

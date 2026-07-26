@@ -1,0 +1,90 @@
+:root {
+  --scrollbar-width: 4px;
+  --scrollbar-track-color: transparent;
+  --scrollbar-thumb-color: #bfc8d250;
+  --scrollbar-thumb-hover-color: bfc8d282;
+  --scrollbar-thumb-active-color: bfc8d282;
+}
+
+/* Webkit browsers */
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color);
+  border-radius: calc(var(--scrollbar-width) / 2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  border-radius: calc(var(--scrollbar-width) / 2);
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-color);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active-color);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
+}
+
+/* Optional: For specific elements with custom scrollbars */
+.scroll-container {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
+}
+
+.scrollable-container::-webkit-scrollbar-thumb {
+  cursor: pointer; /* Changes cursor on scrollbar thumb */
+}
+
+.scrollable-container::-webkit-scrollbar-thumb:hover {
+  cursor: grab; /* Changes cursor on hover */
+}
+
+.scrollable-container::-webkit-scrollbar-thumb:active {
+  cursor: grabbing;
+}
+
+.scrollable-container::-webkit-scrollbar-track {
+  cursor: default;
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-slim:hover {
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+  }
+
+  .scrollbar-slim:hover::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-slim:hover::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+
+  .scrollbar-slim:hover::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded hover:bg-gray-500;
+  }
+}

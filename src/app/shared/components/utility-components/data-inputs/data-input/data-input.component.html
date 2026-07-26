@@ -1,0 +1,307 @@
+@if (inContainer) {
+  <span
+    class=" inline-block {{ containerClass | mergeClasses: inputContainerClass }} {{ animation }}
+     {{ !width ? 'w-full' : '' }}"
+    [style.--order]="order"
+  >
+    <ng-container *ngTemplateOutlet="fieldTpl" />
+  </span>
+} @else {
+  <ng-container *ngTemplateOutlet="fieldTpl" />
+}
+
+<ng-template #fieldTpl>
+  <span
+    class="inline-flex justify-center items-center
+    {{ !width ? 'w-full' : '' }} {{ innerClass }}"
+    [style.width]="width ?? 'fit-content'"
+    [style.max-width]="maxWidth"
+    [style.min-width]="minWidth"
+  >
+    <!-- "range" | "checkbox" | "file" | "url" -->
+    @if (type === 'toggle') {
+      <span class="inline-flex items-center w-full">
+        <ng-container *ngTemplateOutlet="labelTpl" />
+        <mat-slide-toggle
+          (change)="onChange_($event.checked)"
+          [(ngModel)]="value"
+          class="padding-1 ps-2 top--3 pe-2"
+        />
+      </span>
+    }
+
+    @if (type === 'radio') {
+      <span class="inline-flex items-center w-full">
+        <ng-container *ngTemplateOutlet="labelTpl" />
+        <mat-radio-group class="pe-2" [(ngModel)]="value" (change)="onChange_($event.value)">
+          @for (option of options; track option.value ?? option) {
+            <mat-radio-button [value]="option.value ?? option" class="me-3">
+              <span class="pe-2">{{ option | camelToTitleCase }} </span>
+            </mat-radio-button>
+          }
+        </mat-radio-group>
+      </span>
+    }
+
+    @if (type === 'date') {
+      <span class="inline-flex items-center w-full">
+        <ng-container *ngTemplateOutlet="labelTpl" />
+        <mat-form-field
+          appearance="fill"
+          [matTooltip]="toolTip"
+          class="custom-fill hide-arrow bg-none material-form py-[2px] {{ fieldClass }} grow px-0"
+        >
+          @if (!value) {
+            <span matPrefix class="opacity-40">
+              {{ placeholder | camelToTitleCase }}
+            </span>
+          }
+          <input
+            [matDatepicker]="date"
+            (dateChange)="onChange_($event.value)"
+            [(ngModel)]="value"
+            matInput
+          />
+          <mat-datepicker-toggle [for]="date" matSuffix />
+          <mat-datepicker #date />
+        </mat-form-field>
+      </span>
+    }
+
+    @if (type === 'date-range') {
+      @if (showLabel && (label || subLabel || icon)) {
+        <data-label
+          [order]="order + 1"
+          [active]="active"
+          [inContainer]="false"
+          [toolTip]="labelToolTip | any"
+          [label]="label"
+          [subLabel]="subLabel"
+          [icon]="icon"
+          [iconClass]="iconClass"
+          (click)="onLabelClick.emit(true)"
+        />
+      }
+
+      <mat-form-field
+        appearance="fill"
+        [matTooltip]="toolTip"
+        class="custom-fill hide-arrow bg-none py-[2px]"
+      >
+        @if (!value?.[dateRangeProps?.fromKey ?? 'startDate']) {
+          <label class="faded absolute"> {{ dateRangeProps?.fromLabel ?? 'Start Date' }} </label>
+        }
+        <input
+          [matDatepicker]="date_"
+          [value]="value?.[dateRangeProps?.fromKey ?? 'startDate']"
+          matInput
+          (dateChange)="onRangeChange_($event.value, dateRangeProps?.fromKey ?? 'startDate')"
+        />
+        <mat-datepicker-toggle [for]="date_" matSuffix />
+        <mat-datepicker #date_ />
+      </mat-form-field>
+
+      <span class="opacity-40 top--2 px-1"> | </span>
+
+      <mat-form-field appearance="fill" class="custom-fill hide-arrow bg-none py-[2px]">
+        @if (!value?.[dateRangeProps?.toKey ?? 'endDate']) {
+          <label class="faded absolute"> {{ dateRangeProps?.toLabel ?? 'End Date' }} </label>
+        }
+        <input
+          [matDatepicker]="date_2"
+          (dateChange)="onRangeChange_($event.value, dateRangeProps?.toKey ?? 'endDate')"
+          [value]="value?.[dateRangeProps?.toKey ?? 'endDate']"
+          matInput
+        />
+        <mat-datepicker-toggle [for]="date_2" matSuffix />
+        <mat-datepicker #date_2 />
+      </mat-form-field>
+    }
+
+    <!-- Material inputs -->
+    @if (['textarea', 'number', 'password', 'email', 'text', 'tel'].includes(type)) {
+      <ng-container *ngTemplateOutlet="materialInputTpl" />
+    }
+
+    <!-- select acts funny so we avoid typeck -->
+    @if (type === 'select') {
+      <ng-container *ngTemplateOutlet="materialInputTpl" />
+    }
+
+    @if (type === 'slider-select') {
+      <span class="inline-flex items-center w-full">
+        <!-- Previous Button -->
+        <button
+          mat-icon-button
+          (click)="selectedIndex = selectedIndex - 1; onChange_(options[selectedIndex]?.value)"
+          [disabled]="selectedIndex === 0"
+        >
+          <mat-icon svgIcon="caret_left" />
+        </button>
+
+        @if (useDigitCouter) {
+          <number-counter [number]="value | any" [digitSize]="digitSize" />
+        } @else {
+          <span class="inline-block"> {{ options[selectedIndex]?.label }}</span>
+        }
+
+        <!-- Next Button -->
+        <button
+          mat-icon-button
+          (click)="selectedIndex = selectedIndex + 1; onChange_(options[selectedIndex]?.value)"
+          [disabled]="selectedIndex === options.length - 1"
+        >
+          <mat-icon svgIcon="caret_right" />
+        </button>
+      </span>
+    }
+
+    @if (hasClear && value) {
+      <span
+        [style.--order]="order + 1"
+        (click)="onChange_((value = undefined)); onClear_()"
+        class="px-2 size-[36px] inline-flex items-center justify-center  ms-1 me-1 rounded-lg border-slightly-faded
+        text-black cursor-pointer  animate bg-slightly-faded-gradient flex items-center
+        bg-hover-slightly-gradient border-on-hover {{ animation }}"
+        matTooltip="Clear"
+      >
+        <mat-icon class="icon-small text-danger" svgIcon="cancel" />
+      </span>
+    }
+  </span>
+</ng-template>
+
+<ng-template #materialInputTpl>
+  <span class="inline-flex items-center w-full">
+    @if (labelPosition === 'before' || !labelPosition) {
+      <ng-container *ngTemplateOutlet="labelTpl" />
+    }
+
+    <mat-form-field
+      appearance="fill"
+      [matTooltip]="toolTip"
+      class="{{ dataFieldClass }}
+       {{ label || icon ? (labelPosition === 'before' ? 'ps-1' : 'pe-1') : '' }}
+       {{ fieldClass }} col px-0"
+    >
+      @if (prefixIcon) {
+        <span matPrefix class="pe-3">
+          <ng-container
+            *ngTemplateOutlet="
+              iconTpl;
+              context: { icon: prefixIcon, class: 'icon-small position-relative' }
+            "
+          />
+        </span>
+      }
+
+      @if (suffixIcon) {
+        <span matSuffix class="pe-3">
+          <ng-container
+            *ngTemplateOutlet="
+              iconTpl;
+              context: { icon: suffixIcon, class: 'icon-small position-relative' }
+            "
+          />
+        </span>
+      }
+
+      @if (['number', 'text', 'email', 'password', 'tel'].includes(type)) {
+        <input
+          #input
+          (change)="onChange_(input.value)"
+          (keyup)="onKeyup_($event)"
+          [(ngModel)]="value"
+          autocomplete="off"
+          [type]="type"
+          [min]="min"
+          [max]="max"
+          matInput
+          [placeholder]="placeholder"
+        />
+      }
+
+      @if (type === 'textarea') {
+        <textarea
+          (change)="onChange_($event)"
+          [(ngModel)]="value"
+          autocomplete="off"
+          matInput
+          [placeholder]="placeholder"
+        ></textarea>
+      }
+
+      @if (type === 'select') {
+        <mat-select
+          [multiple]="multiple"
+          (selectionChange)="onChange_($event.value)"
+          [(ngModel)]="value"
+          autocomplete="off"
+          matInput
+          [placeholder]="placeholder ?? label"
+        >
+          <app-mat-select-search
+            [reset]="false"
+            (ngModelChange)="handleSearch()"
+            [(ngModel)]="searchValue"
+            ngDefaultControl
+            [ngModelOptions]="{ standalone: true }"
+          />
+
+          @for (
+            option of options | search: optionsVariables?.fetchParameter?.searchKeys : searchValue;
+            track option;
+            let i = $index
+          ) {
+            <mat-option [value]="option?.value ?? option" class="bg-white border-bottom py-1">
+              <div class="flex">
+                @if (showOptionIndex) {
+                  <span
+                    style="border: 3px solid var(--neutral-color)"
+                    class="size-8 me-3 last-no-border round flex-center small"
+                  >
+                    {{ i + 1 }}.
+                  </span>
+                }
+                <span class="col px-0">
+                  {{ option?.label ?? option }}
+                </span>
+              </div>
+            </mat-option>
+          }
+        </mat-select>
+      }
+    </mat-form-field>
+
+    @if (labelPosition === 'after') {
+      <ng-container *ngTemplateOutlet="labelTpl" />
+    }
+  </span>
+</ng-template>
+
+<ng-template #labelTpl>
+  @if (label || subLabel || icon) {
+    <data-label
+      [inContainer]="false"
+      [toolTip]="labelToolTip"
+      [label]="label"
+      [subLabel]="subLabel"
+      [icon]="icon"
+      [order]="order"
+      [active]="active"
+      (click)="onLabelClick_()"
+    />
+  }
+
+  @if (actionButtons.length) {
+    <action-buttons
+      class="flex flex-wrap gap-1"
+      [actionButtons]="actionButtons"
+      [data]="actionButtonsValue"
+    />
+  }
+</ng-template>
+
+<ng-template #iconTpl let-icon="icon" let-class="class">
+  <app-icon [icon]="icon" [iconClass]="class" />
+</ng-template>

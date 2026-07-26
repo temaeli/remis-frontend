@@ -1,0 +1,106 @@
+
+$mat-menu-side-padding: 16px !default;
+$scrollbar-width: 17px;
+$clear-button-width: 20px;
+$multiple-check-width: 33px;
+
+.mat-select-search-hidden {
+  visibility: hidden;
+}
+
+.mat-select-search-inner {
+  position: relative;
+  top: 0;
+  width: 100%;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 100;
+
+  &.mat-select-search-inner-multiple {
+    width: 100%;
+  }
+}
+
+///deep/
+.mat-select-search-panel {
+  /* allow absolute positioning relative to outer options container */
+  transform: none !important;
+  max-height: 350px;
+}
+
+.mat-select-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  padding-left: 36px;
+  padding-right: 36px;
+  box-sizing: border-box;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #417f6a;
+    box-shadow: 0 0 0 3px rgba(65, 127, 106, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.relative {
+  position: relative;
+}
+
+.mat-select-search-no-entries-found {
+  padding: 12px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.mat-select-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    opacity: 0.7;
+  }
+}
+
+///deep/
+.cdk-overlay-pane-select-search {
+  /* correct offsetY so that the selected option is at the position of the select box when opening */
+  margin-top: -50px;
+}

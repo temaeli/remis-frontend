@@ -1,0 +1,639 @@
+@if (dialogRef) {
+  <details-header
+    cdkDrag
+    cdkDragHandle
+    cdkDragRootElement=".cdk-overlay-pane"
+    [title]="$any(title) | truncate: 60"
+    class="border-b border-b-gray-200 cursor-drag"
+  />
+
+  <mat-dialog-content>
+    <ng-container [ngTemplateOutlet]="contentTpl" />
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <action-buttons [actionButtons]="dialogButtons" />
+  </mat-dialog-actions>
+} @else {
+  <ng-container [ngTemplateOutlet]="contentTpl" />
+}
+
+<ng-template #contentTpl>
+  <div class="{{ ' relative size-full flex flex-col flex-1 ' | mergeClasses: innerClass }} ">
+    @if (canShowHeader) {
+      <details-header
+        [subtitle]="showFieldsTotal ? allFields?.length : undefined"
+        [title]="title"
+        [icon]="icon"
+        [data]="entity"
+        [actionButtons]="actionButtons"
+        [headerParameter]="headerParameter"
+      />
+    }
+
+    <!-- Tabs -->
+    @if (showGroupsInTabs) {
+      <mat-tab-group [animationDuration]="0" slidingTabIndicator class="flex-col flex-1 grow">
+        @for (group of fieldsGroups; track $index) {
+          <mat-tab [label]="group.label | any" class="{{ animation }} ">
+            <ng-template mat-tab-label>
+              @if (group.icon) {
+                <mat-icon class="mr-2" [svgIcon]="group.icon" />
+              }
+              {{ group.label }}
+            </ng-template>
+
+            <ng-template matTabContent>
+              <ng-container
+                [ngTemplateOutlet]="groupTpl"
+                [ngTemplateOutletContext]="{ group, animation: animationTabs }"
+              />
+            </ng-template>
+          </mat-tab>
+        }
+      </mat-tab-group>
+    } @else {
+      <!-- list -->
+      <div
+        class="groups-container
+         {{ 'relative grow grid grid-cols-1 gap-2 ' | mergeClasses: groupsContainerClass }}"
+      >
+        @for (group of fieldsGroups; track $index) {
+          <ng-container
+            [ngTemplateOutlet]="groupTpl"
+            [ngTemplateOutletContext]="{ group, animation: animation }"
+          />
+        }
+      </div>
+    }
+  </div>
+</ng-template>
+
+<!-- TEMPLATES -->
+<!-- FIELDS TEMPLATE -->
+<ng-template
+  #groupTpl
+  let-group="group"
+  let-hideAnimations="hideAnimations"
+  let-index="index"
+  let-animation="animation"
+  let-siblingsCount="siblingsCount"
+  let-inTab="inTab"
+>
+  <div
+    class="field-group
+    {{
+      'flex flex-col grow flex-1 gap-2 ' +
+        (!group?.groups?.length ? ' bg-white p-6 lg:px-8  ' : '') +
+        ((!inTab ? index == 0 && canShowHeader : false) ? ' rounded-b-lg ' : ' rounded-lg ')
+        | mergeClasses: groupsClass
+        | mergeClasses: group.groupsClass
+        | mergeClasses: group?.class
+    }}
+    relative {{ animation }} --order-{{ 3 + 2 * (index ?? 0) }}"
+  >
+    @if (group.icon && showBgIconMark) {
+      <bg-icon-mark outerClass="bg-none" [icon]="group.icon" />
+    }
+
+    <!-- group header  -->
+    @if (showGroupHeaders && group.showHeader !== false) {
+      <ng-container *ngTemplateOutlet="groupHeaderTpl; context: { group, class: '', animation }" />
+    }
+
+    @if (group?.fields?.length) {
+      <ng-container
+        [ngTemplateOutlet]="fieldsTpl"
+        [ngTemplateOutletContext]="{ group, hideAnimations, animation }"
+      />
+    }
+
+    @if (group?.groups?.length) {
+      <div
+        class="groups-container {{
+          'relative grow grid grid-cols-1 gap-2'
+            | mergeClasses: group.groupsContainerClass ?? groupsContainerClass
+        }}"
+      >
+        @for (group of group.groups; track $index) {
+          <ng-container
+            [ngTemplateOutlet]="groupTpl"
+            [ngTemplateOutletContext]="{ group, animation: animation }"
+          />
+        }
+      </div>
+    }
+
+    @if (showEmptyGroups && !group?.groups?.length && !group?.fields?.length) {
+      <span class="{{ valuesClass }}">
+        {{ emptyGroupValue }}
+      </span>
+    }
+  </div>
+</ng-template>
+
+<!-- Fields list -->
+<ng-template
+  #fieldsTpl
+  let-group="group"
+  let-hideAnimations="hideAnimations"
+  let-animation="animation"
+>
+  @if (group?.fields?.length) {
+    <div
+      class="fields-containter animate
+        {{
+        'grid grid-cols-2 gap-y-3 gap-x-5'
+          | mergeClasses: fieldsContainerClass
+          | mergeClasses: group.fieldsContainerClass
+      }}
+      "
+    >
+      @for (field of group.fields; track field.key; let i = $index) {
+        @if (field.showFn ? field.showFn(entity) : true) {
+          <!-- Array Field -->
+          @if (field?.type === 'array' || field?.type?.includes('Array')) {
+            <ng-container
+              [ngTemplateOutlet]="arrayFieldTpl"
+              [ngTemplateOutletContext]="{ field, hideAnimations, i, animation }"
+            />
+          }
+
+          <!-- Normal Field -->
+          @else {
+            <ng-container
+              [ngTemplateOutlet]="normalFieldTpl"
+              [ngTemplateOutletContext]="{ field, hideAnimations, i, group, animation }"
+            />
+          }
+        }
+      }
+    </div>
+  }
+</ng-template>
+
+<!-- ARRAY HEADER -->
+<ng-template #arrayHeaderTpl let-field="field" let-class="class" let-animation="animation">
+  @if (field?.label) {
+    <div
+      class="animate {{
+        class | mergeClasses: arraysHeaderClass | mergeClasses: field?.headerClass
+      }} {{ animation }} --order-4"
+    >
+      <div class="flex items-center justify-between">
+        <div
+          class="{{
+            'font-bold rounded-lg opacity-60 mb-2 flex items-center'
+              | mergeClasses: groupLabelsClass
+          }}"
+        >
+          @if (field?.icon) {
+            <mat-icon [svgIcon]="field.icon" class="{{ field?.iconClass }} {{ iconsClass }} me-3" />
+          }
+
+          <span class="{{ field?.titleClass }}"> {{ field?.label }} </span>
+          <!-- total items -->
+          <span class="ps-1 opacity-60">
+            @if (showArraysTotal) {
+              <span>({{ field?.value?.length ?? 0 }})</span>
+            }
+          </span>
+        </div>
+
+        @if (field?.actionButtons?.length) {
+          <action-buttons
+            class="right-0 pb-2 flex items-center"
+            [data]="field"
+            [actionButtons]="field.actionButtons"
+          />
+        }
+      </div>
+    </div>
+  }
+</ng-template>
+
+<!-- GROUP HEADER -->
+<ng-template #groupHeaderTpl let-group="group" let-animation="animation">
+  @if (group?.label && !(group?.label | includes: 'default')) {
+    <div
+      class="animate
+       {{ groupsHeadersClass | mergeClasses: group?.headerClass }} {{ animation }} --order-4"
+    >
+      <div class="flex items-center justify-between">
+        <div
+          class="{{
+            'font-bold rounded-lg opacity-60 mb-3 flex items-center'
+              | mergeClasses: groupLabelsClass
+          }}"
+        >
+          @if (group?.icon) {
+            <mat-icon
+              [svgIcon]="group.icon"
+              class="{{ 'me-3 ' | mergeClasses: iconsClass | mergeClasses: group?.iconClass }} "
+            />
+          }
+
+          <span class="{{ group?.labelClass }}"> {{ group?.label }} </span>
+
+          @if (showFieldsTotal) {
+            <span class="{{ 'ps-1 opacity-60' | mergeClasses: totalLabelsClass }}">
+              ({{ group?.fields?.length ?? 0 }})
+            </span>
+          }
+        </div>
+
+        @if (group?.actionButtons?.length) {
+          <action-buttons
+            class="right-0 pb-2 flex items-center gap-2 flex-wrap"
+            [data]="group"
+            [actionButtons]="group.actionButtons"
+          />
+        }
+      </div>
+    </div>
+  }
+</ng-template>
+
+<!-- FIELD TEMPLATE -->
+<ng-template
+  #normalFieldTpl
+  let-field="field"
+  let-group="group"
+  let-hideAnimations="hideAnimations"
+  let-i="i"
+  let-animation="animation"
+>
+  @if (!field?.sensitive && !field?.hidden) {
+    <div
+      class="details-field w-full
+    {{ fieldsClass | mergeClasses: group?.fieldsClass | mergeClasses: field.class }}
+    {{ hideAnimations ? '' : animation }} --order-{{ i / 2 + 1 }}"
+    >
+      <div [class]="field.outerClass | mergeClasses: fieldsOuterClass">
+        <ng-container *ngTemplateOutlet="iconTpl; context: { field, group }" />
+
+        <div class="col h-full w-full flex flex-col justify-between">
+          <div
+            class="relative animate field-inner
+            {{ 'flex flex-col' | mergeClasses: fieldsInnerClass | mergeClasses: field.innerClass }}"
+            [class.pe-5]="field?.actionButtons?.length"
+          >
+            @if (field.showLabel) {
+              <div
+                class="animate {{ labelsClass | mergeClasses: field.labelClass ?? 'opacity-70' }}"
+              >
+                <span> {{ field?.label | label }} </span>
+
+                @if (showColon && field?.showColon) {
+                  <span> : </span>
+                }
+              </div>
+            }
+
+            <div
+              class="animate {{
+                ' font-bold overflow-x-hidden '
+                  | mergeClasses: valuesClass
+                  | mergeClasses: field.valueClass
+              }}"
+            >
+              <ng-container
+                [ngTemplateOutlet]="valueDisplayTpl"
+                [ngTemplateOutletContext]="{ field }"
+              />
+            </div>
+
+            @if (field?.actionButtons?.length) {
+              <action-buttons
+                class="r-0 absolute flex items-center"
+                [data]="field"
+                [actionButtons]="field.actionButtons"
+              />
+            }
+          </div>
+
+          @if (showUnderlines && field?.showUnderline) {
+            <mat-divider
+              [hidden]="!field?.showLabel"
+              class="animate {{ 'dotted relative top-[2px]' | mergeClasses: dividerClass }}"
+            />
+          }
+        </div>
+      </div>
+    </div>
+  }
+</ng-template>
+
+<ng-template #arrayFieldTpl let-field="field" let-animation="animation">
+  @if (!field?.sensitive && !field?.hidden && !hideArrays) {
+    <div class="arrayField  {{ arraysFieldsClass | mergeClasses: field?.class : 'pb-3' }}">
+      @if (showArraysHeaders && field.showLabel) {
+        <ng-container *ngTemplateOutlet="arrayHeaderTpl; context: { field }" />
+      }
+
+      <div class="h-full w-full relative">
+        @switch (field.type) {
+          <!-- stringArray -->
+          @case ('stringArray') {
+            <ng-container
+              [ngTemplateOutlet]="stringArrayTpl"
+              [ngTemplateOutletContext]="{ field }"
+            />
+          }
+
+          <!-- objectArray -->
+          @case ('objectArray') {
+            @if (field.useTable && false) {
+              <ng-container
+                [ngTemplateOutlet]="dataTableHyridTpl"
+                [ngTemplateOutletContext]="{ field }"
+              />
+            } @else {
+              <!-- objectArray -->
+              <ng-container
+                [ngTemplateOutlet]="objectArrayTpl"
+                [ngTemplateOutletContext]="{ field }"
+              />
+            }
+          }
+
+          <!-- attachment Array -->
+          @case ('attachmentArray') {
+            <ng-container
+              [ngTemplateOutlet]="attachmentArrayTpl"
+              [ngTemplateOutletContext]="{ field }"
+            />
+          }
+
+          <!-- no type -->
+          @default {
+            <!-- default table -->
+            <ng-container
+              [ngTemplateOutlet]="objectArrayTpl"
+              [ngTemplateOutletContext]="{ field }"
+            />
+
+            <!-- <ng-container
+              [ngTemplateOutlet]="dataTableHyridTpl"
+              [ngTemplateOutletContext]="{ field }"
+            ></ng-container> -->
+          }
+        }
+      </div>
+    </div>
+  }
+</ng-template>
+
+<!-- VALUE TEMPLATE -->
+<ng-template #valueDisplayTpl let-field="field">
+  <!-- image -->
+  @if (field.validBase64 && field.extension !== 'pdf') {
+    <div class="{{ field.class }}">
+      <div class="{{ field.innerClass }} rounded-lg border border-gray-200 p-2">
+        @if (field.showLabel) {
+          <div class="text-center animate mb-2 {{ field.labelClass }} {{ labelsClass }}">
+            {{ field?.label }}
+          </div>
+        }
+        <img
+          [src]="getBase64Object(field.value).uri"
+          class="rounded-lg {{ field?.imageClass }}"
+          style="width: 100%; height: auto"
+        />
+      </div>
+    </div>
+  } @else {
+    @if (field.isObject) {
+      @if (viewInnerObjects) {
+        <span
+          (click)="viewDetails(field.value)"
+          class="cursor-pointer rounded-lg inline-flex gap-2 items-center bg-gray-300/10 p-1 px-2"
+        >
+          <mat-icon svgIcon="info" class="icon-small opacity-60" />
+          <span class="flex items-center" [innerHTML]="field.value | label | safeHtml"></span>
+        </span>
+      } @else {
+        <span [innerHTML]="field.value?.value | label | safeHtml"></span>
+      }
+    } @else {
+      @switch (field.type) {
+        @case ('percentage') {
+          <div class="relative flex items-center justify-center">
+            <mat-progress-bar mode="determinate" class="very-fat-bar" value="{{ field?.value }}" />
+            <div class="opacity-60 small absolute">{{ field?.value + '%' }}</div>
+          </div>
+        }
+
+        @case ('attachment') {
+          <span
+            mat-ripple
+            class="flex items-center max-w-[150px] opacity-60 rounded-lg bg-gray-200/20 cursor-pointer px-2 p-1"
+            (click)="viewAttachment(field)"
+          >
+            @if (field.labelIcon) {
+              <mat-icon class="ps-1" [svgIcon]="field.labelIcon" />
+            }
+
+            <span class="ps-2 flex" translate> View File </span>
+          </span>
+        }
+
+        @case ('boolean') {
+          <span
+            class="rounded-lg p-1 px-3 inline-flex items-center"
+            [ngClass]="{
+              'bg-primary-300/10 border border-gray-200': field.value,
+              'bg-gray-300/10': !field.value,
+            }"
+          >
+            {{ field.value ? 'YES' : 'NO' }}
+          </span>
+        }
+
+        @case ('hexColorCode') {
+          <span
+            class="rounded-lg border border-gray-200 p-1 px-3"
+            [style.background]="field.value"
+            [style.color]="field.value | contrastGray"
+          >
+            {{ field.value }}
+          </span>
+        }
+
+        @default {
+          @switch (field.pipe) {
+            @case ('number') {
+              @if (field.type === 'number') {
+                <span [innerHTML]="field.value | number"> </span>
+              } @else {
+                <span [innerHTML]="field.value | safeHtml"> </span>
+              }
+            }
+            @case ('date') {
+              <span [innerHTML]="field.value | date"> </span>
+            }
+            @default {
+              <span [innerHTML]="field.value | safeHtml"> </span>
+            }
+          }
+        }
+      }
+    }
+  }
+</ng-template>
+
+<!-- ATTACHMENT ARRAY -->
+<ng-template #attachmentArrayTpl let-field="field">
+  @for (object of field.value; track $index; let i = $index) {
+    <div class="flex w-full items-center justify-between gap-2">
+      <!-- {{ field.listItemButtons | json }} -->
+      <div
+        (click)="viewAttachmentFromObject(object)"
+        class="grow p-1 m-1 flex gap-2 cursor-pointer hover:bg-gray-100/50 items-center border border-gray-300/20 rounded-lg"
+      >
+        <span class="rounded-lg flex items-center justify-center gap-2">
+          <span class="size-[35px] rounded-full flex items-center justify-center">
+            <span class="opacity-60"> {{ i + 1 }} </span>
+          </span>
+
+          @if (field.labelIcon) {
+            <mat-icon [svgIcon]="field.labelIcon" class="{{ field?.iconClass }}  " />
+          }
+        </span>
+
+        @if (object | label; as name) {
+          <div class="h-full">
+            @if (object?.attachmentType?.title; as title) {
+              <div class="text-capitalize">{{ title }}</div>
+              <div class="small opacity-60">{{ name }}</div>
+            } @else {
+              <div class="  ">{{ name }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      <action-buttons
+        class="flex gap-2"
+        [actionButtons]="field?.listItemButtons ?? []"
+        [data]="object"
+      ></action-buttons>
+    </div>
+  }
+</ng-template>
+
+<!-- STRING ARRAY -->
+<ng-template #stringArrayTpl let-field="field">
+  @for (value of field.value; track $index; let i = $index) {
+    <div class=" ">
+      <div
+        class="{{ animation }} --order-{{ i + 1 }}
+      px-1 m-1 flex w-full hover:bg-gray-200/10
+      items-center border border-gray-300/20 rounded-lg"
+      >
+        <span class="{{ stringArrayIndexClass }} ">
+          <span class="opacity-60"> {{ i + 1 }} </span>
+        </span>
+        <div
+          class="h-full p-1 m-1 flex items-center w-full {{ field.valueClass }}"
+          [innerHTML]="value | safeHtml"
+        ></div>
+      </div>
+    </div>
+  }
+</ng-template>
+
+<!-- OBJECT ARRAY LIST -->
+<ng-template #objectArrayTpl let-field="field" let-animation="animation">
+  <data-grid
+    [gridData]="field.fieldGroups"
+    renderType="list"
+    [icon]="field.icon ?? 'attached'"
+    [title]="field.label"
+    class="overflow-hidden"
+    noContentClass="h-full w-full flex items-center justify-center"
+  >
+    <ng-template #listItem let-data="data" let-index="index">
+      <ng-container
+        [ngTemplateOutlet]="objectArrayItemTpl"
+        [ngTemplateOutletContext]="{ group: data, field, index }"
+      />
+    </ng-template>
+  </data-grid>
+
+  <!-- for show list via table -->
+  <!-- @for (group of field.fieldGroups; track $index; let index = $index) {
+    <ng-container
+      [ngTemplateOutlet]="objectArrayItemTpl"
+      [ngTemplateOutletContext]="{ group, field, index }"
+    />
+  } -->
+</ng-template>
+
+<!-- OBJECT ARRAY ITEM -->
+<ng-template #objectArrayItemTpl let-group="group" let-field="field" let-index="index">
+  <mat-expansion-panel
+    class="px-0 mb-1 {{ animation }} --order-{{ index + 2 }}"
+    (opened)="(true)"
+    (closed)="(false)"
+    [expanded]="expandLists || field.expanded"
+  >
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <div class="relative flex items-center justify-between w-full">
+          <div class="animate {{ arraysLabelClass }} w-full relative">
+            <span class="opacity-60 small pe-3"> {{ index + 1 }} </span>
+            <span class="padd-left-5"> {{ group?.label }}</span>
+          </div>
+
+          @if (field?.itemButtons?.length) {
+            <div (click)="$event.preventDefault()">
+              <action-buttons
+                class="flex items-center flex-wrap"
+                [data]="group?.object"
+                [actionButtons]="field.itemButtons"
+              />
+            </div>
+          }
+        </div>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <ng-template matExpansionPanelContent>
+      <ng-container
+        [ngTemplateOutlet]="fieldsTpl"
+        [ngTemplateOutletContext]="{ group, hideAnimations: true, animation }"
+      />
+    </ng-template>
+  </mat-expansion-panel>
+</ng-template>
+
+<!-- TABLE HYBRID TEMPLATE -->
+<ng-template #dataTableHyridTpl let-field="field">
+  <data-grid
+    [gridData]="field.value | toObservable"
+    [showFilters]="false"
+    [showToolbar]="false"
+    [useAutoMappedColumns]="true"
+    [keyColumns]="field?.visibleKeys ?? []"
+    [hasActionsColumn]="field?.itemButtons?.length"
+    [actionButtons]="field?.itemButtons ?? []"
+    [pinIndexColumn]="false"
+    [pinActionColumn]="false"
+    [viewDetailsClicks]="tableViewDetailsClicks"
+    [icon]="field.icon ?? 'attached'"
+    [title]="field.label"
+    noContentClass="h-full w-full flex items-center justify-center"
+  />
+</ng-template>
+
+<!-- ICON TEMPLATE -->
+<ng-template #iconTpl let-field="field" let-group="group">
+  @if (field?.icon) {
+    <mat-icon [svgIcon]="field?.icon" class="{{ field?.iconClass }} me-3" />
+  }
+
+  @if ((!group || hasFieldWithIcon(group?.fields)) && !field?.icon) {
+    <mat-icon svgIcon="item" class="{{ field?.iconClass }}  opacity-0 me-3" />
+  }
+</ng-template>

@@ -1,0 +1,67 @@
+:host {
+  .sequence-container {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .line,
+  .progress-line,
+  .main-progress-line {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    z-index: 0;
+  }
+
+  .line,
+  .progress-line {
+    left: 50%;
+  }
+
+  .line {
+    background-color: #eee;
+  }
+
+  .progress-line,
+  .main-progress-line {
+    width: 0%;
+    background-color: var(--color-secondary);
+    transition: all 0.5s linear calc(var(--order) * 100ms);
+  }
+  .main-progress-line {
+    //
+  }
+
+  .step-index-container {
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 50%;
+    border: 1px solid #eee;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.5s linear calc(var(--order) * 100ms);
+
+    border: 1px solid #eee;
+    color: #333;
+  }
+
+  .step-index-container.cleared {
+    // border: 2px solid var(--color-secondary);
+    border: 2px solid white;
+    background-color: var(--color-secondary);
+    color: white;
+  }
+
+  .step-index-container.active {
+    border: 2px solid var(--color-secondary);
+    color: var(--color-secondary);
+    background-color: white;
+  }
+}

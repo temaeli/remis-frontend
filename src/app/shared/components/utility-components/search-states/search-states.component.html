@@ -1,0 +1,123 @@
+<div class="inline-flex items-center flex-wrap">
+  <!-- predefined search states -->
+
+  <ng-container *ngFor="let state of states; let i = index">
+    <span *ngIf="!state?.locked" class="inline-block me-1">
+      <span
+        *ngIf="!state.type || state.type === 'list'"
+        style="height: fit-content"
+        class="{{ state.class | mergeClasses: inputContainerClass }} flex-wrap   {{ animation }}"
+        [style.--order]="order + i"
+      >
+        <span
+          *ngIf="!state.hideLabel"
+          (click)="labelClick.emit(state)"
+          class="inline-block m-1 ps-2 text-nowrapp"
+        >
+          {{ state.name ?? state.key | label }}
+        </span>
+
+        <ng-container *ngFor="let value of state.values; let j = index">
+          <span
+            (click)="onChange_(state, value)"
+            style="min-width: 30px"
+            [ngClass]="{ 'bg-gradient-50 text-black': state?.value === value }"
+            class="{{ listStateValueClass }} {{ 'scale-up' }}"
+            [style.--order]="order + i + j / 2"
+          >
+            <span [ngClass]="{ faded: state?.value !== value }">
+              {{ state.labelsMap?.[value] }}
+            </span>
+          </span>
+        </ng-container>
+      </span>
+
+      <span
+        *ngIf="
+          state.type && !['list', 'dateRange', 'numberRange', 'sliderRange'].includes(state.type)
+        "
+        style="height: fit-content"
+        class="{{ animation }}  inline-block "
+        [style.--order]="order + i"
+      >
+        <data-input
+          [type]="$any(state.type)"
+          [hasClear]="state.hasClear === false ? false : true"
+          [active]="!!state.value"
+          [label]="state.name ?? state.key | label"
+          [placeholder]="state.name ?? state.key | label"
+          [toolTip]="'Filter by' + (state.key | label)"
+          labelToolTip=""
+          [order]="order + i"
+          [multiple]="false"
+          maxWidth="max-content"
+          [fieldClass]="'max-width-190'"
+          suffixIcon="cirle"
+          [options]="state?.values ?? []"
+          [value]="state.value"
+          [optionsVariables]="state?.optionsVariables"
+          (onChange)="onChange_(state, $event)"
+        />
+        <!-- (labelClick)="change.emit({state, value:undefined})" -->
+      </span>
+
+      <!--date Range-->
+      <date-filter
+        *ngIf="state.type === 'dateRange'"
+        [order]="5.5"
+        [active]="!!state.value"
+        [label]="state.name ?? (state.key | label)"
+        icon="search"
+        iconClass="icon-small text-primary top-2"
+        [dateRange]="true"
+        [date]="state.value?.[0]"
+        [endDate]="state.value?.[1]"
+        (cancel)="onChange.emit({ state, value: undefined })"
+        (startEndDateChange)="onChange.emit({ state, value: $event })"
+      />
+
+      <!-- number Range -->
+      <ng-container *ngIf="state.type === 'numberRange'">
+        <number-range
+          [label]="state.name ?? (state.key | label)"
+          icon="numbers"
+          maxWidth="320px"
+          [value]="[state.value?.[0], state.value?.[1]]"
+          [min]="state.min"
+          [max]="state.max"
+          (onCancel)="onChange.emit({ state, value: undefined })"
+          (onChange)="onChange_(state, $event)"
+          matInput
+          type="number"
+        />
+      </ng-container>
+
+      <!-- slider Range -->
+      <ng-container *ngIf="state.type === 'sliderRange'">
+        <slider-range
+          [label]="state.name ?? (state.key | label)"
+          icon="numbers"
+          maxWidth="320px"
+          [value]="[state.value?.[0], state.value?.[1]]"
+          [min]="state.min"
+          [max]="state.max"
+          (onCancel)="onChange.emit({ state, value: undefined })"
+          (onChange)="onChange_(state, $event)"
+          matInput
+          type="number"
+        />
+      </ng-container>
+    </span>
+  </ng-container>
+
+  <!-- clear predifined search states -->
+  <data-label
+    *ngIf="hasClear && hasActiveStates()"
+    class="inline-block ps-1"
+    [order]="order + 2"
+    icon="cancel"
+    toolTip=""
+    iconClass="text-danger"
+    (click)="clearSearchStates.emit(true)"
+  />
+</div>
