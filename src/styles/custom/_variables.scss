@@ -1,41 +1,41 @@
 :root {
   /* ================================
-   Primary color – #136148 (green)
+   Primary color – #2d69b3 (WHI blue)
    ================================ */
-  --color-primary: #136148;
+  --color-primary: #2d69b3;
 
-  --color-primary-50: #e8f3ef;
-  --color-primary-100: #d0e7df;
-  --color-primary-200: #a1cfbf;
-  --color-primary-300: #72b79f;
-  --color-primary-400: #439f7f;
-  --color-primary-500: #136148;
-  --color-primary-600: #11573f;
-  --color-primary-700: #0e4a35;
-  --color-primary-800: #0a3a2a;
-  --color-primary-900: #062a1f;
+  --color-primary-50: #ebf1ff;
+  --color-primary-100: #d5e3ff;
+  --color-primary-200: #a7c8ff;
+  --color-primary-300: #77adfb;
+  --color-primary-400: #5c92df;
+  --color-primary-500: #2d69b3;
+  --color-primary-600: #04529b;
+  --color-primary-700: #004788;
+  --color-primary-800: #003b74;
+  --color-primary-900: #003060;
 
-  --color-primary-faded: #13614840;
-  --color-primary-very-faded: #13614820;
+  --color-primary-faded: #2d69b340;
+  --color-primary-very-faded: #2d69b320;
 
   /* =====================================
-   Secondary color – #fbba17 (yellow)
+   Secondary color – #f3ec1a (WHI yellow)
    ===================================== */
-  --color-secondary: #fbba17;
+  --color-secondary: #f3ec1a;
 
-  --color-secondary-50: #fff8e8;
-  --color-secondary-100: #ffefd1;
-  --color-secondary-200: #ffdfa3;
-  --color-secondary-300: #ffd075;
-  --color-secondary-400: #ffc047;
-  --color-secondary-500: #fbba17;
-  --color-secondary-600: #e0a715;
-  --color-secondary-700: #c69312;
-  --color-secondary-800: #9c730e;
-  --color-secondary-900: #73530a;
+  --color-secondary-50: #fffbd6;
+  --color-secondary-100: #fef72a;
+  --color-secondary-200: #efe812;
+  --color-secondary-300: #d2cc00;
+  --color-secondary-400: #b5b000;
+  --color-secondary-500: #f3ec1a;
+  --color-secondary-600: #575500;
+  --color-secondary-700: #4b4900;
+  --color-secondary-800: #3f3d00;
+  --color-secondary-900: #343200;
 
-  --color-secondary-faded: #fbba1740;
-  --color-secondary-very-faded: #fbba1720;
+  --color-secondary-faded: #f3ec1a40;
+  --color-secondary-very-faded: #f3ec1a20;
 
   --color-white: #ffffff;
   --color-white_: #ffffff; // this doesnt change on dark mode
@@ -54,10 +54,10 @@
   --color-dark-faded: #33333370;
 
   //aliases
-  --c-pri: #136148;
-  --c-pri-faded: #13614840;
-  --c-sec: #fbba17;
-  --c-sec-faded: #fbba1740;
+  --c-pri: #2d69b3;
+  --c-pri-faded: #2d69b340;
+  --c-sec: #f3ec1a;
+  --c-sec-faded: #f3ec1a40;
 
   ///measurements
   --border-radius: 15px;
