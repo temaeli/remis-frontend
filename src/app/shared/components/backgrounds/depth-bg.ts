@@ -4,13 +4,20 @@ import { GetArrayPipe } from '../../pipes/get-array.pipe';
 @Component({
   selector: 'depth-bg',
   template: ` <div
-      class="size-full top-0 left-0 absolute z-0 opacity-100  dark:opacity-0  "
-      style="background: url('images/light.jpg') right/cover"
-    ></div>
-
-    <div
-      class="size-full top-0 left-0 absolute z-0  opacity-0 dark:opacity-100 "
-      style="background: url('images/dark.jpg') right/cover"
+      class="size-full top-0 left-0 absolute z-0"
+      style="
+        background-image:
+          linear-gradient(var(--color-primary-faded) 1px, transparent 1px),
+          linear-gradient(90deg, var(--color-primary-faded) 1px, transparent 1px),
+          linear-gradient(var(--color-primary-very-faded) 1px, transparent 1px),
+          linear-gradient(90deg, var(--color-primary-very-faded) 1px, transparent 1px);
+        background-size:
+          160px 160px,
+          160px 160px,
+          32px 32px,
+          32px 32px;
+        opacity: 0.5;
+      "
     ></div>
 
     <div

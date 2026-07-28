@@ -12,7 +12,6 @@ import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { AuthService } from '../auth.service';
 import { AppVariablesPipe } from '../../../core/settings/app-variables.pipe';
 import { FetchService } from '@shared/fetch/fetch.service';
-import { Logo } from '@shared/components/logo/logo';
 import { LoginCredentials, User } from '../auth.interface';
 import { Subscription } from 'rxjs';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
@@ -28,7 +27,6 @@ import { settings$ } from '@core/settings/settings.store';
     RouterLink,
     MatDividerModule,
     AppVariablesPipe,
-    Logo,
   ],
 
   templateUrl: './login.component.html',

@@ -14,23 +14,18 @@ import { Validators } from '@angular/forms';
 import {
   ACTIVATE_USER,
   ASSIGN_ROLES_TO_USER,
-  ASSIGN_PLANTS_TO_USER,
   CHANGE_PASSWORD,
   CREATE_USER,
   RESET_USER_PWD,
   UNLOCK_USER,
 } from './user.graphql';
 import { LIST_ALL_ROLES } from '../roles/role.graphql';
-import { DistributionAssignmentType, UserAccount, UserAssignmentType } from './user.interface';
+import { UserAccount } from './user.interface';
 import {
   getUpsertBtnProps,
   navigateRelativeTo,
 } from '@shared/components/view-component/view.helpers';
-import { ALL_PLANT_PAGEABLE } from 'app/routes/plants/plants/plant.graphql';
 import { getDisplayName } from '@core/helpers/view.helpers';
-import { ALL_CNG_STATIONS, ASSIGN_USER_TO_CNG_STATION } from '@routes/distribution/cng/cng.graphql';
-import { GET_ALL_PIPELINES } from '@routes/pipeline-management/pipelines/pipeline.graphql';
-import { enumToObjectArray } from '@core/helpers';
 import { ALL_DESIGNATIONS } from '@routes/settings/designations/designations.graphql';
 
 // Listener for all User actions
@@ -366,262 +361,6 @@ export function userAssignRolesBtn(comp: BaseComponent): ActionButton {
   };
 }
 
-export function userAssignPlantsBtn(comp: BaseComponent): ActionButton {
-  return {
-    icon: 'factory',
-    label: 'Assign Plant / Pipeline',
-    click: (data: UserAccount) => {
-      const selectedPlantUid = data?.plants?.[0]?.plant?.uid || '';
-      const selectedPipelineUid = data?.pipelines?.[0]?.pipeline?.uid || '';
-      const assignmentType = selectedPipelineUid
-        ? UserAssignmentType.PIPELINE
-        : UserAssignmentType.PLANT;
-
-      const formParameter: FormParameters = {
-        title: 'Assign Plant / Pipeline',
-        closeAction$: user$,
-        model: {
-          assignmentType,
-          plantUid: selectedPlantUid,
-          pipelineUid: selectedPipelineUid,
-        },
-        fields: [
-          {
-            key: 'assignmentType',
-            label: 'Assignment Type',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [VALIDATOR_REQUIRED],
-            options: enumToObjectArray(UserAssignmentType),
-          },
-          {
-            key: 'plantUid',
-            label: 'Plant',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [VALIDATOR_REQUIRED],
-            showWhen: [{ key: 'assignmentType', value: UserAssignmentType.PLANT }],
-            optionsVariables: {
-              fetchParameter: { query: ALL_PLANT_PAGEABLE, variables: { active: true } },
-              labelKey: 'name',
-              valueKey: 'uid',
-            },
-          },
-          {
-            key: 'pipelineUid',
-            label: 'Pipeline',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [VALIDATOR_REQUIRED],
-            showWhen: [{ key: 'assignmentType', value: UserAssignmentType.PIPELINE }],
-            optionsVariables: {
-              fetchParameter: { query: GET_ALL_PIPELINES, variables: { active: true } },
-              labelKey: 'name',
-              valueKey: 'uid',
-            },
-          },
-        ],
-        onSubmit: async (value: any) => {
-          if (!data?.uid) return;
-
-          const isPlant = value.assignmentType === UserAssignmentType.PLANT;
-          const targetUid = isPlant ? value.plantUid : value.pipelineUid;
-          if (!targetUid) return;
-
-          await comp.fs.fetch({
-            notify: true,
-            variables: {
-              userUid: data.uid,
-              uid: targetUid,
-              assignmentType: value.assignmentType,
-            },
-            mutation: ASSIGN_PLANTS_TO_USER,
-            successFn: (res) => user$.next(res?.data),
-          });
-        },
-      };
-
-      comp.vs?.openModal(FormComponent, formParameter, '96%');
-    },
-    permissions: ['ROLE_UPDATE_USER', 'ROLE_CREATE_USER'],
-  };
-}
-
-export function userAssignCngStationBtn(comp: BaseComponent): ActionButton {
-  return {
-    icon: 'location_on',
-    label: 'Assign CNG Station',
-    click: (data: UserAccount) => {
-      const formParameter: FormParameters = {
-        title: 'Assign CNG Station',
-        closeAction$: user$,
-        model: {
-          stationUid: '',
-          ...data,
-        },
-        fields: [
-          {
-            key: 'stationUid',
-            label: 'CNG Station',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [VALIDATOR_REQUIRED],
-            optionsVariables: {
-              fetchParameter: { query: ALL_CNG_STATIONS },
-              labelKey: 'name',
-              valueKey: 'uid',
-            },
-          },
-        ],
-        onSubmit: async (value: any) => {
-          if (!data?.uid) return;
-
-          await comp.fs.fetch({
-            notify: true,
-            variables: {
-              userUid: data.uid,
-              stationUid: value.stationUid,
-            },
-            mutation: ASSIGN_USER_TO_CNG_STATION,
-            successFn: (res) => user$.next(res?.data),
-          });
-        },
-      };
-
-      comp.vs?.openModal(FormComponent, formParameter, '96%');
-    },
-    permissions: ['ROLE_UPDATE_USER', 'ROLE_CREATE_USER'],
-  };
-}
-
-export function userAssignWorkstationBtn(comp: BaseComponent): ActionButton {
-  return {
-    icon: 'factory',
-    label: 'Assign Workstation',
-    click: (data: UserAccount) => {
-      const selectedPlantUid = data?.plants?.[0]?.plant?.uid || '';
-      const selectedPipelineUid = data?.pipelines?.[0]?.pipeline?.uid || '';
-      const assignmentType = selectedPipelineUid
-        ? UserAssignmentType.PIPELINE
-        : UserAssignmentType.PLANT;
-
-      const formParameter: FormParameters = {
-        title: 'Assign Workstation',
-        closeAction$: user$,
-        model: {
-          assignmentType,
-          plantUid: selectedPlantUid,
-          pipelineUid: selectedPipelineUid,
-          distributionType: DistributionAssignmentType.CNG,
-          stationUid: '',
-        },
-        fields: [
-          {
-            key: 'assignmentType',
-            label: 'Assignment Type',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [],
-            options: enumToObjectArray(UserAssignmentType),
-          },
-          {
-            key: 'plantUid',
-            label: 'Plant',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [],
-            showWhen: [{ key: 'assignmentType', value: UserAssignmentType.PLANT }],
-            optionsVariables: {
-              fetchParameter: { query: ALL_PLANT_PAGEABLE, variables: { active: true } },
-              labelKey: 'name',
-              valueKey: 'uid',
-            },
-          },
-          {
-            key: 'pipelineUid',
-            label: 'Pipeline',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [],
-            showWhen: [{ key: 'assignmentType', value: UserAssignmentType.PIPELINE }],
-            optionsVariables: {
-              fetchParameter: { query: GET_ALL_PIPELINES, variables: { active: true } },
-              labelKey: 'name',
-              valueKey: 'uid',
-            },
-          },
-          {
-            key: 'distributionType',
-            label: 'Distribution Type',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [],
-            showWhen: [{ key: 'assignmentType', value: UserAssignmentType.DISTRIBUTION }],
-            options: enumToObjectArray(DistributionAssignmentType),
-          },
-          {
-            key: 'stationUid',
-            label: 'CNG Station',
-            type: FieldType.select,
-            class: 'col-span-full',
-            validations: [],
-            showWhen: [
-              { key: 'assignmentType', value: UserAssignmentType.DISTRIBUTION, combination: 'and' },
-              { key: 'distributionType', value: DistributionAssignmentType.CNG, combination: 'and' },
-            ],
-            optionsVariables: {
-              fetchParameter: { query: ALL_CNG_STATIONS },
-              labelKey: 'name',
-              valueKey: 'uid',
-            },
-          },
-        ],
-        onSubmit: async (value: any) => {
-          if (!data?.uid) return;
-
-          if (value.assignmentType === UserAssignmentType.DISTRIBUTION) {
-            const isCng = value.distributionType === DistributionAssignmentType.CNG;
-            if (isCng && !value.stationUid) return;
-
-            await comp.fs.fetch({
-              notify: true,
-              variables: {
-                userUid: data.uid,
-                // CONSTRUCTION has no per-station selection — the backend ignores `uid` in that case.
-                uid: isCng ? value.stationUid : data.uid,
-                assignmentType: value.assignmentType,
-                distributionType: value.distributionType,
-              },
-              mutation: ASSIGN_PLANTS_TO_USER,
-              successFn: (res) => user$.next(res?.data),
-            });
-            return;
-          }
-
-          const isPlant = value.assignmentType === UserAssignmentType.PLANT;
-          const targetUid = isPlant ? value.plantUid : value.pipelineUid;
-
-          if (targetUid) {
-            await comp.fs.fetch({
-              notify: true,
-              variables: {
-                userUid: data.uid,
-                uid: targetUid,
-                assignmentType: value.assignmentType,
-              },
-              mutation: ASSIGN_PLANTS_TO_USER,
-              successFn: (res) => user$.next(res?.data),
-            });
-          }
-        },
-      };
-
-      comp.vs?.openModal(FormComponent, formParameter, '96%');
-    },
-    permissions: ['ROLE_UPDATE_USER', 'ROLE_CREATE_USER'],
-  };
-}
-
 export function userTableBtns(comp: BaseComponent): ActionButton[] {
   return [
     {
@@ -633,8 +372,6 @@ export function userTableBtns(comp: BaseComponent): ActionButton[] {
         userUnlockBtn(comp),
         userResetPasswordBtn(comp),
         userAssignRolesBtn(comp),
-        // userAssignPlantsBtn(comp),
-        userAssignWorkstationBtn(comp),
       ],
     },
   ];

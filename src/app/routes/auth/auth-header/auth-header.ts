@@ -20,12 +20,15 @@ import { settings$ } from '@core/settings/settings.store';
        {{ animation }} --order-3"
     >
       <div
-        class="absolute -left-3 h-[400px] w-[150px] bg-light  "
+        class="absolute -left-12 h-[400px] w-[80px] bg-light pointer-events-none"
         style="transform: rotate(45deg);"
       ></div>
 
-      <div class="{{ animation }} --order-3 relative left-5">
-        <img class="w-[40px] h-auto" src="{{ 'logo' | appVariables }}" />
+      <div
+        class="{{ animation }} --order-3 relative z-10 left-5 flex items-center gap-3 min-w-0"
+      >
+        <img class="w-[40px] h-auto shrink-0" src="{{ 'logo' | appVariables }}" alt="WHI logo" />
+        <span class="hidden sm:inline text-white_ font-bold tracking-tight truncate">REMIS</span>
       </div>
 
       <div class="flex items-center gap-2">

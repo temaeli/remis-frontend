@@ -1,15 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { signal } from '@angular/core';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
-import { userUpsertBtn, user$, userAssignCngStationBtn } from './user.form';
+import { userUpsertBtn, user$ } from './user.form';
 import { GET_USER_BY_UID } from './user.graphql';
 import { UserAccount } from './user.interface';
-import { CngService } from '@routes/distribution/cng/cng.service';
-import { CngStation } from '@routes/distribution/cng/cng-station.interface';
 
 @Component({
   selector: 'app-user',
@@ -108,91 +106,6 @@ import { CngStation } from '@routes/distribution/cng/cng-station.interface';
             }
           </div>
 
-          <!-- Plants Section -->
-          <div class="mt-16">
-            <h2 class="text-2xl font-bold text-gray-900 mb-8">Assigned Plants</h2>
-            @if (user && user.plants && user.plants.length > 0) {
-              <div class="grid gap-4">
-                @for (userPlant of user.plants; track userPlant.id) {
-                  <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-4">
-                        <div>
-                          <h3 class="text-base font-semibold text-gray-900">
-                            {{ userPlant.plant.code }}
-                          </h3>
-                          <p class="text-xs text-gray-500 mt-1">{{ userPlant.plant.name }}</p>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-3">
-                        @if (userPlant.current) {
-                          <span
-                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800"
-                          >
-                            <span class="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-                            Current
-                          </span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
-                No plants assigned
-              </div>
-            }
-          </div>
-
-          <!-- CNG Stations Section -->
-          <div class="mt-16">
-            <h2 class="text-2xl font-bold text-gray-900 mb-8">Assigned CNG Stations</h2>
-            @if (cngStation) {
-              <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <span class="text-lg">📍</span>
-                    </div>
-                    <div>
-                      <h3 class="text-base font-semibold text-gray-900">
-                        {{ cngStation.code }}
-                      </h3>
-                      <p class="text-xs text-gray-500 mt-1">{{ cngStation.name }}</p>
-                      <p class="text-xs text-gray-400 mt-0.5">{{ cngStation.stationType }}</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"
-                    >
-                      <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                      Assigned
-                    </span>
-                  </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p class="text-gray-500 text-xs">Region</p>
-                    <p class="text-gray-900 font-medium">{{ cngStation.region || '—' }}</p>
-                  </div>
-                  <div>
-                    <p class="text-gray-500 text-xs">Location</p>
-                    <p class="text-gray-900 font-medium">{{ cngStation.location || '—' }}</p>
-                  </div>
-                  <div>
-                    <p class="text-gray-500 text-xs">Contact</p>
-                    <p class="text-gray-900 font-medium">{{ cngStation.contact || '—' }}</p>
-                  </div>
-                </div>
-              </div>
-            } @else {
-              <div class="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
-                No CNG stations assigned
-              </div>
-            }
-          </div>
         </div>
       </div>
     </div>
@@ -203,12 +116,10 @@ export class UserComponent extends BaseComponent implements OnInit {
   override subtitle = 'User Management';
 
   user: UserAccount | undefined;
-  cngStation: CngStation | undefined;
-  override actionButtons: ActionButton[] = [userUpsertBtn(this), userAssignCngStationBtn(this)];
+  override actionButtons: ActionButton[] = [userUpsertBtn(this)];
   expandedRoles = signal<Set<number>>(new Set());
 
   private userUid = this.route.snapshot?.paramMap?.get('uid');
-  private cngService = inject(CngService);
 
   fetchParameter: FetchParameter = {
     loadingOn: 'no-content',
@@ -227,16 +138,6 @@ export class UserComponent extends BaseComponent implements OnInit {
 
   async setContents() {
     this.user = await this.fs.fetch(this.fetchParameter);
-
-    // Fetch CNG station assigned to this user
-    if (this.userUid) {
-      try {
-        this.cngStation = await this.cngService.cngStationForUser(this.userUid).toPromise();
-      } catch (error) {
-        console.error('Error fetching CNG station:', error);
-        this.cngStation = undefined;
-      }
-    }
 
     // Expand all roles by default
     if (this.user?.rolesList && this.user.rolesList.length > 0) {

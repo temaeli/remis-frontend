@@ -1,130 +1,496 @@
-<section id="home" class="relative size-full flex items-center justify-center overflow-hidden">
-  <!-- Background decoration -->
-  <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
-    <!-- Primary orb: large green, top-right -->
-    <div
-      class="absolute rounded-full -top-[180px] -right-[180px] w-[650px] h-[650px] [background:radial-gradient(circle,rgba(19,97,72,0.18)_0%,transparent_70%)]"
-    ></div>
-    <!-- Secondary orb: yellow, bottom-left -->
-    <div
-      class="absolute rounded-full -bottom-[120px] -left-[120px] w-[480px] h-[480px] [background:radial-gradient(circle,rgba(251,186,23,0.14)_0%,transparent_70%)]"
-    ></div>
-    <!-- Mid orb: faint green, center -->
-    <div
-      class="absolute rounded-full top-[40%] left-[38%] w-[300px] h-[300px] [background:radial-gradient(circle,rgba(19,97,72,0.06)_0%,transparent_70%)]"
-    ></div>
-    <!-- Dot grid -->
-    <div
-      class="absolute inset-0 [background-image:radial-gradient(circle,rgba(19,97,72,0.06)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_90%_90%_at_50%_50%,black_20%,transparent_80%)] [-webkit-mask-image:radial-gradient(ellipse_90%_90%_at_50%_50%,black_20%,transparent_80%)]"
-    ></div>
+<div class="grid-bg"></div>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+        <rect x="4" y="4" width="32" height="32" rx="2" stroke="var(--whi-blue)" stroke-width="1.5" />
+        <path d="M20 4v32M4 20h32" stroke="var(--whi-blue)" stroke-width="1" opacity="0.3" />
+        <path d="M12 26V16l8-5 8 5v10" stroke="var(--whi-green)" stroke-width="1.6" />
+        <circle cx="20" cy="20" r="2.4" fill="var(--seal)" />
+      </svg>
+      <span class="brand-txt">REMIS<small>Watumishi Housing</small></span>
+    </div>
+    <div class="nav-links">
+      <a href="#lifecycle">Lifecycle</a>
+      <a href="#modules">Modules</a>
+      <a href="#audit">Audit &amp; control</a>
+      <a href="#integrations">Integrations</a>
+      <a routerLink="/auth/login" class="nav-cta">Sign In</a>
+    </div>
   </div>
+</nav>
 
-  <!-- Content -->
-  <div
-    class="relative mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-24 lg:py-32 {{
-      animation
-    }} --order-1"
-  >
-    <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-      <!-- ──────────── Left: Narrative ──────────── -->
-      <div>
-        <!-- Badge -->
-        <div class="mb-6 {{ animation }} --order-2">
-          <span
-            class="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold tracking-widest uppercase text-primary"
-          >
-            <span class="badge-dot inline-block size-1.5 rounded-full bg-secondary"></span>
-            Enterprise Platform
-          </span>
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow reveal">Real Estate Management Information System</div>
+      <h1 class="reveal d1">From land registered<br />to <em>title deed issued</em>.</h1>
+      <p class="hero-sub reveal d2">
+        REMIS is Watumishi Housing Investments' single source of truth &mdash; unifying land,
+        projects, costing, inventory, valuation, billing, leasing and sales into one auditable
+        record.
+      </p>
+      <div class="hero-actions reveal d3">
+        <a routerLink="/auth/login" class="btn-primary">Access System &rarr;</a>
+        <a href="#lifecycle" class="btn-ghost">See the lifecycle</a>
+      </div>
+    </div>
+    <div class="deed reveal d3">
+      <div class="deed-head">
+        <div>
+          <h3>Certificate of Title</h3>
+          <span>PLOT&nbsp;&middot;&nbsp;USA-RIVER-04829</span>
         </div>
+        <div class="seal" id="seal">LAND<br />REGISTRY<br />e-ARDHI</div>
+      </div>
+      <svg class="parcel-map draw" id="parcel" viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#14487a" stroke-width="0.6" opacity="0.3" />
+          </pattern>
+        </defs>
+        <rect width="320" height="170" fill="#f6f7f3" />
+        <g stroke="#cdd4cd" stroke-width="0.6">
+          <line x1="40" y1="0" x2="40" y2="170" /><line x1="120" y1="0" x2="120" y2="170" />
+          <line x1="200" y1="0" x2="200" y2="170" /><line x1="280" y1="0" x2="280" y2="170" />
+          <line x1="0" y1="42" x2="320" y2="42" /><line x1="0" y1="85" x2="320" y2="85" /><line x1="0" y1="128" x2="320" y2="128" />
+        </g>
+        <polygon points="70,34 240,28 262,122 96,142" fill="url(#hatch)" stroke="#1c7a4d" stroke-width="1.7" />
+        <circle class="corner c1" cx="70" cy="34" r="3.2" fill="#8a2a2f" />
+        <circle class="corner c2" cx="240" cy="28" r="3.2" fill="#8a2a2f" />
+        <circle class="corner c3" cx="262" cy="122" r="3.2" fill="#8a2a2f" />
+        <circle class="corner c4" cx="96" cy="142" r="3.2" fill="#8a2a2f" />
+        <text x="163" y="90" font-family="JetBrains Mono, monospace" font-size="11" fill="#14487a" text-anchor="middle" letter-spacing="1">0.482 HA</text>
+        <text x="150" y="18" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70" text-anchor="middle">N &#8593;</text>
+      </svg>
+      <div class="deed-rows">
+        <div class="deed-row"><span>REGISTERED</span><span>12 Mar 2024</span></div>
+        <div class="deed-row"><span>STAGE</span><span>Costed &middot; Sold</span></div>
+        <div class="deed-row"><span>BILLING &middot; GePG</span><span>Cleared</span></div>
+        <div class="deed-row"><span>STATUS</span><span class="status-pill">&#9679; Title issued</span></div>
+      </div>
+    </div>
+  </div>
+</header>
 
-        <!-- Headline -->
-        <h1
-          class="text-4xl sm:text-5xl xl:text-6xl font-bold leading-tight tracking-tight mb-6 {{
-            animation
-          }} --order-3"
-        >
-          Managing Gas<br />
-          <span class="text-primary">Operations</span><span class="text-secondary">.</span>
-        </h1>
-
-        <!-- Description -->
-        <p
-          class="text-sm sm:text-base leading-relaxed max-w-lg mb-10 opacity-60 {{
-            animation
-          }} --order-4"
-        >
-          A centralized, secure, and integrated digital platform designed to streamline gas
-          distribution, infrastructure management, customer services, billing, and regulatory
-          compliance across GASCO's operational network.
-        </p>
-
-        <!-- CTA -->
-        <div class="flex flex-wrap items-center gap-4 mb-12 {{ animation }} --order-5">
-          <button
-            (click)="goToLogin()"
-            class="cta-btn relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-primary text-white_ px-8 py-3.5 font-semibold shadow-[0_8px_24px_rgba(19,97,72,0.35)] hover:opacity-90 transition-opacity"
-            aria-label="Access the GASCO management system"
-          >
-            Access System
-            <mat-icon>arrow_forward</mat-icon>
-          </button>
-
-          <button
-            (click)="lodgeFeedback()"
-            class="cta-btn relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-secondary text-white_ px-8 py-3.5 font-semibold shadow-[0_8px_24px_rgba(19,97,72,0.35)] hover:opacity-90 transition-opacity"
-            aria-label="Lodge Feedback"
-          >
-            Lodge Feedback
-          </button>
+<section class="docset" id="docset" style="padding-top: 0">
+  <div class="wrap">
+    <div class="sec-head reveal" style="margin-bottom: 0">
+      <div class="kicker">The record behind the deed</div>
+      <h2>Every title is backed by its plan.</h2>
+      <p>
+        The same parcel carries its building elevation and approved master plan through REMIS
+        &mdash; from project registration to the certificate above.
+      </p>
+    </div>
+    <div class="docset-grid">
+      <!-- BUILDING ELEVATION — interactive -->
+      <div class="doc reveal d1">
+        <div class="doc-head">
+          <div>
+            <h3>Building Elevation</h3>
+            <span class="sheet">SHEET A-201 &middot; USA-RIVER BLOCK C</span>
+          </div>
+          <span class="tag">Real Estate Investment</span>
         </div>
+        <div class="explorer">
+          <svg class="canvas bdraw" id="bldg" viewBox="0 0 340 230" xmlns="http://www.w3.org/2000/svg">
+            <line x1="20" y1="206" x2="320" y2="206" stroke="#435a70" stroke-width="1.4" />
+            <path class="roof" d="M88 56 L170 30 L252 56" fill="none" stroke="#1c7a4d" stroke-width="1.8" />
 
-        <!-- Stats -->
-        <div class="grid grid-cols-3 gap-6 pt-8 border-t border-black/10 {{ animation }} --order-6">
-          @for (stat of stats; track $index) {
-            <div>
-              <div class="text-2xl sm:text-3xl font-bold text-primary mb-1">{{ stat.value }}</div>
-              <div class="text-xs opacity-55 leading-snug">{{ stat.label }}</div>
-            </div>
-          }
+            <g
+              class="floor-grp"
+              [class.active]="selectedLevel() === 4"
+              tabindex="0"
+              role="button"
+              aria-label="Level 4 — Penthouse"
+              (click)="openFloor(4)"
+              (keydown)="onFloorKey($event, 4)"
+            >
+              <rect class="floorfill" x="96" y="56" width="148" height="30" />
+              <rect class="floor f5" x="96" y="56" width="148" height="30" fill="none" stroke="#14487a" stroke-width="1.6" />
+              <g class="bwin" fill="#cfe0ee" stroke="#14487a" stroke-width="0.8">
+                <rect x="110" y="64" width="16" height="14" /><rect x="138" y="64" width="16" height="14" /><rect x="186" y="64" width="16" height="14" /><rect x="214" y="64" width="16" height="14" />
+              </g>
+            </g>
+            <g
+              class="floor-grp"
+              [class.active]="selectedLevel() === 3"
+              tabindex="0"
+              role="button"
+              aria-label="Level 3"
+              (click)="openFloor(3)"
+              (keydown)="onFloorKey($event, 3)"
+            >
+              <rect class="floorfill" x="96" y="86" width="148" height="30" />
+              <rect class="floor f4" x="96" y="86" width="148" height="30" fill="none" stroke="#14487a" stroke-width="1.6" />
+              <g class="bwin" fill="#cfe0ee" stroke="#14487a" stroke-width="0.8">
+                <rect x="110" y="94" width="16" height="14" /><rect x="138" y="94" width="16" height="14" /><rect x="186" y="94" width="16" height="14" /><rect x="214" y="94" width="16" height="14" />
+              </g>
+            </g>
+            <g
+              class="floor-grp"
+              [class.active]="selectedLevel() === 2"
+              tabindex="0"
+              role="button"
+              aria-label="Level 2"
+              (click)="openFloor(2)"
+              (keydown)="onFloorKey($event, 2)"
+            >
+              <rect class="floorfill" x="96" y="116" width="148" height="30" />
+              <rect class="floor f3" x="96" y="116" width="148" height="30" fill="none" stroke="#14487a" stroke-width="1.6" />
+              <g class="bwin" fill="#cfe0ee" stroke="#14487a" stroke-width="0.8">
+                <rect x="110" y="124" width="16" height="14" /><rect x="138" y="124" width="16" height="14" /><rect x="186" y="124" width="16" height="14" /><rect x="214" y="124" width="16" height="14" />
+              </g>
+            </g>
+            <g
+              class="floor-grp"
+              [class.active]="selectedLevel() === 1"
+              tabindex="0"
+              role="button"
+              aria-label="Level 1"
+              (click)="openFloor(1)"
+              (keydown)="onFloorKey($event, 1)"
+            >
+              <rect class="floorfill" x="96" y="146" width="148" height="30" />
+              <rect class="floor f2" x="96" y="146" width="148" height="30" fill="none" stroke="#14487a" stroke-width="1.6" />
+              <g class="bwin" fill="#cfe0ee" stroke="#14487a" stroke-width="0.8">
+                <rect x="110" y="154" width="16" height="14" /><rect x="138" y="154" width="16" height="14" /><rect x="186" y="154" width="16" height="14" /><rect x="214" y="154" width="16" height="14" />
+              </g>
+            </g>
+            <g
+              class="floor-grp"
+              [class.active]="selectedLevel() === 0"
+              tabindex="0"
+              role="button"
+              aria-label="Ground Floor"
+              (click)="openFloor(0)"
+              (keydown)="onFloorKey($event, 0)"
+            >
+              <rect class="floorfill" x="96" y="176" width="148" height="30" />
+              <rect class="floor f1" x="96" y="176" width="148" height="30" fill="none" stroke="#14487a" stroke-width="1.6" />
+              <g class="bwin" fill="#cfe0ee" stroke="#14487a" stroke-width="0.8">
+                <rect x="110" y="184" width="16" height="14" /><rect x="138" y="184" width="16" height="14" /><rect x="186" y="184" width="16" height="14" /><rect x="214" y="184" width="16" height="14" />
+              </g>
+              <rect class="bwin" x="160" y="188" width="20" height="18" fill="#14487a" />
+            </g>
+
+            <g class="bwin" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70">
+              <text x="278" y="209">GF</text><text x="278" y="179">L1</text><text x="278" y="149">L2</text><text x="278" y="119">L3</text><text x="278" y="89">L4</text>
+            </g>
+            <g stroke="#c39a3d" stroke-width="1">
+              <line class="lvl f1" x1="256" y1="206" x2="272" y2="206" /><line class="lvl f2" x1="256" y1="176" x2="272" y2="176" /><line class="lvl f3" x1="256" y1="146" x2="272" y2="146" /><line class="lvl f4" x1="256" y1="116" x2="272" y2="116" /><line class="lvl f5" x1="256" y1="86" x2="272" y2="86" />
+            </g>
+            <text class="bwin" x="170" y="224" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70" text-anchor="middle">5 STOREYS &middot; 20 UNITS</text>
+          </svg>
+          <div class="explore-hint">Click a floor to look inside</div>
+
+          <div class="exp-panel" id="expPanel" [class.open]="currentLevel()" aria-live="polite">
+            @if (currentLevel(); as level) {
+              <div class="exp-head">
+                <div class="lvl-name">
+                  {{ level.name }} <span>{{ level.code }} &middot; {{ level.units.length }} units</span>
+                </div>
+                <button class="exp-close" (click)="closeFloor()">&times; Close</button>
+              </div>
+              <div class="exp-body">
+                <div>
+                  <svg class="floorplan-svg" viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="8" width="304" height="194" fill="none" stroke="#14487a" stroke-width="2" />
+                    <line x1="8" y1="104" x2="312" y2="104" stroke="#435a70" stroke-width="1" stroke-dasharray="4 4" />
+                    <rect x="140" y="96" width="40" height="16" fill="#e7ece4" stroke="#8a2a2f" stroke-width="1" />
+                    <text x="160" y="107" font-family="JetBrains Mono, monospace" font-size="7" fill="#8a2a2f" text-anchor="middle">CORE</text>
+
+                    @for (unit of level.units; track unit.u; let i = $index) {
+                      <rect
+                        [attr.x]="unitLayout[i].x"
+                        [attr.y]="unitLayout[i].y"
+                        [attr.width]="unitLayout[i].w"
+                        [attr.height]="unitLayout[i].h"
+                        rx="2"
+                        stroke-width="1.6"
+                        class="u-cell"
+                        [class]="'u-cell ' + statusMeta[unit.status].cls"
+                        [class.sel]="selectedUnit() === unit"
+                        (click)="selectUnit(unit)"
+                      />
+                      <text
+                        [attr.x]="unitLayout[i].x + 10"
+                        [attr.y]="unitLayout[i].y + 18"
+                        font-family="Fraunces, serif"
+                        font-size="13"
+                        font-weight="600"
+                        fill="#0f2438"
+                        style="pointer-events: none"
+                        >{{ unit.u }}</text
+                      >
+                      <text
+                        [attr.x]="unitLayout[i].x + 10"
+                        [attr.y]="unitLayout[i].y + 33"
+                        font-family="JetBrains Mono, monospace"
+                        font-size="7"
+                        fill="#435a70"
+                        style="pointer-events: none"
+                        >{{ unit.type.split(' ')[0] }}</text
+                      >
+                      <text
+                        [attr.x]="unitLayout[i].x + unitLayout[i].w - 8"
+                        [attr.y]="unitLayout[i].y + unitLayout[i].h - 8"
+                        font-family="JetBrains Mono, monospace"
+                        font-size="7"
+                        fill="#435a70"
+                        text-anchor="end"
+                        style="pointer-events: none"
+                        >{{ statusMeta[unit.status].label }}</text
+                      >
+                    }
+                  </svg>
+                  <div class="legend">
+                    <span class="la"><i></i>Available</span>
+                    <span class="lr"><i></i>Reserved</span>
+                    <span class="ls"><i></i>Sold</span>
+                  </div>
+                </div>
+                <div class="unit-detail">
+                  @if (selectedUnit(); as u) {
+                    <div class="ud-top">
+                      <div>
+                        <h5>Unit {{ u.u }}</h5>
+                        <div class="ud-sub">{{ level.code }} &middot; USA-RIVER BLOCK C</div>
+                      </div>
+                      <span class="ud-status" [class]="statusMeta[u.status].pill">{{ statusMeta[u.status].label }}</span>
+                    </div>
+                    <div class="ud-rows">
+                      <div class="ud-row"><span class="k">Type</span><span class="v">{{ u.type }}</span></div>
+                      <div class="ud-row"><span class="k">Size</span><span class="v">{{ u.size }}</span></div>
+                      <div class="ud-row"><span class="k">Price</span><span class="v">{{ money(u.price) }}</span></div>
+                      <div class="ud-row"><span class="k">Payment mode</span><span class="v">{{ u.mode }}</span></div>
+                      <div class="ud-row"><span class="k">Buyer / client</span><span class="v">{{ u.buyer }}</span></div>
+                      <div class="ud-row"><span class="k">Billing</span><span class="v">{{ u.billing }}</span></div>
+                    </div>
+                  } @else {
+                    <div class="ud-empty">
+                      Select a unit on the plan to see its full record.
+                      <span>Type &middot; size &middot; price &middot; buyer &middot; billing</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
         </div>
+        <div class="doc-foot"><span>Type <b>2&ndash;4 bedroom</b></span><span>Status <b>WIP 100%</b></span></div>
       </div>
 
-      <!-- ──────────── Right: Feature Cards ──────────── -->
-      <div class="grid gap-4 {{ animation }} --order-7">
-        @for (feature of features; track $index) {
-          <div
-            class="group rounded-2xl border border-black/10 bg-primary/5 backdrop-blur-sm p-5 transition-[transform,border-color,background-color] duration-300 ease-[var(--ease-out)] hover:translate-x-1.5 hover:border-primary/40 hover:bg-primary/10 cursor-default"
-          >
-            <div class="flex items-start gap-4">
-              <div
-                class="shrink-0 rounded-xl bg-primary p-3 shadow-[0_4px_14px_rgba(19,97,72,0.3)] transition-[transform,box-shadow] duration-300 ease-[var(--ease-out)] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_8px_20px_rgba(19,97,72,0.4)]"
-              >
-                <mat-icon [svgIcon]="feature.icon" class="text-white_" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-sm mb-1.5">{{ feature.title }}</h3>
-                <p class="opacity-55 text-xs leading-relaxed">{{ feature.description }}</p>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Trust / Compliance card -->
-        <div
-          class="rounded-2xl border border-secondary/30 bg-secondary/10 backdrop-blur-sm p-5 flex items-center gap-4"
-        >
-          <div class="shrink-0 rounded-xl bg-secondary/20 p-3">
-            <mat-icon class="text-secondary">verified_user</mat-icon>
-          </div>
+      <!-- MASTER PLAN / FLOOR PLATE -->
+      <div class="doc reveal d2">
+        <div class="doc-head">
           <div>
-            <div class="font-semibold text-sm mb-0.5">Safety &amp; Compliance First</div>
-            <div class="opacity-55 text-xs leading-relaxed">
-              100% aligned with industry regulations, safety protocols, and operational standards.
-            </div>
+            <h3>Master Plan &mdash; Floor Plate</h3>
+            <span class="sheet">SHEET A-104 &middot; TYPICAL LEVEL</span>
           </div>
+          <span class="tag">Approved</span>
         </div>
+        <svg class="canvas pdraw" id="plan" viewBox="0 0 340 230" xmlns="http://www.w3.org/2000/svg">
+          <path class="wall" d="M28 26 H312 V204 H28 Z" fill="none" stroke="#14487a" stroke-width="2" />
+          <line class="part" x1="28" y1="112" x2="312" y2="112" stroke="#435a70" stroke-width="1" stroke-dasharray="4 4" />
+          <line class="part" x1="28" y1="128" x2="312" y2="128" stroke="#435a70" stroke-width="1" stroke-dasharray="4 4" />
+          <rect class="room r1" x="28" y="26" width="94" height="86" fill="none" stroke="#1c7a4d" stroke-width="1.3" />
+          <rect class="room r2" x="122" y="26" width="96" height="86" fill="none" stroke="#1c7a4d" stroke-width="1.3" />
+          <rect class="room r3" x="218" y="26" width="94" height="86" fill="none" stroke="#1c7a4d" stroke-width="1.3" />
+          <rect class="room r2" x="28" y="128" width="94" height="76" fill="none" stroke="#1c7a4d" stroke-width="1.3" />
+          <rect class="room r3" x="122" y="128" width="96" height="76" fill="none" stroke="#1c7a4d" stroke-width="1.3" />
+          <rect class="room r4" x="218" y="128" width="94" height="76" fill="none" stroke="#1c7a4d" stroke-width="1.3" />
+          <rect class="room r4" x="150" y="112" width="40" height="16" fill="#e7ece4" stroke="#8a2a2f" stroke-width="1" />
+          <g class="plabel" stroke="#c39a3d" stroke-width="0.8" fill="none">
+            <path d="M70 112 a10 10 0 0 1 10 -10" /><path d="M166 112 a10 10 0 0 1 10 -10" /><path d="M262 112 a10 10 0 0 1 10 -10" />
+          </g>
+          <g class="plabel" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70" text-anchor="middle">
+            <text x="75" y="72">UNIT A</text><text x="170" y="72">UNIT B</text><text x="265" y="72">UNIT C</text>
+            <text x="75" y="170">UNIT D</text><text x="170" y="170">CORE</text><text x="265" y="170">UNIT E</text>
+          </g>
+          <text class="plabel" x="170" y="220" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70" text-anchor="middle">TYPICAL FLOOR &middot; 4 UNITS + CORE</text>
+        </svg>
+        <div class="doc-foot"><span>Units/floor <b>4</b></span><span>Master plan <b>v3 &middot; approved</b></span></div>
       </div>
     </div>
   </div>
 </section>
+
+<section id="lifecycle" class="lifecycle">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">The end-to-end record</div>
+      <h2>One record, every stage of the property's life.</h2>
+      <p>
+        Each stage writes to the same controlled record, so allocation, costing, payments and
+        title never drift apart across departments.
+      </p>
+    </div>
+    <div class="track reveal d1">
+      <div class="stop"><div class="stop-dot">1</div><h4>Land registered</h4><p>Parcel captured, approved and marked available for a project or sale.</p></div>
+      <div class="stop"><div class="stop-dot">2</div><h4>Project &amp; plan</h4><p>Master plan and units defined against the land parcel.</p></div>
+      <div class="stop"><div class="stop-dot">3</div><h4>Costed &amp; priced</h4><p>Costs allocated to units; approved selling and rental prices set.</p></div>
+      <div class="stop"><div class="stop-dot">4</div><h4>Finished inventory</h4><p>WIP at 100% converts to available apartments, plots and spaces.</p></div>
+      <div class="stop"><div class="stop-dot">5</div><h4>Reserved &amp; sold</h4><p>Reservation lock, KYC, agreement and payment to ownership.</p></div>
+      <div class="stop"><div class="stop-dot">6</div><h4>Title issued</h4><p>Deed processed and tracked through e-Ardhi against a clean record.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="modules" style="padding-top: 0">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">11 modules &middot; 124 requirements</div>
+      <h2>Eleven modules, one system of record.</h2>
+      <p>
+        Each module owns its domain and writes to a shared record &mdash; no re-keying between
+        land, finance, sales and leasing.
+      </p>
+    </div>
+    <div class="mod-grid">
+      <div class="mod reveal"><div class="mod-top"><div class="mod-num">01</div><div class="mod-code">LM</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="6" width="28" height="28" /><path d="M6 15h28M15 6v28" /><circle cx="24" cy="24" r="3" fill="currentColor" stroke="none" /></svg><h4>Land Management</h4><p>Register parcels, track status and acquisition history, and control allocation to projects or sale.</p></div>
+      <div class="mod reveal d1"><div class="mod-top"><div class="mod-num">02</div><div class="mod-code">PDI</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 34V12l12-6 12 6v22" /><path d="M8 34h24M16 34V22h8v12" /></svg><h4>Project Development &amp; Investment</h4><p>Create projects and master plans, define units, and manage phases against a land parcel.</p></div>
+      <div class="mod reveal d2"><div class="mod-top"><div class="mod-num">03</div><div class="mod-code">CFE</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 32h24M12 32V16M20 32V10M28 32V20" /><path d="M8 8l8 6 6-6 10 4" /></svg><h4>Costing &amp; Financial Engine</h4><p>Allocate cost to units, apply versioned pricing rules, and run profit and margin analysis.</p></div>
+      <div class="mod reveal"><div class="mod-top"><div class="mod-num">04</div><div class="mod-code">FPI</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="12" width="26" height="22" /><path d="M7 20h26M20 12v22" /><path d="M13 6h14v6H13z" /></svg><h4>Finished Product &amp; Inventory</h4><p>Convert completed WIP into inventory with reservation locks and real-time availability.</p></div>
+      <div class="mod reveal d1"><div class="mod-top"><div class="mod-num">05</div><div class="mod-code">IPV</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="20" cy="20" r="14" /><path d="M20 12v8l6 4" /><path d="M20 6v3M34 20h-3" /></svg><h4>Investment Property Valuation</h4><p>Register REIT assets, run periodic valuation, and keep an immutable history for NAV.</p></div>
+      <div class="mod reveal d2"><div class="mod-top"><div class="mod-num">06</div><div class="mod-code">BIL</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="6" width="22" height="28" /><path d="M14 13h12M14 19h12M14 25h7" /></svg><h4>Billing Management</h4><p>Configure service charges, issue unified bills with GePG control numbers, and reconcile payments.</p></div>
+      <div class="mod reveal"><div class="mod-top"><div class="mod-num">07</div><div class="mod-code">HLM</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="9" width="26" height="22" /><path d="M7 16h26M12 24h8" /><circle cx="27" cy="24" r="1.5" fill="currentColor" stroke="none" /></svg><h4>House Lease Management</h4><p>Booking, KYC, agreements, rent cycles, renewals and tenant handover, end to end.</p></div>
+      <div class="mod reveal d1"><div class="mod-top"><div class="mod-num">08</div><div class="mod-code">HSM</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 14h28l-3 20H9L6 14z" /><path d="M14 14V9a6 6 0 0112 0v5" /></svg><h4>House Sales Management</h4><p>Reservation, buyer qualification, cash / mortgage / hire-purchase, and title processing.</p></div>
+      <div class="mod reveal d2"><div class="mod-top"><div class="mod-num">09</div><div class="mod-code">PSM</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 30l8-18 8 18M12 24h8" /><path d="M26 12l6 18M26 21h8" /></svg><h4>Plot Sales Management</h4><p>Surveyed-plot reservation, eligibility, instalment plans, and e-Ardhi title transfer.</p></div>
+      <div class="mod reveal"><div class="mod-top"><div class="mod-num">10</div><div class="mod-code">RAN</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="6" width="28" height="28" /><path d="M12 26v-6M20 26V14M28 26v-9" /></svg><h4>Reporting &amp; Analytics</h4><p>Operational and executive reports on portfolio, revenue, profitability and performance.</p></div>
+      <div class="mod reveal d1"><div class="mod-top"><div class="mod-num">11</div><div class="mod-code">UAA</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="20" cy="14" r="6" /><path d="M8 34c0-7 5-11 12-11s12 4 12 11" /></svg><h4>Configuration &amp; Access</h4><p>Users, roles and RBAC permissions, system parameters and configurable business rules.</p></div>
+      <div class="mod reveal d2"><div class="mod-top"><div class="mod-num">12</div><div class="mod-code">CM</div></div><svg class="mod-ico" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="15" cy="15" r="6" /><path d="M5 33c0-6 4-10 10-10s10 4 10 10" /><path d="M26 12h8M30 8v8" /></svg><h4>Customer Management</h4><p>A single client identity for buyers and tenants across every transaction and record.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="wrap">
+    <div class="sec-head reveal" style="max-width: none; margin-bottom: 44px">
+      <div class="kicker" style="color: var(--gold)">Built for scale and control</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat reveal"><div class="num"><em class="count" data-to="12">0</em></div><div class="lbl">Integrated modules</div></div>
+      <div class="stat reveal d1"><div class="num"><em class="count" data-to="124">0</em></div><div class="lbl">Traceable requirements</div></div>
+      <div class="stat reveal d2"><div class="num"><em class="count" data-to="100">0</em>%</div><div class="lbl">Actions audit-logged</div></div>
+      <div class="stat reveal d3"><div class="num"><em class="count" data-to="5">0</em></div><div class="lbl">Government integrations</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="audit">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">Accountability by design</div>
+      <h2>If it happened, it's on the record.</h2>
+      <p>
+        Every financial and status-changing action is time-stamped, attributed and
+        tamper-evident &mdash; disputes are settled by evidence, not memory.
+      </p>
+    </div>
+    <div class="benefits-grid">
+      <div class="ledger reveal" id="ledger">
+        <div class="ledger-head"><span>Audit trail &middot; Plot USA-RIVER-04829</span><span class="lock">&#128274; tamper-evident</span></div>
+        <div class="ledger-row"><span class="t">08:14 &middot; 12 Mar</span><span class="act">Land parcel registered</span><span class="who">Estate &middot; A. Mushi</span></div>
+        <div class="ledger-row"><span class="t">10:02 &middot; 28 Jun</span><span class="act">Master plan &amp; units approved</span><span class="who">Project &middot; R. Kito</span></div>
+        <div class="ledger-row"><span class="t">14:20 &middot; 03 Sep</span><span class="act">Reservation lock applied</span><span class="who">Sales &middot; L. Owino</span></div>
+        <div class="ledger-row"><span class="t">09:20 &middot; 14 Jan</span><span class="act">Down payment reconciled &middot; GePG</span><span class="who">System</span></div>
+        <div class="ledger-row"><span class="t">11:05 &middot; 22 Feb</span><span class="act">Title case submitted &middot; e-Ardhi</span><span class="who">Legal &middot; J. Sway</span></div>
+      </div>
+      <ul class="ben-list reveal d1">
+        <li><span class="ben-mark">&sect;</span><div><h4>A single source of truth</h4><p>One record follows land through project, sale and title &mdash; no conflicting copies across departments.</p></div></li>
+        <li><span class="ben-mark">&sect;</span><div><h4>No double allocation</h4><p>Atomic reservation locks stop two buyers reserving the same unit or plot at the same moment.</p></div></li>
+        <li><span class="ben-mark">&sect;</span><div><h4>Versioned, reconciled finance</h4><p>Costing and pricing use approved, versioned parameters; every recalculation preserves its history.</p></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="integrations" style="background: var(--paper-2)">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">External interfaces</div>
+      <h2>Connected to the systems that make it official.</h2>
+      <p>
+        REMIS exchanges only approved information with national services, and records every
+        request, response and reference for audit.
+      </p>
+    </div>
+    <div class="int-grid reveal d1">
+      <div class="int"><div class="abbr">GePG</div><div class="desc">Control numbers, payment &amp; reconciliation</div></div>
+      <div class="int"><div class="abbr">NIDA</div><div class="desc">Identity &amp; KYC verification</div></div>
+      <div class="int"><div class="abbr">BRELA</div><div class="desc">Business entity verification</div></div>
+      <div class="int"><div class="abbr">TRA</div><div class="desc">Tax &amp; stamp-duty references</div></div>
+      <div class="int"><div class="abbr">e-Ardhi</div><div class="desc">Title-deed processing &amp; tracking</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="roles">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">Role-based access</div>
+      <h2>Every role sees exactly what it needs.</h2>
+      <p>
+        From the estate counter to the executive floor, RBAC gives each officer their own
+        controlled view of the record.
+      </p>
+    </div>
+    <div class="who-grid">
+      <div class="who-card reveal"><div class="role">Land &amp; projects</div><h4>Estate &amp; Project officers</h4><p>Register parcels, build master plans, define units and monitor development to completion.</p></div>
+      <div class="who-card reveal d1"><div class="role">Sales, leasing &amp; finance</div><h4>Sales, Leasing &amp; Finance officers</h4><p>Run reservations, agreements, billing and payment-to-ownership with built-in controls.</p></div>
+      <div class="who-card reveal d2"><div class="role">Oversight</div><h4>Management &amp; Executive</h4><p>Review portfolio, revenue, profitability and valuation on live, evidence-based reports.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="final">
+  <div class="grid-bg"></div>
+  <div class="wrap">
+    <h2 class="reveal">See a parcel travel from register to deed.</h2>
+    <p class="reveal d1">
+      Book a walkthrough and we'll trace the full lifecycle on a WHI workflow &mdash; land,
+      costing, sale and title.
+    </p>
+    <div class="reveal d2"><a routerLink="/auth/login" class="btn-primary">Login &rarr;</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <div class="foot-brand">
+          <svg class="brand-mark" viewBox="0 0 40 40" fill="none" style="width: 30px; height: 30px">
+            <rect x="4" y="4" width="32" height="32" rx="2" stroke="#fff" stroke-width="1.5" />
+            <path d="M12 26V16l8-5 8 5v10" stroke="var(--whi-green-br)" stroke-width="1.6" />
+            <circle cx="20" cy="20" r="2.4" fill="var(--gold)" />
+          </svg>
+          REMIS
+        </div>
+        <p>
+          Real Estate Management Information System for Watumishi Housing Investments. One
+          auditable record, from land registration to title.
+        </p>
+      </div>
+      <div class="foot-col">
+        <h5>System</h5>
+        <a href="#lifecycle">Lifecycle</a><a href="#modules">Modules</a><a href="#audit">Audit &amp; control</a><a href="#integrations">Integrations</a>
+      </div>
+      <div class="foot-col">
+        <h5>Organisation</h5>
+        <a href="https://www.whi.go.tz/">WHI website</a><a href="#">Security</a><a href="#">Support</a>
+      </div>
+      <div class="foot-col">
+        <h5>Access</h5>
+        <a routerLink="/auth/login">Sign in</a><a href="#contact">Login</a><a href="#">Documentation</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; 2026 Watumishi Housing Investments &middot; REMIS</span>
+      <span>INTERNAL USE &middot; v1.0</span>
+    </div>
+  </div>
+</footer>

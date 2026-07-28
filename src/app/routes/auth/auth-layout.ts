@@ -13,7 +13,7 @@ import { AuthHeader } from './auth-header/auth-header';
       <!-- Background layers -->
 
       <div
-        class="size-full backdrop-blur-[2px] top-0 left-0 absolute dark:opacity-35 opacity-15  "
+        class="size-full backdrop-blur-[2px] top-0 left-0 absolute dark:opacity-10 opacity-15  "
         style="background: radial-gradient(circle, var(--color-secondary), transparent);  "
       ></div>
 
@@ -23,7 +23,9 @@ import { AuthHeader } from './auth-header/auth-header';
 
       <auth-header />
 
-      <div class="grow relative overflow-y-auto flex flex-col justify-center items-center  p-3">
+      <div
+        class="grow relative overflow-y-auto flex flex-col items-center p-3 [justify-content:safe_center]"
+      >
         <div class="w-full grow relative">
           <!--  -->
           <router-outlet />

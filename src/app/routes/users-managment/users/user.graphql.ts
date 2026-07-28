@@ -5,7 +5,6 @@ import {
   responseGqlFields,
 } from '@shared/fetch/graphql.constants';
 import { gql } from 'apollo-angular';
-import { plantGqlFields } from 'app/routes/plants/plants/plant.graphql';
 
 export const userMinimalGqlFields = `
   email
@@ -51,27 +50,6 @@ export const userGqlFields = `
     }
    }
   }
-   plants{
-      createdAt
-      current
-      id
-      plant{
-        id
-        name
-        uid
-        code
-      }
-   }
-   pipelines{
-      createdAt
-      current
-      id
-      pipeline{
-        id
-        name
-        uid
-      }
-   }
   ${baseGqlFields}
 `;
 
@@ -142,24 +120,6 @@ export const CHANGE_PASSWORD = gql`
 export const ASSIGN_ROLES_TO_USER = gql`
   mutation assignRolesToUser($userRoleListDto: UserRoleListDtoInput, $uid: String) {
     assignRolesToUser(userRoleListDto: $userRoleListDto, uid: $uid) {
-           ${responseGqlFields(userGqlFields)}
-    }
-  }
-`;
-
-export const ASSIGN_PLANTS_TO_USER = gql`
-  mutation assignPlantToUser(
-    $uid: String!
-    $assignmentType: UserAssignmentType!
-    $userUid: String
-    $distributionType: DistributionAssignmentType
-  ) {
-    assignPlantToUser(
-      uid: $uid
-      assignmentType: $assignmentType
-      userUid: $userUid
-      distributionType: $distributionType
-    ) {
            ${responseGqlFields(userGqlFields)}
     }
   }

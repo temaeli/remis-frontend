@@ -1,63 +1,68 @@
 :root {
   /* ================================
-   Primary color – #2d69b3 (WHI blue)
+   Primary color – #14487a (WHI ink-blue)
    ================================ */
-  --color-primary: #2d69b3;
-
-  --color-primary-50: #ebf1ff;
-  --color-primary-100: #d5e3ff;
-  --color-primary-200: #a7c8ff;
-  --color-primary-300: #77adfb;
-  --color-primary-400: #5c92df;
-  --color-primary-500: #2d69b3;
-  --color-primary-600: #04529b;
-  --color-primary-700: #004788;
-  --color-primary-800: #003b74;
-  --color-primary-900: #003060;
-
-  --color-primary-faded: #2d69b340;
-  --color-primary-very-faded: #2d69b320;
+  --color-primary: #14487a;
+  --color-primary-50: #eaf1ff;
+  --color-primary-100: #d3e4ff;
+  --color-primary-200: #a2c9ff;
+  --color-primary-300: #83aee6;
+  --color-primary-400: #6893ca;
+  --color-primary-500: #14487a;
+  --color-primary-600: #003d6e;
+  --color-primary-700: #00315b;
+  --color-primary-800: #001c38;
+  --color-primary-900: #001229;
+  --color-primary-faded: #14487a40;
+  --color-primary-very-faded: #14487a20;
 
   /* =====================================
-   Secondary color – #f3ec1a (WHI yellow)
+   Secondary color – #c39a3d (WHI gold)
    ===================================== */
-  --color-secondary: #f3ec1a;
+  --color-secondary: #c39a3d;
+  --color-secondary-50: #fff8f2;
+  --color-secondary-100: #ffefd4;
+  --color-secondary-200: #edc05f;
+  --color-secondary-300: #cfa547;
+  --color-secondary-400: #b28b2f;
+  --color-secondary-500: #c39a3d;
+  --color-secondary-600: #967115;
+  --color-secondary-700: #795900;
+  --color-secondary-800: #5c4300;
+  --color-secondary-900: #402d00;
+  --color-secondary-faded: #c39a3d40;
+  --color-secondary-very-faded: #c39a3d20;
 
-  --color-secondary-50: #fffbd6;
-  --color-secondary-100: #fef72a;
-  --color-secondary-200: #efe812;
-  --color-secondary-300: #d2cc00;
-  --color-secondary-400: #b5b000;
-  --color-secondary-500: #f3ec1a;
-  --color-secondary-600: #575500;
-  --color-secondary-700: #4b4900;
-  --color-secondary-800: #3f3d00;
-  --color-secondary-900: #343200;
-
-  --color-secondary-faded: #f3ec1a40;
-  --color-secondary-very-faded: #f3ec1a20;
-
-  --color-white: #ffffff;
-  --color-white_: #ffffff; // this doesnt change on dark mode
+  /* =====================================
+   Supporting accents from the REMIS "certificate" design language
+   ===================================== */
+  --color-accent-green: #1c7a4d;
+  --color-accent-green-bright: #2a9c66;
+  --color-accent-seal: #8a2a2f;
+  --color-ink: #0f2438;
+  --color-ink-soft: #435a70;
+  --color-paper: #f5f6f4;
+  --color-paper-2: #ecefe9;
+  --color-line: #cdd4cd;
+  --color-white: #fff;
+  --color-white_: #fff; // this doesnt change on dark mode
   --color-white-faded: #ffffff70;
   --color-white-slightly-faded: #ffffffc7;
-
   --color-light: #f8f9fa;
   --color-pale: #d2d2d2;
   --color-neutral: #dbdcdd;
   --color-gray: #626262;
-
   --color-black: #2b2b2b;
   --color-black-faded: #2b2b2b70;
   --color-black-very-faded: #2b2b2b11;
-  --color-dark: #333333;
+  --color-dark: #333;
   --color-dark-faded: #33333370;
 
   //aliases
-  --c-pri: #2d69b3;
-  --c-pri-faded: #2d69b340;
-  --c-sec: #f3ec1a;
-  --c-sec-faded: #f3ec1a40;
+  --c-pri: #14487a;
+  --c-pri-faded: #14487a40;
+  --c-sec: #c39a3d;
+  --c-sec-faded: #c39a3d40;
 
   ///measurements
   --border-radius: 15px;
@@ -77,14 +82,17 @@
   --color-white: #1b1b1b;
   --color-white-faded: #1b1b1b70;
   --color-white-slightly-faded: #1b1b1bc7;
-
-  --color-black: #ffffff;
+  --color-black: #fff;
   --color-black-faded: #ffffff70;
-  --color-black-very-faded: #ffffff11;
+  --color-black-very-faded: #fff1;
   --color-dark: #dfdfdf;
   --color-dark-faded: #dfdfdf70;
-
   --color-light: #2b2b2b;
   --color-neutral: #484848;
   --color-pale: #383838;
+  --color-ink: #ecefe9;
+  --color-ink-soft: #a8b6c4;
+  --color-paper: #10181f;
+  --color-paper-2: #161f27;
+  --color-line: #2c363f;
 }

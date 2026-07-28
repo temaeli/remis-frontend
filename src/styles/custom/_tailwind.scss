@@ -36,6 +36,15 @@
   --color-warning: #f59e0b;
   --color-info: #0fa3de;
 
+  /* ===== REMIS certificate design language ===== */
+  --color-accent-green: var(--color-accent-green);
+  --color-accent-green-bright: var(--color-accent-green-bright);
+  --color-accent-seal: var(--color-accent-seal);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-paper: var(--color-paper);
+  --color-paper-2: var(--color-paper-2);
+  --color-line: var(--color-line);
   --animate-gradient: gradient 6s ease infinite;
 }
 
@@ -43,9 +52,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
