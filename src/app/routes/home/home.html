@@ -36,7 +36,15 @@
         <a href="#lifecycle" class="btn-ghost">See the lifecycle</a>
       </div>
     </div>
-    <div class="deed reveal d3">
+    <div
+      class="deed reveal d3"
+      tabindex="0"
+      role="button"
+      aria-label="View this plot's location and surrounding parcels"
+      [attr.aria-expanded]="showNeighborhood()"
+      (click)="openNeighborhood()"
+      (keydown)="onDeedKey($event)"
+    >
       <div class="deed-head">
         <div>
           <h3>Certificate of Title</h3>
@@ -70,9 +78,157 @@
         <div class="deed-row"><span>BILLING &middot; GePG</span><span>Cleared</span></div>
         <div class="deed-row"><span>STATUS</span><span class="status-pill">&#9679; Title issued</span></div>
       </div>
+      <div class="explore-hint">Click to see the plot in context</div>
     </div>
   </div>
 </header>
+
+<div class="wrap">
+  <div class="exp-panel" id="nbhdPanel" [class.open]="showNeighborhood()" aria-live="polite">
+    <div class="exp-head">
+      <div class="lvl-name">
+        Parcel in Context <span>USA-RIVER-04829 &middot; ~60m radius</span>
+      </div>
+      <button class="exp-close" (click)="closeNeighborhood()">&times; Close</button>
+    </div>
+    <div class="exp-body">
+      <div>
+        <svg class="floorplan-svg" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="hatch-nbhd" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#1c7a4d" stroke-width="0.6" opacity="0.35" />
+            </pattern>
+          </defs>
+          <rect width="340" height="240" fill="#f6f7f3" />
+
+          <!-- Access road -->
+          <rect x="0" y="205" width="340" height="35" fill="#d9dcd4" />
+          <line x1="0" y1="222" x2="340" y2="222" stroke="#c39a3d" stroke-width="1.4" stroke-dasharray="10 6" />
+          <text x="170" y="216" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70" text-anchor="middle" letter-spacing="1">USA RIVER ROAD</text>
+
+          <!-- Neighbouring plots -->
+          @for (plot of neighborPlots; track plot.id; let i = $index) {
+            <g
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="'Plot ' + plot.code + ' — ' + statusMeta[plot.status].label"
+              (click)="selectNeighborPlot(plot)"
+              (keydown)="onNeighborKey($event, plot)"
+            >
+              <rect
+                [attr.x]="neighborLayout[i].x"
+                [attr.y]="neighborLayout[i].y"
+                [attr.width]="neighborLayout[i].w"
+                [attr.height]="neighborLayout[i].h"
+                stroke-width="1.4"
+                [class]="'u-cell ' + statusMeta[plot.status].cls"
+                [class.sel]="selectedNeighbor() === plot"
+              />
+              <text
+                [attr.x]="neighborLayout[i].x + neighborLayout[i].w / 2"
+                [attr.y]="neighborLayout[i].y + neighborLayout[i].h / 2 - 2"
+                font-family="JetBrains Mono, monospace"
+                font-size="9"
+                fill="#14487a"
+                text-anchor="middle"
+                style="pointer-events: none"
+                >{{ plot.code }}</text
+              >
+              <text
+                [attr.x]="neighborLayout[i].x + neighborLayout[i].w / 2"
+                [attr.y]="neighborLayout[i].y + neighborLayout[i].h / 2 + 12"
+                font-family="JetBrains Mono, monospace"
+                font-size="7"
+                fill="#435a70"
+                text-anchor="middle"
+                style="pointer-events: none"
+                >{{ statusMeta[plot.status].label }}</text
+              >
+            </g>
+          }
+
+          <!-- Subject parcel -->
+          <rect
+            [attr.x]="subjectLayout.x"
+            [attr.y]="subjectLayout.y"
+            [attr.width]="subjectLayout.w"
+            [attr.height]="subjectLayout.h"
+            fill="url(#hatch-nbhd)"
+            stroke="#1c7a4d"
+            stroke-width="1.8"
+          />
+          <rect
+            [attr.x]="subjectLayout.x - 4"
+            [attr.y]="subjectLayout.y - 4"
+            [attr.width]="subjectLayout.w + 8"
+            [attr.height]="subjectLayout.h + 8"
+            fill="none"
+            stroke="#c39a3d"
+            stroke-width="1.2"
+            stroke-dasharray="4 3"
+          />
+          <text
+            [attr.x]="subjectLayout.x + subjectLayout.w / 2"
+            [attr.y]="subjectLayout.y + subjectLayout.h / 2 - 4"
+            font-family="Fraunces, serif"
+            font-size="10"
+            font-weight="600"
+            fill="#0f2438"
+            text-anchor="middle"
+            style="pointer-events: none"
+            >YOUR PLOT</text
+          >
+          <text
+            [attr.x]="subjectLayout.x + subjectLayout.w / 2"
+            [attr.y]="subjectLayout.y + subjectLayout.h / 2 + 12"
+            font-family="JetBrains Mono, monospace"
+            font-size="8"
+            fill="#435a70"
+            text-anchor="middle"
+            style="pointer-events: none"
+            >04829</text
+          >
+
+          <!-- Frontage leader -->
+          <line x1="168" y1="195" x2="168" y2="205" stroke="#c39a3d" stroke-width="1" />
+          <text x="176" y="203" font-family="JetBrains Mono, monospace" font-size="6.5" fill="#c39a3d" letter-spacing="0.5">12M FRONTAGE</text>
+
+          <!-- Compass & scale -->
+          <text x="320" y="18" font-family="JetBrains Mono, monospace" font-size="8" fill="#435a70" text-anchor="middle">N &#8593;</text>
+          <line x1="10" y1="232" x2="50" y2="232" stroke="#435a70" stroke-width="1" />
+          <text x="10" y="196" font-family="JetBrains Mono, monospace" font-size="6.5" fill="#435a70">0        25m</text>
+        </svg>
+        <div class="legend">
+          <span class="la"><i></i>Available</span>
+          <span class="lr"><i></i>Reserved</span>
+          <span class="ls"><i></i>Sold</span>
+        </div>
+      </div>
+      <div class="unit-detail">
+        @if (selectedNeighbor(); as n) {
+          <div class="ud-top">
+            <div>
+              <h5>Plot {{ n.code }}</h5>
+              <div class="ud-sub">{{ n.use }}</div>
+            </div>
+            <span class="ud-status" [class]="statusMeta[n.status].pill">{{ statusMeta[n.status].label }}</span>
+          </div>
+          <div class="ud-rows">
+            <div class="ud-row"><span class="k">Distance</span><span class="v">{{ n.distance }}</span></div>
+            <div class="ud-row"><span class="k">Frontage</span><span class="v">{{ n.frontage }}</span></div>
+            <div class="ud-row"><span class="k">Use type</span><span class="v">{{ n.use }}</span></div>
+            <div class="ud-row"><span class="k">Access</span><span class="v">Usa River Road</span></div>
+          </div>
+        } @else {
+          <div class="ud-empty">
+            Select a nearby plot to see its record.
+            <span>Status &middot; distance &middot; frontage &middot; access</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
 
 <section class="docset" id="docset" style="padding-top: 0">
   <div class="wrap">

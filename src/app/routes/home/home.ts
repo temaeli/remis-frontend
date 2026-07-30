@@ -288,6 +288,69 @@ const UNIT_LAYOUT: UnitLayout[] = [
   { x: 168, y: 114, w: 138, h: 82 },
 ];
 
+interface NeighborPlot {
+  id: string;
+  code: string;
+  status: 'avail' | 'resv' | 'sold';
+  use: string;
+  distance: string;
+  frontage: string;
+}
+
+// Layout on the 340x240 neighbourhood-map viewBox — road strip runs along the bottom.
+const NEIGHBOR_LAYOUT: UnitLayout[] = [
+  { x: 8, y: 8, w: 100, h: 90 },
+  { x: 118, y: 8, w: 100, h: 90 },
+  { x: 228, y: 8, w: 104, h: 90 },
+  { x: 8, y: 108, w: 100, h: 87 },
+  { x: 228, y: 108, w: 104, h: 87 },
+];
+
+const SUBJECT_LAYOUT: UnitLayout = { x: 118, y: 108, w: 100, h: 87 };
+
+const NEIGHBOR_PLOTS: NeighborPlot[] = [
+  {
+    id: 'n1',
+    code: '04814',
+    status: 'avail',
+    use: 'Residential Plot',
+    distance: '42m NW',
+    frontage: '15m',
+  },
+  {
+    id: 'n2',
+    code: '04818',
+    status: 'sold',
+    use: 'Residential Plot',
+    distance: '18m N',
+    frontage: '14m',
+  },
+  {
+    id: 'n3',
+    code: '04822',
+    status: 'resv',
+    use: 'Commercial Plot',
+    distance: '46m NE',
+    frontage: '18m',
+  },
+  {
+    id: 'n4',
+    code: '04826',
+    status: 'avail',
+    use: 'Residential Plot',
+    distance: '15m W',
+    frontage: '14m',
+  },
+  {
+    id: 'n5',
+    code: '04833',
+    status: 'sold',
+    use: 'Residential Plot',
+    distance: '16m E',
+    frontage: '15m',
+  },
+];
+
 @Component({
   selector: 'app-home',
   imports: [RouterLink],
@@ -302,9 +365,14 @@ export class Home implements AfterViewInit, OnDestroy {
   readonly levels = LEVELS;
   readonly unitLayout = UNIT_LAYOUT;
   readonly statusMeta = STATUS_META;
+  readonly neighborPlots = NEIGHBOR_PLOTS;
+  readonly neighborLayout = NEIGHBOR_LAYOUT;
+  readonly subjectLayout = SUBJECT_LAYOUT;
 
   selectedLevel = signal<number | null>(null);
   selectedUnit = signal<UnitRecord | null>(null);
+  showNeighborhood = signal(false);
+  selectedNeighbor = signal<NeighborPlot | null>(null);
 
   currentLevel = computed<FloorLevel | null>(() => {
     const level = this.selectedLevel();
@@ -330,6 +398,38 @@ export class Home implements AfterViewInit, OnDestroy {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.openFloor(level);
+    }
+  }
+
+  openNeighborhood(): void {
+    this.showNeighborhood.set(true);
+    queueMicrotask(() => {
+      this.el.nativeElement
+        .querySelector('#nbhdPanel')
+        ?.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+    });
+  }
+
+  closeNeighborhood(): void {
+    this.showNeighborhood.set(false);
+    this.selectedNeighbor.set(null);
+  }
+
+  onDeedKey(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.openNeighborhood();
+    }
+  }
+
+  selectNeighborPlot(plot: NeighborPlot): void {
+    this.selectedNeighbor.set(plot);
+  }
+
+  onNeighborKey(event: KeyboardEvent, plot: NeighborPlot): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.selectNeighborPlot(plot);
     }
   }
 
