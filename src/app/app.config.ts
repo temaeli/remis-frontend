@@ -3,8 +3,6 @@ import { provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
 import { ApplicationConfig, importProvidersFrom, inject } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
-import { provideDateFnsAdapter } from '@angular/material-date-fns-adapter';
-import { MAT_CARD_CONFIG } from '@angular/material/card';
 import { MatPaginatorIntl } from '@angular/material/paginator';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
@@ -22,6 +20,7 @@ import { createApollo } from './configs/graphql.config';
 import { provideEchartsCore } from 'ngx-echarts';
 import { APP_ROUTES } from './app.routes';
 import { provideApollo } from 'apollo-angular';
+import { configureMaterialProvider } from './configs/material.config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -68,26 +67,7 @@ export const appConfig: ApplicationConfig = {
       deps: [PaginatorI18nService],
       useFactory: (paginatorI18nSrv: PaginatorI18nService) => paginatorI18nSrv.getPaginatorIntl(),
     },
-
     { provide: BASE_URL, useValue: environment.baseUrl },
-
-    {
-      provide: MAT_CARD_CONFIG,
-      useValue: { appearance: 'outlined' },
-    },
-
-    provideDateFnsAdapter({
-      parse: {
-        dateInput: 'yyyy-MM-dd',
-        timeInput: 'HH:mm',
-      },
-      display: {
-        dateInput: 'yyyy-MM-dd',
-        timeInput: 'HH:mm',
-        monthYearLabel: 'yyyy MMM',
-        dateA11yLabel: 'LL',
-        monthYearA11yLabel: 'yyyy MMM',
-      },
-    }),
+    configureMaterialProvider(),
   ],
 };

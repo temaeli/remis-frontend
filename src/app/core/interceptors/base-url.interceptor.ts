@@ -12,10 +12,23 @@ export function baseUrlInterceptor(req: HttpRequest<unknown>, next: HttpHandlerF
 
   const hasScheme = (url: string) => baseUrl && hasHttpScheme(url);
 
-  const prependBaseUrl = (url: string) =>
-    [baseUrl?.replace(/\/$/g, ''), url.replace(/^\.?\//, '')].filter(val => val).join('/');
+  if (hasHttpScheme(req.url)) {
+    return next(req);
+  }
 
-  return hasScheme(req.url) === false
-    ? next(req.clone({ url: prependBaseUrl(req.url) }))
-    : next(req);
+  //If BASE_URL missing developer friendly error-for toubleshooting
+  if (!baseUrl) {
+    console.error(
+      `[BaseUrlInterceptor Error]: API request to '${req.url}' failed. ` +
+      `BASE_URL is null or undefined! Please ensure 'environment.baseUrl' is set and provided in app.config.ts.`
+    );
+    return next(req);
+  }
+
+  // Prepend Base URL
+  const formattedBaseUrl = baseUrl.replace(/\/$/g, '');
+  const formattedRelativeUrl = req.url.replace(/^\.?\//, '');
+  const fullUrl = [formattedBaseUrl, formattedRelativeUrl].filter(Boolean).join('/');
+
+  return next(req.clone({ url: fullUrl }));
 }

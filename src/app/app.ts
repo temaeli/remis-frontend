@@ -20,8 +20,6 @@ import { APP_VARIABLES } from '@core/settings/app-variables';
 })
 export class App implements OnDestroy, AfterViewInit {
   private readonly preloader = inject(PreloaderService);
-  private readonly iconReg = inject(MatIconRegistry);
-  private readonly ds = inject(DomSanitizer);
 
   vs = inject(ViewService);
   router = inject(Router);
@@ -30,25 +28,11 @@ export class App implements OnDestroy, AfterViewInit {
   subs = new Subscription();
 
   constructor() {
-    this.setIcons();
     this.listenToActions();
   }
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
-  }
-
-  setIcons() {
-    //combine svg in assets and svg it tags
-    const path = '/images/svg/';
-
-    SvgIcons.forEach((n) => {
-      this.iconReg.addSvgIcon(n, this.ds.bypassSecurityTrustResourceUrl(path + n + '.svg'));
-    });
-
-    SVG_ICONS.forEach((i) => {
-      this.iconReg.addSvgIconLiteral(i.name, this.ds.bypassSecurityTrustHtml(i.tag));
-    });
   }
 
   @HostListener('body:scroll', ['$event'])

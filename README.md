@@ -57,3 +57,18 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## ⚙️ Environment Configuration
+
+This application relies on the `BASE_URL` injection token to direct API calls.
+
+### Required Environment Variables
+
+Ensure your `environment.ts` and `environment.prod.ts` files contain a non-empty `baseUrl`:
+
+```typescript
+// src/environments/environment.ts
+export const environment = {
+  production: false,
+  baseUrl: '[https://api-dev.yourdomain.com](https://api-dev.yourdomain.com)', // ⚠️ MUST NOT be null, undefined, or empty!
+};
