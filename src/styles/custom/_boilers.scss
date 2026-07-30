@@ -1,6 +1,16 @@
 @use 'animations' as *;
 @use 'variables' as *;
 
+// Buttons & inputs follow the sharp-cornered REMIS certificate design
+// language (see home.scss) — this overrides any rounded-* utility applied
+// directly in markup. FABs keep their circular shape, a distinct pattern.
+button:not(.mat-mdc-fab-base),
+input,
+textarea,
+select {
+  border-radius: 0 !important;
+}
+
 .bg-primary {
   background: var(--color-primary) !important;
 }

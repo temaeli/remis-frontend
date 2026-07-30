@@ -67,6 +67,10 @@
   ///measurements
   --border-radius: 15px;
   --border-radius-small: 8px;
+  // Buttons and inputs follow the sharp-cornered REMIS certificate design
+  // language (see home.scss) rather than the general --border-radius scale.
+  --button-radius: 0px;
+  --input-radius: 0px;
   --font-size: 14px;
 
   /// easings

@@ -3,7 +3,11 @@
   --mat-button-outlined-label-text-color: var(--color-black);
   --mat-button-outlined-icon-spacing: 0px;
   --mat-button-outlined-icon-offset: 0px;
-  --mat-button-outlined-container-shape: var(--border-radius);
+  --mat-button-outlined-container-shape: var(--button-radius);
+  --mat-button-filled-container-shape: var(--button-radius);
+  --mat-button-protected-container-shape: var(--button-radius);
+  --mat-button-text-container-shape: var(--button-radius);
+  --mat-button-tonal-container-shape: var(--button-radius);
 
   --mat-sys-corner-full: var(--border-radius);
 
@@ -541,6 +545,12 @@
 }
 
 //mat outline look
+
+// MDC ships a hardcoded top radius on the field wrapper itself, independent
+// of the notched-outline shape token below — flatten it to match --input-radius.
+.mdc-text-field {
+  border-radius: var(--input-radius) !important;
+}
 
 /* Customize the border-radius for the outlined MDC form field */
 .mat-form-field-appearance-outline .mdc-text-field--outlined .mdc-notched-outline {
