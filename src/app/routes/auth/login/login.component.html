@@ -1,77 +1,60 @@
-<div class="relative size-full flex items-center justify-center">
-  <div class="flex flex-col w-full max-w-md justify-center lg:mt-5">
-    <!-- Logo Section -->
-    <div class="text-center mb-3  {{ animation }} --order-4">
-      <img class="w-[100px] h-auto mx-auto" src="{{ 'logo' | appVariables }}" alt="WHI logo" />
-    </div>
+<div class="login-page">
+  <div class="grid-bg" aria-hidden="true"></div>
 
-    <div class="mb-4  {{ animation }} --order-5 ">
-      <h1 class="tracking-[1px] text-black flex flex text-center items-center justify-center">
-        @for (item of [1, 2]; track item) {
-          <span
-            class="text-2xl font-bold inline-block {{
-              item === 1
-                ? 'absolute text-secondary opacity-50'
-                : 'relative bg-gradient-to-r from-transparent from-0% via-30% via-primary
-                      dark:via-[#fff]   to-transparent to-100% bg-clip-text text-transparent
-                      animate-stripe-flow'
-            }}"
-          >
-            {{ 'fullName' | appVariables }}
-          </span>
-        }
-      </h1>
-    </div>
-
-    <div
-      class="relative bg-gradient-to-b from-white/50 to-transparent backdrop-blur-[3px]
-           {{ animation }} --order-6  p-8 rounded-lg overflow-hidden border-2"
-      style="border-color: var(--color-primary-100)"
-    >
-      <div
-        class="absolute dark:bg-[var(--color-primary)]/10 bg-white/20 backdrop-blur-[3px] inset-0"
-      ></div>
-      <div
-        class="absolute inset-0 bg-gradient-to-b from-white/60 via-white/10 to-transparent"
-      ></div>
-      <div
-        class="absolute -top-20 -right-20 w-50 h-40 bg-primary-400/10 rounded-full blur-3xl"
-      ></div>
-      <div
-        class="absolute -top-20 -left-20 w-50 h-40 bg-primary-600/10 rounded-full blur-3xl"
-      ></div>
-
-      <!-- Form content -->
-      <div class="relative {{ animation }} --order-7">
-        <app-form class=" " [fp]="formConfig" />
-
-        <div
-          *ngIf="errorMessage"
-          class="text-red-600 text-center mt-4"
-          role="alert"
-          aria-live="polite"
-        >
-          {{ errorMessage }}
-        </div>
-
-        <mat-divider class="m col-span-full relative top-2 opacity-30" />
-
-        <div class="col-span-full flex justify-between mt-6 {{ animation }} --order-8">
-          <a
-            [routerLink]="['/auth', 'self-register']"
-            class="font-semibold text-center text-gray-400 mt-5 relative lg:-top-5 hover:text-primary"
-          >
-            <span class=" ">Register </span>
-          </a>
-
-          <a
-            [routerLink]="['/auth/self-register', 'reset']"
-            class="font-semibold text-center text-gray-400 mt-5 relative lg:-top-5 hover:text-primary"
-          >
-            <span class=" ">Forgot Password? </span>
-          </a>
-        </div>
+  <div class="login-wrap">
+    <div class="login-brand {{ animation }} --order-1">
+      <img class="brand-logo" src="{{ 'logo' | appVariables }}" alt="WHI logo" />
+      <div class="brand-text">
+        <span class="brand-name">{{ 'fullName' | appVariables }}</span>
+        <span class="brand-tag">Watumishi Housing Investments</span>
       </div>
     </div>
+
+    <div class="login-head {{ animation }} --order-2">
+      <span class="kicker">Secure Access</span>
+      <h1>Welcome back.</h1>
+      <p>Sign in to manage land, projects, sales, leasing and billing in one record.</p>
+    </div>
+
+    <div class="login-card {{ animation }} --order-3">
+      <span class="corner c1" aria-hidden="true"></span>
+      <span class="corner c2" aria-hidden="true"></span>
+
+      <div class="card-head">
+        <div>
+          <h2>Account Sign In</h2>
+          <span class="sheet">REMIS &middot; Staff &amp; Partner Access</span>
+        </div>
+        <div class="seal" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="17" stroke="var(--color-primary)" stroke-width="1.4" />
+            <path d="M12 24V15l8-5 8 5v9" stroke="var(--color-accent-green)" stroke-width="1.6" />
+            <circle cx="20" cy="20" r="2.2" fill="var(--color-secondary)" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <app-form [fp]="formConfig" />
+
+        @if (errorMessage) {
+          <div class="login-error" role="alert" aria-live="polite">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+        }
+      </div>
+
+      <mat-divider class="card-divider" />
+
+      <div class="card-links">
+        <a [routerLink]="['/auth', 'self-register']">Create an account</a>
+        <a [routerLink]="['/auth/self-register', 'reset']">Forgot password?</a>
+      </div>
+    </div>
+
+    <p class="login-foot {{ animation }} --order-5">
+      &copy; {{ currentYear }} Watumishi Housing Investments &middot; REMIS
+    </p>
   </div>
 </div>

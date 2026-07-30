@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
@@ -19,15 +18,7 @@ import { settings$ } from '@core/settings/settings.store';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormComponent,
-    MatIconModule,
-    RouterLink,
-    MatDividerModule,
-    AppVariablesPipe,
-  ],
+  imports: [FormComponent, MatIconModule, RouterLink, MatDividerModule, AppVariablesPipe],
 
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',

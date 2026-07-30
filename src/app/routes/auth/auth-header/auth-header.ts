@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
@@ -9,51 +8,53 @@ import { AuthService } from '../auth.service';
 import { UserButton } from '@theme/widgets/user-button';
 import { settings$ } from '@core/settings/settings.store';
 
+const GHOST_BTN = 'border border-primary text-primary bg-transparent hover:bg-primary/10';
+const GOLD_BTN = 'bg-secondary !border-secondary text-primary hover:opacity-90';
+
 @Component({
   selector: 'auth-header',
-  standalone: true,
-  imports: [CommonModule, ActionButtonsComponent, AppVariablesPipe, UserButton],
+  imports: [ActionButtonsComponent, AppVariablesPipe, UserButton],
   template: `
     <div
-      class="min-h-14  stick-top z-100 top-0 left-0 shadow-lg border-b-2 border-secondary p-2
-       bg-primary flex justify-between items-center relative overflow-hidden lg:px-8
-       {{ animation }} --order-3"
+      class="min-h-16 stick-top z-100 top-0 left-0 border-b border-line bg-paper flex
+       justify-between items-center relative px-4 lg:px-8 {{ animation }} --order-3"
     >
-      <div
-        class="absolute -left-12 h-[400px] w-[80px] bg-light pointer-events-none"
-        style="transform: rotate(45deg);"
-      ></div>
-
-      <div
-        class="{{ animation }} --order-3 relative z-10 left-5 flex items-center gap-3 min-w-0"
-      >
-        <img class="w-[40px] h-auto shrink-0" src="{{ 'logo' | appVariables }}" alt="WHI logo" />
-        <span class="hidden sm:inline text-white_ font-bold tracking-tight truncate">REMIS</span>
+      <div class="relative z-10 flex items-center gap-3 min-w-0">
+        <svg class="w-8 h-8 shrink-0" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="4" y="4" width="32" height="32" rx="2" stroke="var(--color-primary)" stroke-width="1.5" />
+          <path d="M20 4v32M4 20h32" stroke="var(--color-primary)" stroke-width="1" opacity="0.3" />
+          <path d="M12 26V16l8-5 8 5v10" stroke="var(--color-accent-green)" stroke-width="1.6" />
+          <circle cx="20" cy="20" r="2.4" fill="var(--color-secondary)" />
+        </svg>
+        <span
+          class="hidden sm:inline font-semibold tracking-tight text-ink truncate"
+          style="font-family: Fraunces, serif"
+        >
+          {{ 'fullName' | appVariables }}
+        </span>
       </div>
 
       <div class="flex items-center gap-2">
-        <ng-container *ngIf="auth.check(); else guest">
+        @if (auth.check()) {
           <app-user [animation]="animation" />
           <action-buttons
             [actionButtons]="loggedButtons"
             [animation]="animation"
             class="flex flex-wrap gap-2"
           />
-        </ng-container>
-
-        <ng-template #guest>
+        } @else {
           <action-buttons
             [actionButtons]="headerButtons"
             [animation]="animation"
             class="flex flex-wrap gap-2"
           />
-        </ng-template>
+        }
 
         <action-buttons
           [actionButtons]="st.actionButtons"
           [animation]="animation"
           [data]="this"
-          class="flex flex-center gap-2 flex-wrap !text-white"
+          class="flex flex-center gap-2 flex-wrap !text-ink"
         />
       </div>
     </div>
@@ -71,26 +72,26 @@ export class AuthHeader {
   headerButtons: ActionButton[] = [
     {
       label: 'Login',
-      class: 'bg-white !border-secondary  text-secondary  ',
+      class: GHOST_BTN,
       click: () => this.router.navigate(['/auth/login']),
       showFunction: () => !this.auth.check() && !this.router.url.includes('login'),
     },
     {
       label: 'Register',
-      class: 'bg-secondary !border-secondary  text-primary  ',
+      class: GOLD_BTN,
       click: () => this.router.navigate(['/auth/self-register']),
       showFunction: () => !this.auth.check() && !this.router.url.includes('self-register'),
     },
     {
       label: 'Home',
-      class: 'bg-white !border-secondary  text-secondary  ',
+      class: GHOST_BTN,
       click: () => this.router.navigate(['/']),
       showFunction: () => !this.router.url.includes('home'),
     },
 
     {
       label: 'Logout',
-      class: 'bg-secondary !border-secondary  text-primary  ',
+      class: GOLD_BTN,
       click: () => this.auth.logout().subscribe(),
       showFunction: () => this.auth.check(),
     },
@@ -99,7 +100,7 @@ export class AuthHeader {
   loggedButtons: ActionButton[] = [
     {
       label: 'Modules',
-      class: 'bg-white !border-secondary  text-secondary  ',
+      class: GHOST_BTN,
       click: () => this.router.navigate(['/staff-landing']),
       showFunction: () => this.auth.check(),
     },
