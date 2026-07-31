@@ -1,9 +1,7 @@
-FROM registry.lands.go.tz/nginx:1.28.2-alpine
+FROM nginx:alpine
 
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY dist/remis-frontend/browser/ /usr/share/nginx/html/
 
-# COPY certs/ /etc/ssl
+EXPOSE 80
 
-WORKDIR /usr/share/nginx/html
-
-COPY dist/gasco-frontend/browser/ .
+CMD ["nginx", "-g", "daemon off;"]
