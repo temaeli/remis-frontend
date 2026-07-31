@@ -1,4 +1,119 @@
-include:
-  - project: 'deployment/ci-templates'
-    ref: main
-    file: 'angular-gitlab-ci.yml'
+variables:
+  GIT_STRATEGY: none
+  GIT_SSL_NO_VERIFY: "true"
+
+stages:
+  - build
+  - docker
+  - deploy
+
+# ============================================
+# BUILD
+# ============================================
+build:
+  stage: build
+  image: node:20-alpine
+  
+  before_script:
+    - git config --global http.sslVerify false
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@41.59.87.110:2243/whi/remis-frontend.git .
+    - git checkout ${CI_COMMIT_SHA}
+  
+  script:
+    - echo "Building Angular application..."
+    - npm ci --force
+    - npm run build:prod
+    - ls -la dist/remis-frontend/browser/
+  
+  artifacts:
+    paths:
+      - dist/
+      - Dockerfile
+      - nginx.conf
+    expire_in: 1 hour
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "prod"
+
+# ============================================
+# DOCKER
+# ============================================
+docker:
+  stage: docker
+  image: docker:cli
+  
+  dependencies:
+    - build
+  
+  before_script:
+    - apk add --no-cache git
+  
+  script:
+    - echo "Building Docker image..."
+    - docker build -t remis-frontend:${CI_COMMIT_SHORT_SHA} .
+    - docker tag remis-frontend:${CI_COMMIT_SHORT_SHA} remis-frontend:${CI_COMMIT_BRANCH}-latest
+    - echo "✅ Docker image built successfully!"
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "prod"
+
+# ============================================
+# DEPLOY - DEV (Auto)
+# ============================================
+deploy-dev:
+  stage: deploy
+  image: docker:cli
+  
+  script:
+    - echo "🚀 Deploying frontend to DEVELOPMENT..."
+    - docker stop remis-frontend-dev || true
+    - docker rm remis-frontend-dev || true
+    - docker run -d --name remis-frontend-dev -p 81:80 remis-frontend:dev-latest
+    - echo "✅ Dev frontend deployment successful!"
+    - docker ps | grep remis-frontend-dev
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      when: on_success
+
+# ============================================
+# DEPLOY - STAGING (Manual)
+# ============================================
+deploy-staging:
+  stage: deploy
+  image: docker:cli
+  
+  script:
+    - echo "🚀 Deploying frontend to STAGING..."
+    - docker stop remis-frontend-staging || true
+    - docker rm remis-frontend-staging || true
+    - docker run -d --name remis-frontend-staging -p 82:80 remis-frontend:staging-latest
+    - echo "✅ Staging frontend deployment successful!"
+    - docker ps | grep remis-frontend-staging
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+      when: manual
+
+# ============================================
+# DEPLOY - PRODUCTION (Manual)
+# ============================================
+deploy-prod:
+  stage: deploy
+  image: docker:cli
+  
+  script:
+    - echo "🚀 Deploying frontend to PRODUCTION..."
+    - docker stop remis-frontend || true
+    - docker rm remis-frontend || true
+    - docker run -d --name remis-frontend -p 80:80 remis-frontend:prod-latest
+    - echo "✅ Production frontend deployment successful!"
+    - docker ps | grep remis-frontend
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH == "prod"
+      when: manual
