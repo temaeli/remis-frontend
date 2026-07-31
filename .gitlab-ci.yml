@@ -73,7 +73,7 @@ deploy-dev:
     - echo "🚀 Deploying frontend to DEVELOPMENT..."
     - docker stop remis-frontend-dev || true
     - docker rm remis-frontend-dev || true
-    - docker run -d --name remis-frontend-dev -p 81:80 remis-frontend:dev-latest
+    - docker run -d --name remis-frontend-dev --network remis-network -p 81:80 remis-frontend:dev-latest
     - echo "✅ Dev frontend deployment successful!"
     - docker ps | grep remis-frontend-dev
   
@@ -92,7 +92,7 @@ deploy-staging:
     - echo "🚀 Deploying frontend to STAGING..."
     - docker stop remis-frontend-staging || true
     - docker rm remis-frontend-staging || true
-    - docker run -d --name remis-frontend-staging -p 82:80 remis-frontend:staging-latest
+    - docker run -d --name remis-frontend-staging --network remis-network -p 82:80 remis-frontend:staging-latest
     - echo "✅ Staging frontend deployment successful!"
     - docker ps | grep remis-frontend-staging
   
@@ -111,7 +111,7 @@ deploy-prod:
     - echo "🚀 Deploying frontend to PRODUCTION..."
     - docker stop remis-frontend || true
     - docker rm remis-frontend || true
-    - docker run -d --name remis-frontend -p 80:80 remis-frontend:prod-latest
+    - docker run -d --name remis-frontend --network remis-network -p 80:80 remis-frontend:prod-latest
     - echo "✅ Production frontend deployment successful!"
     - docker ps | grep remis-frontend
   
