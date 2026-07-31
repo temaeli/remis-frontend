@@ -22,7 +22,7 @@ build:
   
   script:
     - echo "Building Angular application..."
-    - npm ci --force
+    - npm install --force
     - npm run build:prod
     - ls -la dist/remis-frontend/browser/
   
