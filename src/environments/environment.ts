@@ -10,26 +10,14 @@ export const environment: EnvInterface = {
   useHash: false,
   apiUrl: 'localhost',
   GRANT_TYPE: 'password',
-  CLIENT_ID: 'gasco',
-  CLIENT_SECRET: 'gasco',
+  CLIENT_ID: 'remis',
+  CLIENT_SECRET: 'remis',
   SESSION_TIME: 9000000,
   REQUEST_TIME: 60000,
 
-  ///// staging
-  // FRONT_END_URL: 'http://localhost:4300',
-  // SERVER_URL: 'http://41.59.86.73:9001',
-
-  ///// staging private
-  // FRONT_END_URL: 'http://localhost:4300',
-  // SERVER_URL: 'http://10.76.100.30:9001',
-
-  ///// gasco dev
-  // FRONT_END_URL: 'http://localhost:4300',
-  SERVER_URL: 'https://dev.gasco.co.tz/bkend',
-
-  //// local
-  FRONT_END_URL: 'http://192.168.1.11:4200',
-  // SERVER_URL: 'http://192.168.1.11:9091',
+  ///// remis dev
+  FRONT_END_URL: 'http://demo.remis.go.tz',
+  SERVER_URL: 'http://demo.remis.go.tz/api',
 };
 
 /*
