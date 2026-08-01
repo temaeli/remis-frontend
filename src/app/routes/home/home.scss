@@ -137,6 +137,34 @@ nav {
   color: var(--whi-blue);
 }
 
+.theme-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--line);
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.theme-toggle mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
 .nav-cta {
   padding: 9px 20px;
   font-size: 14px;

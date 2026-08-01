@@ -16,6 +16,15 @@
       <a href="#modules">Modules</a>
       <a href="#audit">Audit &amp; control</a>
       <a href="#integrations">Integrations</a>
+      <button
+        type="button"
+        class="theme-toggle"
+        (click)="toggleTheme()"
+        [attr.aria-pressed]="(st.settings$ | async)?.theme === 'dark'"
+        aria-label="Toggle dark mode"
+      >
+        <mat-icon [svgIcon]="(st.settings$ | async)?.theme === 'dark' ? 'bulb_off' : 'bulb'" />
+      </button>
       <a routerLink="/auth/login" class="nav-cta">Sign In</a>
     </div>
   </div>

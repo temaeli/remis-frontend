@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatIcon } from '@angular/material/icon';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { ActionButtonsComponent } from '@shared/components/action-buttons/action-buttons.component';
 import { SettingsService } from '@core/settings/settings.service';
@@ -13,7 +15,7 @@ const GOLD_BTN = 'bg-secondary !border-secondary text-primary hover:opacity-90';
 
 @Component({
   selector: 'auth-header',
-  imports: [ActionButtonsComponent, AppVariablesPipe, UserButton],
+  imports: [ActionButtonsComponent, AppVariablesPipe, UserButton, MatIcon, AsyncPipe],
   template: `
     <div
       class="min-h-16 stick-top z-100 top-0 left-0 border-b border-line bg-paper flex
@@ -50,12 +52,18 @@ const GOLD_BTN = 'bg-secondary !border-secondary text-primary hover:opacity-90';
           />
         }
 
-        <action-buttons
-          [actionButtons]="st.actionButtons"
-          [animation]="animation"
-          [data]="this"
-          class="flex flex-center gap-2 flex-wrap !text-ink"
-        />
+        <button
+          type="button"
+          class="inline-flex items-center justify-center size-[34px] shrink-0 text-ink-soft bg-transparent border border-line hover:text-secondary hover:border-secondary focus-visible:text-secondary focus-visible:border-secondary transition-colors"
+          (click)="toggleTheme()"
+          [attr.aria-pressed]="(st.settings$ | async)?.theme === 'dark'"
+          aria-label="Toggle dark mode"
+        >
+          <mat-icon
+            [svgIcon]="(st.settings$ | async)?.theme === 'dark' ? 'bulb_off' : 'bulb'"
+            class="!w-[18px] !h-[18px] !text-[18px]"
+          />
+        </button>
       </div>
     </div>
   `,
@@ -68,6 +76,11 @@ export class AuthHeader {
 
   animation = settings$.value.animations?.auth;
   user$ = this.auth.user$;
+
+  toggleTheme(): void {
+    const theme = this.st.settings$.value.theme === 'dark' ? 'light' : 'dark';
+    this.st.setSettings({ theme });
+  }
 
   headerButtons: ActionButton[] = [
     {

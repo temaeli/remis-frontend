@@ -8,7 +8,10 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MatIcon } from '@angular/material/icon';
+import { SettingsService } from '@core/settings/settings.service';
 
 interface UnitRecord {
   u: string;
@@ -353,7 +356,7 @@ const NEIGHBOR_PLOTS: NeighborPlot[] = [
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, AsyncPipe, MatIcon],
   templateUrl: './home.html',
   styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -361,6 +364,8 @@ const NEIGHBOR_PLOTS: NeighborPlot[] = [
 export class Home implements AfterViewInit, OnDestroy {
   private el: ElementRef<HTMLElement> = inject(ElementRef);
   private observers: IntersectionObserver[] = [];
+
+  st = inject(SettingsService);
 
   readonly levels = LEVELS;
   readonly unitLayout = UNIT_LAYOUT;
@@ -439,6 +444,11 @@ export class Home implements AfterViewInit, OnDestroy {
 
   money(amount: number): string {
     return 'TZS ' + amount.toLocaleString('en-US');
+  }
+
+  toggleTheme(): void {
+    const theme = this.st.settings$.value.theme === 'dark' ? 'light' : 'dark';
+    this.st.setSettings({ theme });
   }
 
   private prefersReducedMotion(): boolean {
