@@ -1,27 +1,24 @@
 <div class="bg-white size-full relative flex flex-col">
-  <div
-    class="min-h-14 bg-primary overflow-hidden stick-top flex items-center px-3 justify-between
-    {{ animation }} --order-3 z-100 top-0 left-0 shadow-lg border-b border-secondary
-     "
+  <header
+    class="header-bar min-h-14 bg-primary overflow-hidden stick-top flex items-center px-4 sm:px-6 justify-between
+    {{ animation }} --order-3 z-100 top-0 left-0 shadow-lg"
   >
-    <div
-      class="absolute -left-3 h-[400px] w-[150px] bg-white"
-      style="transform: rotate(45deg)"
-    ></div>
-
-    <div class="flex relative gap-2 items-center">
-      <span class="cursor-pointer">
-        <img class="w-[40px] h-auto" src="{{ 'icon' | appVariables }}" />
-      </span>
-      <span class="opacity-50 px-2"> | </span>
-      <span class="font-bold text-[16px] letter-spacing-3">
-        {{ 'name' | appVariables }}
-      </span>
+    <div class="flex relative gap-3 items-center min-w-0 z-10">
+      <img class="w-9 h-auto shrink-0" src="{{ 'icon' | appVariables }}" alt="" />
+      <span class="w-px h-7 bg-white/25 shrink-0" aria-hidden="true"></span>
+      <div class="min-w-0 leading-tight">
+        <div class="brand-name text-white text-[17px] font-semibold tracking-tight truncate">
+          {{ 'name' | appVariables }}
+        </div>
+        <div class="brand-tagline hidden sm:block text-white/55 truncate">
+          Real Estate Management Information System
+        </div>
+      </div>
     </div>
 
-    <div class="flex items-center">
+    <div class="flex items-center z-10">
       <app-user [animation]="animation" />
-      <span class="opacity-50 {{ animation }} --order-3"> | </span>
+      <span class="opacity-30 text-white {{ animation }} --order-3" aria-hidden="true"> | </span>
 
       <action-buttons
         [actionButtons]="st.actionButtons"
@@ -30,65 +27,49 @@
         class="ms-2 flex flex-center gap-2 flex-wrap"
       />
     </div>
-  </div>
+  </header>
 
-  <div class="grow overflow-y-auto bg-light flex justify-center items-center">
-    <!-- Background layers -->
+  <div class="grow overflow-y-auto bg-light flex justify-center items-start relative">
+    <!-- Registry-themed background: parcel grid + faint survey/seal watermarks -->
     <div class="absolute inset-0 bg-white"></div>
+    <div class="registry-grid"></div>
+    <svg class="registry-seal" viewBox="0 0 200 200" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+      <circle cx="100" cy="100" r="92" stroke-width="1" />
+      <circle cx="100" cy="100" r="74" stroke-width="1" />
+      <circle cx="100" cy="100" r="3.5" fill="currentColor" stroke="none" />
+      <path d="M100 8v22M100 170v22M8 100h22M170 100h22" stroke-width="1" />
+      <path d="M60 130V80l40-24 40 24v50" stroke-width="1.6" />
+      <path d="M40 152h120" stroke-width="1" />
+    </svg>
+    <svg class="registry-seal registry-seal--alt" viewBox="0 0 200 200" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+      <rect x="14" y="14" width="172" height="172" stroke-width="1" />
+      <path d="M14 14L186 186M186 14L14 186" stroke-width="0.6" opacity="0.5" />
+      <polygon points="46,140 60,58 150,44 168,120 120,166" stroke-width="1.6" />
+    </svg>
 
-    <div class="absolute inset-0 opacity-25">
-      <depth-bg />
-    </div>
+    <div class="mx-auto flex-1 max-w-6xl p-4 sm:p-6 lg:p-12 relative z-10">
+      <div class="mb-6 text-center sm:text-left">
+        <p class="directory-eyebrow">Module Directory</p>
+        <h1 class="directory-title">Select a module to continue</h1>
+      </div>
 
-    <div class="mx-auto flex-1 max-w-7xl p-4 sm:p-6 lg:p-12 z-10">
-      <div class="flex flex-wrap justify-center gap-3">
-        @for (module of modules(); track $index; let i = $index) {
-          <div class="staff-card-wrapper min-w-[320px] max-w-[400px] w-full md:w-[32%] p-2">
-            <a
-              class="staff-card group bg-white/90 backdrop-blur-xl rounded-xl shadow-xl flex flex-col justify-center gap-1 p-3 pt-2 relative overflow-hidden border border-transparent focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:border-primary/30"
-              [routerLink]="['', module.route]"
-              tabindex="0"
-              aria-label="{{ module.name }} module card"
-            >
-              <!-- Glass gradient overlay -->
-              <div
-                class="absolute inset-0 pointer-events-none rounded-xl bg-gradient-to-br from-white/90 via-primary/5 to-primary/10 z-0"
-              ></div>
-              <div class="flex flex-col items-center gap-0.5 mb-1 z-10 w-full">
-                <span
-                  class="icon-circle flex items-center justify-center rounded-full border-2 border-primary/40 group-hover:border-primary/80 bg-white/80 size-12 transition-all duration-300 shadow-lg mx-auto"
-                >
-                  <mat-icon
-                    [svgIcon]="module.icon"
-                    class="text-primary size-7 transition-all duration-300 group-hover:scale-110"
-                  />
-                </span>
-                <span
-                  class="font-bold text-xl md:text-lg text-black tracking-tight text-center w-full mt-1"
-                  >{{ module.name }}</span
-                >
-              </div>
-              <div class="card-chart mt-1 z-10 w-full flex">
-                <div class="h-7 flex items-end gap-1.5 ml-2">
-                  <div
-                    class="bg-primary/60 rounded-full w-2 md:w-2.5 h-4 group-hover:h-6 transition-all duration-300"
-                  ></div>
-                  <div
-                    class="bg-primary/40 rounded-full w-2 md:w-2.5 h-5 group-hover:h-7 transition-all duration-300"
-                  ></div>
-                  <div
-                    class="bg-primary/80 rounded-full w-2 md:w-2.5 h-3 group-hover:h-5 transition-all duration-300"
-                  ></div>
-                  <div
-                    class="bg-primary/30 rounded-full w-2 md:w-2.5 h-6 group-hover:h-4 transition-all duration-300"
-                  ></div>
-                  <div
-                    class="bg-primary/50 rounded-full w-2 md:w-2.5 h-4 group-hover:h-8 transition-all duration-300"
-                  ></div>
-                </div>
-              </div>
-            </a>
-          </div>
+      <div class="module-grid">
+        @for (module of modules(); track module.route; let i = $index) {
+          <a
+            class="module-tile"
+            [routerLink]="['', module.route]"
+            aria-label="Open {{ module.name }} module"
+          >
+            <div class="tile-top" aria-hidden="true">
+              <span class="tile-num">{{ (i + 1).toString().padStart(2, '0') }}</span>
+              <span class="tile-code">{{ moduleCode(module.name) }}</span>
+            </div>
+            <span class="tile-icon" aria-hidden="true">
+              <mat-icon [svgIcon]="module.icon" />
+            </span>
+            <span class="tile-name">{{ module.name }}</span>
+            <span class="tile-cta">Open module <span aria-hidden="true">&rarr;</span></span>
+          </a>
         }
       </div>
     </div>

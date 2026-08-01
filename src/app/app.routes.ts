@@ -52,9 +52,10 @@ export const APP_ROUTES: TypedRoutes = [
       isMenu: true,
       icon: 'settings',
       visibleFor: ['internal'],
-      permissions: ['SETTINGS_MODULE'],
+      // permissions: ['SETTINGS_MODULE'],
     },
     loadChildren: () => import('./routes/settings/settings.routes'),
   },
+
   { path: '**', redirectTo: 'home' },
 ];

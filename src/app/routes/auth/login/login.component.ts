@@ -81,13 +81,14 @@ export class LoginComponent implements OnDestroy {
       rememberMe: value.rememberMe,
     };
 
+    this.router.navigateByUrl('/staff-landing'); // this should be removed when the backend is up
+
     this.errorMessage = null;
     this.fs.fetch({
       loadingOn: 'submit-button',
       fetchFn: () => this.auth.login(payload),
       successFn: (user: any) => {
         console.log('[Login] Success - User:', user?.email, 'isStaff:', user?.isStaff);
-        this.redirectUser(user);
       },
       failedFn: (err: any) => {
         console.error('[Login] Failed:', err);
