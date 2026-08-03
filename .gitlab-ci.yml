@@ -48,9 +48,6 @@ docker:
   dependencies:
     - build
   
-  before_script:
-    - apk add --no-cache git
-  
   script:
     - echo "Building Docker image..."
     - docker build -t remis-frontend:${CI_COMMIT_SHORT_SHA} .
