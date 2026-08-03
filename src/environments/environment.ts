@@ -10,14 +10,15 @@ export const environment: EnvInterface = {
   useHash: false,
   apiUrl: 'localhost',
   GRANT_TYPE: 'password',
-  CLIENT_ID: 'remis',
-  CLIENT_SECRET: 'remis',
+  CLIENT_ID: 'whi',
+  CLIENT_SECRET: 'whi',
   SESSION_TIME: 9000000,
   REQUEST_TIME: 60000,
 
   ///// remis dev
   FRONT_END_URL: 'http://demo.remis.go.tz',
-  SERVER_URL: 'http://demo.remis.go.tz/api',
+  // SERVER_URL: 'http://demo.remis.go.tz/api',
+  SERVER_URL: 'http://localhost:9091',
 };
 
 /*

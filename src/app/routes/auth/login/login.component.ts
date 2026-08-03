@@ -81,14 +81,12 @@ export class LoginComponent implements OnDestroy {
       rememberMe: value.rememberMe,
     };
 
-    this.router.navigateByUrl('/staff-landing'); // this should be removed when the backend is up
-
     this.errorMessage = null;
     this.fs.fetch({
       loadingOn: 'submit-button',
       fetchFn: () => this.auth.login(payload),
       successFn: (user: any) => {
-        console.log('[Login] Success - User:', user?.email, 'isStaff:', user?.isStaff);
+        this.redirectUser(user);
       },
       failedFn: (err: any) => {
         console.error('[Login] Failed:', err);
@@ -111,9 +109,9 @@ export class LoginComponent implements OnDestroy {
       console.log('[Redirect] -> /staff-landing');
       this.router.navigateByUrl('/staff-landing');
     } else if (user?.isStaff === false) {
-      // External/Client user
-      console.log('[Redirect] -> /portal');
-      this.router.navigateByUrl('/portal');
+      // External/Client user — no dedicated external portal exists yet
+      console.log('[Redirect] -> /home');
+      this.router.navigateByUrl('/home');
     } else {
       // Fallback for unknown user type
       console.log('[Redirect] -> /home (unknown user type)');
