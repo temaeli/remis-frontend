@@ -16,7 +16,7 @@ build:
   
   before_script:
     - git config --global http.sslVerify false
-    - echo "Token exists: ${CI_JOB_TOKEN:+YES}"
+    - if [ -n "$CI_JOB_TOKEN" ]; then echo "Token exists"; else echo "Token missing"; fi
     - echo "Project: $CI_PROJECT_PATH"
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@41.59.87.110:2243/whi/remis-frontend.git .
     - git checkout ${CI_COMMIT_SHA}
