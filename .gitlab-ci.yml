@@ -12,16 +12,17 @@ stages:
 # ============================================
 build:
   stage: build
-  image: node:20-alpine
+  image: node:20  
   
   before_script:
-    - apk add --no-cache git
     - git config --global http.sslVerify false
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@41.59.87.110:2243/whi/remis-frontend.git .
     - git checkout ${CI_COMMIT_SHA}
   
   script:
     - echo "Building Angular application..."
+    - node --version
+    - npm --version
     - npm install --force
     - npm run build:prod
     - ls -la dist/remis-frontend/browser/
@@ -35,43 +36,36 @@ build:
   
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
-    - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "prod"
 
-# ============================================
 # DOCKER
 # ============================================
 docker:
   stage: docker
   image: docker:cli
-  
   dependencies:
     - build
   
   script:
     - echo "Building Docker image..."
     - docker build -t remis-frontend:${CI_COMMIT_SHORT_SHA} .
-    - docker tag remis-frontend:${CI_COMMIT_SHORT_SHA} remis-frontend:${CI_COMMIT_BRANCH}-latest
-    - echo "✅ Docker image built successfully!"
+    - docker tag remis-frontend:${CI_COMMIT_SHORT_SHA} remis-frontend:dev-latest
+    - echo "Docker image built successfully!"
   
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
-    - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "prod"
 
-# ============================================
-# DEPLOY - DEV (Auto)
+# DEPLOY - DEV
 # ============================================
 deploy-dev:
   stage: deploy
   image: docker:cli
   
   script:
-    - echo "🚀 Deploying frontend to DEVELOPMENT..."
+    - echo "Deploying frontend to DEVELOPMENT..."
     - docker stop remis-frontend-dev || true
     - docker rm remis-frontend-dev || true
     - docker run -d --name remis-frontend-dev --network remis-network -p 81:80 remis-frontend:dev-latest
-    - echo "✅ Dev frontend deployment successful!"
+    - echo "Dev frontend deployment successful!"
     - docker ps | grep remis-frontend-dev
   
   rules:
