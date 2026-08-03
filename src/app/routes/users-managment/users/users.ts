@@ -31,18 +31,12 @@ export class Users extends BaseComponent {
     'firstName filter(true) sortable(true)',
     'lastName filter(true) sortable(true)',
     'email filter(true) sortable(true)',
-    // 'phoneNumber filter(true) sortable(true)',
-    // 'nationalId filter(true) sortable(true)',
-    // 'rolesList',
 
     {
       field: 'rolesList',
       header: 'Roles',
       valueFn: (r) => r?.rolesList?.map((x: any) => getDisplayName(x.role?.name)),
     },
-    'plants',
-    'pipelines',
-
     {
       field: 'active',
       valueFn: (row) => (row?.active ? 'Active' : 'Inactive'),

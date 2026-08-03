@@ -42,14 +42,14 @@ export const SETTINGS_ROUTES: TypedRoutes = [
   },
 
   // Report Templates
-  {
-    path: 'report-template',
-    data: { isMenu: true, name: 'Report Templates', icon: 'report' },
-    loadComponent: () =>
-      import('./report-template/report-templates.component').then(
-        (m) => m.ReportTemplatesComponent,
-      ),
-  },
+  // {
+  //   path: 'report-template',
+  //   data: { isMenu: true, name: 'Report Templates', icon: 'report' },
+  //   loadComponent: () =>
+  //     import('./report-template/report-templates.component').then(
+  //       (m) => m.ReportTemplatesComponent,
+  //     ),
+  // },
   {
     matcher: (url) => matchRoute(url, 'report-template', 'reportTemplateUid'),
     loadComponent: () =>
