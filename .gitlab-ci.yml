@@ -12,18 +12,16 @@ stages:
 # ============================================
 build:
   stage: build
-  image: node:20  
+  image: node:20-alpine
   
   before_script:
+    - apk add --no-cache git
     - git config --global http.sslVerify false
-    - echo "Project: $CI_PROJECT_PATH"
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@41.59.87.110:2243/whi/remis-frontend.git .
     - git checkout ${CI_COMMIT_SHA}
   
   script:
     - echo "Building Angular application..."
-    - node --version
-    - npm --version
     - npm install --force
     - npm run build:prod
     - ls -la dist/remis-frontend/browser/
@@ -37,25 +35,32 @@ build:
   
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "prod"
 
+# ============================================
 # DOCKER
 # ============================================
 docker:
   stage: docker
   image: docker:cli
+  
   dependencies:
     - build
   
   script:
     - echo "Building Docker image..."
     - docker build -t remis-frontend:${CI_COMMIT_SHORT_SHA} .
-    - docker tag remis-frontend:${CI_COMMIT_SHORT_SHA} remis-frontend:dev-latest
+    - docker tag remis-frontend:${CI_COMMIT_SHORT_SHA} remis-frontend:${CI_COMMIT_BRANCH}-latest
     - echo "Docker image built successfully!"
   
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "prod"
 
-# DEPLOY - DEV
+# ============================================
+# DEPLOY - DEV (Auto)
 # ============================================
 deploy-dev:
   stage: deploy
@@ -72,3 +77,4 @@ deploy-dev:
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
       when: on_success
+
