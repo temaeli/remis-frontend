@@ -52,7 +52,7 @@ docker:
     - echo "Building Docker image..."
     - docker build -t remis-frontend:${CI_COMMIT_SHORT_SHA} .
     - docker tag remis-frontend:${CI_COMMIT_SHORT_SHA} remis-frontend:${CI_COMMIT_BRANCH}-latest
-    - echo "✅ Docker image built successfully!"
+    - echo "Docker image built successfully!"
   
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
@@ -67,13 +67,14 @@ deploy-dev:
   image: docker:cli
   
   script:
-    - echo "🚀 Deploying frontend to DEVELOPMENT..."
+    - echo "Deploying frontend to DEVELOPMENT..."
     - docker stop remis-frontend-dev || true
     - docker rm remis-frontend-dev || true
     - docker run -d --name remis-frontend-dev --network remis-network -p 81:80 remis-frontend:dev-latest
-    - echo "✅ Dev frontend deployment successful!"
+    - echo "Dev frontend deployment successful!"
     - docker ps | grep remis-frontend-dev
   
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
       when: on_success
+
