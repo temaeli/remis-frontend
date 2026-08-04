@@ -32,6 +32,8 @@ export interface AppRouteData extends Menu {
   isMenu?: boolean;
   title?: string;
   subtitle?: string;
+  /** Short blurb describing what the module does, shown on the staff landing tiles. */
+  description?: string;
   /** Mounts a shared detail component in view-only mode (no mutation actions). */
   readOnly?: boolean;
 }

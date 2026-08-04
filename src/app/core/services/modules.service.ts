@@ -6,6 +6,7 @@ export interface Module {
   name: string;
   route: string;
   icon: string;
+  description?: string;
   children?: TypedRoutes;
 }
 

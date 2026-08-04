@@ -68,6 +68,9 @@
               <mat-icon [svgIcon]="module.icon" />
             </span>
             <span class="tile-name">{{ module.name }}</span>
+            @if (module.description) {
+              <span class="tile-desc">{{ module.description }}</span>
+            }
             <span class="tile-cta">Open module <span aria-hidden="true">&rarr;</span></span>
           </a>
         }
