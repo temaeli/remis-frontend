@@ -6,7 +6,9 @@ export const environment: EnvInterface = {
   useHash: false,
   apiUrl: 'localhost',
   FRONT_END_URL: 'http://training.remis.go.tz',
-  SERVER_URL: 'http://training.remis.go.tz/api',
+  // SERVER_URL: 'http://training.remis.go.tz/api',
+  SERVER_URL: 'http://197.149.179.218:9091',
+
   GRANT_TYPE: 'password',
   CLIENT_ID: 'whi',
   CLIENT_SECRET: 'whi',

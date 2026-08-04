@@ -50,24 +50,12 @@ export const SETTINGS_ROUTES: TypedRoutes = [
   //       (m) => m.ReportTemplatesComponent,
   //     ),
   // },
-  {
-    matcher: (url) => matchRoute(url, 'report-template', 'reportTemplateUid'),
-    loadComponent: () =>
-      import('./report-template/report-template.component').then((m) => m.ReportTemplateComponent),
-  },
+  // {
+  //   matcher: (url) => matchRoute(url, 'report-template', 'reportTemplateUid'),
+  //   loadComponent: () =>
+  //     import('./report-template/report-template.component').then((m) => m.ReportTemplateComponent),
+  // },
 
-  // System Settings
-  {
-    path: 'system-settings',
-    data: { isMenu: true, name: 'System Settings', icon: 'settings' },
-    loadComponent: () =>
-      import('./system-settings/system-settings.component').then((m) => m.SystemSettingsComponent),
-  },
-  {
-    matcher: (url) => matchRoute(url, 'system-settings', 'uid'),
-    loadComponent: () =>
-      import('./system-settings/system-setting.component').then((m) => m.SystemSettingComponent),
-  },
 
   // Designations Management
   {
@@ -80,6 +68,19 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     matcher: (url) => matchRoute(url, 'designations', 'uid'),
     loadComponent: () =>
       import('./designations/designation.component').then((m) => m.DesignationComponent),
+  },
+
+   // Departments Management
+  {
+    path: 'departments',
+    data: { isMenu: true, name: 'Departments', icon: 'suitcase' },
+    loadComponent: () =>
+      import('./departments/departments.component').then((m) => m.DepartmentsComponent),
+  },
+  {
+    matcher: (url) => matchRoute(url, 'departments', 'departmentUid'),
+    loadComponent: () =>
+      import('./departments/department.component').then((m) => m.DepartmentComponent),
   },
 
   // Regions Management
@@ -109,17 +110,18 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     loadComponent: () => import('../notifications/dashboard/dashboard').then((m) => m.Dashboard),
   },
 
-  // Departments Management
+
+  // System Settings
   {
-    path: 'departments',
-    data: { isMenu: true, name: 'Departments', icon: 'suitcase' },
+    path: 'system-settings',
+    data: { isMenu: true, name: 'System Settings', icon: 'settings' },
     loadComponent: () =>
-      import('./departments/departments.component').then((m) => m.DepartmentsComponent),
+      import('./system-settings/system-settings.component').then((m) => m.SystemSettingsComponent),
   },
   {
-    matcher: (url) => matchRoute(url, 'departments', 'departmentUid'),
+    matcher: (url) => matchRoute(url, 'system-settings', 'uid'),
     loadComponent: () =>
-      import('./departments/department.component').then((m) => m.DepartmentComponent),
+      import('./system-settings/system-setting.component').then((m) => m.SystemSettingComponent),
   },
 ];
 

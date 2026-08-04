@@ -18,7 +18,7 @@ export const environment: EnvInterface = {
   ///// remis dev
   FRONT_END_URL: 'http://demo.remis.go.tz',
   // SERVER_URL: 'http://demo.remis.go.tz/api',
-  SERVER_URL: 'http://localhost:9091',
+  SERVER_URL: 'http://197.149.179.218:9091',
 };
 
 /*
