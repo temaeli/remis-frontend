@@ -53,6 +53,7 @@ export const APP_ROUTES: TypedRoutes = [
       isMenu: true,
       icon: 'map',
       visibleFor: ['internal'],
+      permissions: ['ROLE_VIEW_LAND_MANAGEMENT_MODULE'],
       // description:
       //   'Register parcels, track status and acquisition history, and control allocation to projects or sale.',
     },
@@ -68,7 +69,7 @@ export const APP_ROUTES: TypedRoutes = [
       isMenu: true,
       icon: 'settings',
       visibleFor: ['internal'],
-      // permissions: ['SETTINGS_MODULE'],
+      permissions: ['ROLE_VIEW_SETTINGS_MODULE'],
     },
     loadChildren: () => import('./routes/settings/settings.routes'),
   },
