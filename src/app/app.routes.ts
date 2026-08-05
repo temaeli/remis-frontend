@@ -5,7 +5,7 @@ import { UserModuleComp } from './routes/user/user';
 import { externalUserGuard } from './routes/auth/external-user.guard';
 import { permissionGuard } from './routes/auth/permission.guard';
 import { ResetComponent } from '@routes/auth/register/reset/reset.component';
-import { LandManagement } from './routes/land-management/land-management';
+import { AssetManagement } from './routes/asset-management/asset-management';
 
 export const APP_ROUTES: TypedRoutes = [
   {
@@ -45,19 +45,21 @@ export const APP_ROUTES: TypedRoutes = [
   },
 
   {
-    path: 'land-management',
-    title: 'Land Management',
-    component: LandManagement,
+    path: 'asset-management',
+    title: 'Asset Management',
+    component: AssetManagement,
     canActivate: [externalUserGuard, permissionGuard],
     data: {
       isMenu: true,
       icon: 'map',
       visibleFor: ['internal'],
-      permissions: ['ROLE_VIEW_LAND_MANAGEMENT_MODULE'],
-      // description:
-      //   'Register parcels, track status and acquisition history, and control allocation to projects or sale.',
+      // ROLE_VIEW_LAND_MANAGEMENT_MODULE is kept alongside the new permission so
+      // roles already granted the old module tile do not lose access on rename.
+      permissions: ['ROLE_VIEW_ASSET_REGISTRY_MODULE', 'ROLE_VIEW_LAND_MANAGEMENT_MODULE'],
+      description:
+        'Classify assets by type, category and subcategory, register them, and record land registrations and verifications.',
     },
-    loadChildren: () => import('./routes/land-management/land-management.routes'),
+    loadChildren: () => import('./routes/asset-management/asset-management.routes'),
   },
 
   {
