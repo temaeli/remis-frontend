@@ -28,8 +28,8 @@ export class Users extends BaseComponent {
 
   keyColumns: GridKeyColumn[] = [
     'index',
-    'firstName filter(true) sortable(true)',
-    'lastName filter(true) sortable(true)',
+    'bioData.firstName as First Name filter(true) sortable(true)',
+    'bioData.thirdName as Last Name filter(true) sortable(true)',
     'email filter(true) sortable(true)',
 
     {

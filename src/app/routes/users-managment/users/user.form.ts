@@ -109,7 +109,18 @@ export function userUpsertBtn(comp: BaseComponent): ActionButton {
   return {
     click: (data?: UserAccount) => {
       const formParameter: FormParameters = {
-        model: { ...data },
+        // The form still submits the flat names UserDto expects, but the record
+        // carries them on bioData, under different names. Seed them across, or an
+        // edit opens blank and saves the blanks back over the person record.
+        model: {
+          ...data,
+          firstName: data?.bioData?.firstName,
+          middleName: data?.bioData?.secondName,
+          lastName: data?.bioData?.thirdName,
+          nationalId: data?.bioData?.nin,
+          phoneNumber:
+            data?.bioData?.mobileNumber != null ? String(data.bioData.mobileNumber) : undefined,
+        },
         title: 'User',
         fields: getUserFormFields(comp),
         closeAction$: user$,
@@ -153,7 +164,7 @@ export function userActivateBtn(comp: BaseComponent): ActionButton {
     labelMapper: (data: UserAccount) => (data?.active ? 'Deactivate User' : 'Activate User'),
     confirmDataMapper: (data: UserAccount) => ({
       title: data?.active ? 'Deactivate User' : 'Activate User',
-      message: `Are you sure you want to ${data?.active ? 'deactivate' : 'activate'} <b>${data?.firstName ?? ''} ${data?.lastName ?? ''}</b>?`,
+      message: `Are you sure you want to ${data?.active ? 'deactivate' : 'activate'} <b>${data?.bioData?.firstName ?? ''} ${data?.bioData?.thirdName ?? ''}</b>?`,
       confirmText: data?.active ? 'Deactivate' : 'Activate',
       confirmButtonColor: data?.active ? 'red' : 'primary',
     }),
@@ -177,7 +188,7 @@ export function userUnlockBtn(comp: BaseComponent): ActionButton {
     hideFunction: (data: UserAccount) => !!data?.accountNonLocked,
     confirmDataMapper: (data: UserAccount) => ({
       title: 'Unlock User',
-      message: `Are you sure you want to unlock <b>${data?.firstName ?? ''} ${data?.lastName ?? ''}</b>?`,
+      message: `Are you sure you want to unlock <b>${data?.bioData?.firstName ?? ''} ${data?.bioData?.thirdName ?? ''}</b>?`,
       confirmText: 'Unlock',
       confirmButtonColor: 'primary',
     }),
@@ -200,7 +211,7 @@ export function userResetPasswordBtn(comp: BaseComponent): ActionButton {
     label: 'Reset Password',
     confirmDataMapper: (data: UserAccount) => ({
       title: 'Reset Password',
-      message: `Are you sure you want to reset the password for <b>${data?.firstName ?? ''} ${data?.lastName ?? ''}</b>?`,
+      message: `Are you sure you want to reset the password for <b>${data?.bioData?.firstName ?? ''} ${data?.bioData?.thirdName ?? ''}</b>?`,
       confirmText: 'Reset',
       confirmButtonColor: 'red',
     }),

@@ -4,7 +4,7 @@ import { DataGridComponent } from '@shared/components/data-grid/data-grid.compon
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridParameter, GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
-
+import { getDisplayName } from '@core/helpers/view.helpers';
 import { ALL_ASSETS_PAGEABLE } from './asset.graphql';
 import { asset$, assetTableBtns, assetUpsertBtn } from './asset.form';
 
@@ -28,7 +28,11 @@ export class AssetsComponent extends BaseComponent {
     'assignedNumber',
     'name',
     'assetSubcategory.name as Sub Category',
-    'status',
+    {
+          field: 'status',
+          header: 'Status',
+          valueFn: (r) =>(getDisplayName(r.status)),
+    },
     {
       field: 'reserved',
       valueFn: (row) => (row?.reserved ? 'Yes' : 'No'),

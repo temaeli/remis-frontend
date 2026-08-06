@@ -4,6 +4,7 @@ import {
   baseMinimalGqlFields,
   pageGqlFields,
 } from '@shared/fetch/graphql.constants';
+import { bioDataGqlFields } from '@routes/users-managment/users/user.graphql';
 
 export const designationGqlFields = `
 active
@@ -14,12 +15,11 @@ ${baseMinimalGqlFields}
 
 `;
 
+// Personal data lives on bio_data, not on the login — see bioDataGqlFields.
 export const userGqlFields = `
 active
 email
-firstName
-lastName
-phoneNumber
+${bioDataGqlFields}
 ${baseMinimalGqlFields}
 
 `;

@@ -54,10 +54,10 @@ export class DesignationComponent extends BaseComponent implements OnInit {
 
     const keyColumns: GridKeyColumn[] = [
       'index',
-      'firstName',
-      'lastName',
+      'bioData.firstName as First Name',
+      'bioData.thirdName as Last Name',
       'email',
-      'phoneNumber',
+      'bioData.mobileNumber as Phone Number',
       'active',
     ];
 

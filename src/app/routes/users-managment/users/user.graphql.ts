@@ -6,15 +6,32 @@ import {
 } from '@shared/fetch/graphql.constants';
 import { gql } from 'apollo-angular';
 
+/**
+ * Personal data lives on `bio_data` in remis_core_schema, not on `uaa.users`,
+ * which keeps only credentials. The column names differ from the old ones on
+ * User: middleName is `secondName`, lastName is `thirdName`, nationalId is
+ * `nin` and phoneNumber is `mobileNumber`.
+ *
+ * Nullable — a login can exist before a person record is attached to it — so
+ * always read through it defensively.
+ */
+export const bioDataGqlFields = `
+  bioData {
+    id
+    firstName
+    secondName
+    thirdName
+    nin
+    mobileNumber
+    email
+  }
+`;
+
 export const userMinimalGqlFields = `
   email
-  firstName
-  middleName
-  lastName
-  phoneNumber
   isStaff
-  fullName
   uid
+  ${bioDataGqlFields}
 `;
 
 export const userGqlFields = `
@@ -28,16 +45,12 @@ export const userGqlFields = `
   enabled
   failedAttempt
   firstLogin
-  firstName
-  lastName
   lockTime
-  middleName
   password
   passwordExpired
   username
-  phoneNumber
-  nationalId
   isStaff
+  ${bioDataGqlFields}
   rolesList{
    id
    role{
@@ -72,7 +85,7 @@ export const LIST_USERS_PAGEABLE = gql`
 export const LIST_USERS_PAGEABLE_ = gql`
   query getAllUsersPageable($active: Boolean, $pageableParam: PageableParamInput){
     getAllUsersPageable(active: $active, pageableParam: $pageableParam){
-     ${pageGqlFields('uid firstName lastName')}
+     ${pageGqlFields(`uid ${bioDataGqlFields}`)}
     }
   }
 `;

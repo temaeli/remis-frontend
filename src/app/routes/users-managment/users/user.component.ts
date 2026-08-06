@@ -124,10 +124,10 @@ export class UserComponent extends BaseComponent implements OnInit {
   fetchParameter: FetchParameter = {
     loadingOn: 'no-content',
     query: GET_USER_BY_UID,
-    successFn: (res) =>
-      (this.title =
-        `${(res as UserAccount)?.firstName ?? ''} ${(res as UserAccount)?.lastName ?? ''}`.trim() ||
-        'User'),
+    successFn: (res) => {
+      const person = (res as UserAccount)?.bioData;
+      this.title = `${person?.firstName ?? ''} ${person?.thirdName ?? ''}`.trim() || 'User';
+    },
     variables: { uid: this.userUid },
   };
 
