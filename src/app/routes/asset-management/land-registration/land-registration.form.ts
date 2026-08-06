@@ -14,6 +14,7 @@ import {
 
 import { LandRegistration } from '../asset-registry.interface';
 import {
+  toAssetRegistryInput,
   assetRegistryBaseFields,
   LAND_REGISTRATION_DELETE_PERMISSIONS,
   LAND_REGISTRATION_UPSERT_PERMISSIONS,
@@ -35,7 +36,7 @@ export const getLandRegistrationFormFields = (): FieldConfig[] => [
     // flagged forLand — the error comes back on submit.
     optionsVariables: {
       labelKey: 'name',
-      valueKey: 'uid',
+      valueKey: 'id',
       fetchParameter: { query: ALL_ASSETS },
     },
     validations: [VALIDATOR_REQUIRED],
@@ -48,7 +49,7 @@ export function landRegistrationUpsertBtn(comp: BaseComponent, assetUid?: string
     click: (data?: LandRegistration) => {
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
-        model: { assetUid: data?.asset?.uid ?? assetUid, ...data },
+        model: { assetUid: data?.asset?.id ?? assetUid, ...data },
         title: 'Land Registration',
         fields: getLandRegistrationFormFields(),
         closeAction$: close$,
@@ -56,7 +57,7 @@ export function landRegistrationUpsertBtn(comp: BaseComponent, assetUid?: string
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { input: value },
+            variables: { input: toAssetRegistryInput(value) },
             mutation: SAVE_LAND_REGISTRATION,
             successFn: (res) => {
               landRegistration$.next(res?.data);
@@ -77,7 +78,7 @@ export function landRegistrationViewBtn(comp: BaseComponent): ActionButton {
   return {
     icon: 'view',
     label: 'View Land Registration',
-    click: (data: LandRegistration) => navigateRelativeTo(comp, 'land-registrations', data?.uid),
+    click: (data: LandRegistration) => navigateRelativeTo(comp, 'land-registrations', data?.id),
     permissions: LAND_REGISTRATION_VIEW_PERMISSIONS,
   };
 }
@@ -88,7 +89,7 @@ export function landRegistrationDeleteBtn(comp: BaseComponent): ActionButton {
       await comp.fs.fetch({
         notify: true,
         loadingOn: 'content',
-        variables: { uid: data.uid },
+        variables: { uid: data.id },
         mutation: DELETE_LAND_REGISTRATION,
         finalFn: (res) => landRegistration$.next(res?.data),
       });

@@ -24,7 +24,7 @@ import {
 })
 export class AssetCategoriesComponent extends BaseComponent {
   override title = 'Asset Categories';
-  override subtitle = 'Second level of the asset classification hierarchy';
+  override subtitle = 'Divisions of an asset type';
   override actionButtons: ActionButton[] = [assetCategoryUpsertBtn(this)];
 
   keyColumns: GridKeyColumn[] = [
@@ -32,8 +32,12 @@ export class AssetCategoriesComponent extends BaseComponent {
     'assignedNumber',
     'name',
     'description',
-    'assetType.name',
-    'active',
+    'assetType.name as Type',
+    {
+      field: 'active',
+      valueFn: (row) => (row?.active ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.active ? 'text-success' : 'text-danger'),
+    },
     'actions',
   ];
 

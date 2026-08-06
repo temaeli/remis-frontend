@@ -22,64 +22,6 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
     loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
 
-  // Asset Types — top of the classification hierarchy
-  {
-    path: 'asset-types',
-    data: {
-      isMenu: true,
-      name: 'Asset Types',
-      icon: 'category',
-      permissions: ASSET_TYPE_VIEW_PERMISSIONS,
-    },
-    loadComponent: () =>
-      import('./asset-type/asset-types.component').then((m) => m.AssetTypesComponent),
-  },
-  {
-    matcher: (url) => matchRoute(url, 'asset-types', 'uid'),
-    loadComponent: () =>
-      import('./asset-type/asset-type.component').then((m) => m.AssetTypeComponent),
-  },
-
-  // Asset Categories
-  {
-    path: 'asset-categories',
-    data: {
-      isMenu: true,
-      name: 'Asset Categories',
-      icon: 'list',
-      permissions: ASSET_CATEGORY_VIEW_PERMISSIONS,
-    },
-    loadComponent: () =>
-      import('./asset-category/asset-categories.component').then((m) => m.AssetCategoriesComponent),
-  },
-  {
-    matcher: (url) => matchRoute(url, 'asset-categories', 'uid'),
-    loadComponent: () =>
-      import('./asset-category/asset-category.component').then((m) => m.AssetCategoryComponent),
-  },
-
-  // Asset Subcategories
-  {
-    path: 'asset-subcategories',
-    data: {
-      isMenu: true,
-      name: 'Asset Subcategories',
-      icon: 'list',
-      permissions: ASSET_SUBCATEGORY_VIEW_PERMISSIONS,
-    },
-    loadComponent: () =>
-      import('./asset-subcategory/asset-subcategories.component').then(
-        (m) => m.AssetSubcategoriesComponent,
-      ),
-  },
-  {
-    matcher: (url) => matchRoute(url, 'asset-subcategories', 'uid'),
-    loadComponent: () =>
-      import('./asset-subcategory/asset-subcategory.component').then(
-        (m) => m.AssetSubcategoryComponent,
-      ),
-  },
-
   // Assets — the operational entity
   {
     path: 'assets',
@@ -140,23 +82,104 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
       ),
   },
 
-  // Land Parcels — pre-existing screens backed by the project module's own API,
-  // not the asset registry. Left in place; unrelated to land-registrations above.
+  /**
+   * Reference data that classifies the registry. Grouped behind one menu and kept
+   * last, so the operational screens above lead.
+   *
+   * The parent declares no permissions of its own: MenuService aggregates the
+   * children's, so the group appears when a user can reach at least one of them.
+   *
+   * Componentless — the children render in the module's existing outlet.
+   */
   {
-    path: 'land-parcels',
+    path: 'configurations',
     data: {
       isMenu: true,
-      name: 'Land Parcels',
-      icon: 'map',
-      permissions: LAND_PARCEL_VIEW_PERMISSIONS,
+      name: 'Configurations',
+      icon: 'settings',
     },
-    loadComponent: () =>
-      import('./land-parcel/land-parcels.component').then((m) => m.LandParcelsComponent),
-  },
-  {
-    matcher: (url) => matchRoute(url, 'land-parcels', 'landParcelUid'),
-    loadComponent: () =>
-      import('./land-parcel/land-parcel.component').then((m) => m.LandParcelComponent),
+    children: [
+      { path: '', redirectTo: 'asset-types', pathMatch: 'full' },
+
+      // Asset Types — top of the classification hierarchy
+      {
+        path: 'asset-types',
+        data: {
+          isMenu: true,
+          name: 'Asset Types',
+          icon: 'category',
+          permissions: ASSET_TYPE_VIEW_PERMISSIONS,
+        },
+        loadComponent: () =>
+          import('./asset-type/asset-types.component').then((m) => m.AssetTypesComponent),
+      },
+      {
+        matcher: (url) => matchRoute(url, 'asset-types', 'uid'),
+        loadComponent: () =>
+          import('./asset-type/asset-type.component').then((m) => m.AssetTypeComponent),
+      },
+
+      // Asset Categories
+      {
+        path: 'asset-categories',
+        data: {
+          isMenu: true,
+          name: 'Asset Categories',
+          icon: 'list',
+          permissions: ASSET_CATEGORY_VIEW_PERMISSIONS,
+        },
+        loadComponent: () =>
+          import('./asset-category/asset-categories.component').then(
+            (m) => m.AssetCategoriesComponent,
+          ),
+      },
+      {
+        matcher: (url) => matchRoute(url, 'asset-categories', 'uid'),
+        loadComponent: () =>
+          import('./asset-category/asset-category.component').then((m) => m.AssetCategoryComponent),
+      },
+
+      // Asset Subcategories
+      {
+        path: 'asset-subcategories',
+        data: {
+          isMenu: true,
+          name: 'Asset Subcategories',
+          icon: 'list',
+          permissions: ASSET_SUBCATEGORY_VIEW_PERMISSIONS,
+        },
+        loadComponent: () =>
+          import('./asset-subcategory/asset-subcategories.component').then(
+            (m) => m.AssetSubcategoriesComponent,
+          ),
+      },
+      {
+        matcher: (url) => matchRoute(url, 'asset-subcategories', 'uid'),
+        loadComponent: () =>
+          import('./asset-subcategory/asset-subcategory.component').then(
+            (m) => m.AssetSubcategoryComponent,
+          ),
+      },
+
+      // Land Parcels — pre-existing screens backed by the project module's own API,
+      // not the asset registry. Unrelated to the land-registrations screen above.
+      {
+        path: 'land-parcels',
+        data: {
+          isMenu: true,
+          name: 'Land Parcels',
+          icon: 'map',
+          permissions: LAND_PARCEL_VIEW_PERMISSIONS,
+        },
+        loadComponent: () =>
+          import('./land-parcel/land-parcels.component').then((m) => m.LandParcelsComponent),
+      },
+      {
+        matcher: (url) => matchRoute(url, 'land-parcels', 'landParcelUid'),
+        loadComponent: () =>
+          import('./land-parcel/land-parcel.component').then((m) => m.LandParcelComponent),
+      },
+    ],
   },
 ];
 

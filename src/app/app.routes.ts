@@ -56,8 +56,8 @@ export const APP_ROUTES: TypedRoutes = [
       // ROLE_VIEW_LAND_MANAGEMENT_MODULE is kept alongside the new permission so
       // roles already granted the old module tile do not lose access on rename.
       permissions: ['ROLE_VIEW_ASSET_REGISTRY_MODULE', 'ROLE_VIEW_LAND_MANAGEMENT_MODULE'],
-      description:
-        'Classify assets by type, category and subcategory, register them, and record land registrations and verifications.',
+    //   description:
+    //     'Classify assets by type, category and subcategory, register them, and record land registrations and verifications.',
     },
     loadChildren: () => import('./routes/asset-management/asset-management.routes'),
   },

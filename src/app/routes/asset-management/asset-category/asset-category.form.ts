@@ -14,6 +14,7 @@ import {
 
 import { AssetCategory } from '../asset-registry.interface';
 import {
+  toAssetRegistryInput,
   assetRegistryBaseFields,
   ASSET_CATEGORY_DELETE_PERMISSIONS,
   ASSET_CATEGORY_UPSERT_PERMISSIONS,
@@ -33,7 +34,7 @@ export const getAssetCategoryFormFields = (): FieldConfig[] => [
     type: FieldType.select,
     optionsVariables: {
       labelKey: 'name',
-      valueKey: 'uid',
+      valueKey: 'id',
       fetchParameter: { query: ALL_ASSET_TYPES },
     },
     validations: [VALIDATOR_REQUIRED],
@@ -47,7 +48,7 @@ export function assetCategoryUpsertBtn(comp: BaseComponent, assetTypeUid?: strin
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
         // Pre-selects the parent when opened from an asset type's detail page.
-        model: { assetTypeUid: data?.assetType?.uid ?? assetTypeUid, ...data },
+        model: { assetTypeUid: data?.assetType?.id ?? assetTypeUid, ...data },
         title: 'Asset Category',
         fields: getAssetCategoryFormFields(),
         closeAction$: close$,
@@ -55,7 +56,7 @@ export function assetCategoryUpsertBtn(comp: BaseComponent, assetTypeUid?: strin
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { input: value },
+            variables: { input: toAssetRegistryInput(value) },
             mutation: SAVE_ASSET_CATEGORY,
             successFn: (res) => {
               assetCategory$.next(res?.data);
@@ -76,7 +77,7 @@ export function assetCategoryViewBtn(comp: BaseComponent): ActionButton {
   return {
     icon: 'view',
     label: 'View Asset Category',
-    click: (data: AssetCategory) => navigateRelativeTo(comp, 'asset-categories', data?.uid),
+    click: (data: AssetCategory) => navigateRelativeTo(comp, 'asset-categories', data?.id),
     permissions: ASSET_CATEGORY_VIEW_PERMISSIONS,
   };
 }
@@ -87,7 +88,7 @@ export function assetCategoryDeleteBtn(comp: BaseComponent): ActionButton {
       await comp.fs.fetch({
         notify: true,
         loadingOn: 'content',
-        variables: { uid: data.uid },
+        variables: { uid: data.id },
         mutation: DELETE_ASSET_CATEGORY,
         finalFn: (res) => assetCategory$.next(res?.data),
       });

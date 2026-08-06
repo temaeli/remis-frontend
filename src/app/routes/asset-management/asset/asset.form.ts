@@ -14,6 +14,7 @@ import {
 
 import { Asset } from '../asset-registry.interface';
 import {
+  toAssetRegistryInput,
   assetRegistryBaseFields,
   ASSET_DELETE_PERMISSIONS,
   ASSET_STATUS_OPTIONS,
@@ -34,19 +35,19 @@ export const getAssetFormFields = (): FieldConfig[] => [
     type: FieldType.select,
     optionsVariables: {
       labelKey: 'name',
-      valueKey: 'uid',
+      valueKey: 'id',
       fetchParameter: { query: ALL_ASSET_SUBCATEGORIES },
     },
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
   },
-  {
-    key: 'status',
-    label: 'Status',
-    type: FieldType.select,
-    options: ASSET_STATUS_OPTIONS,
-    class: 'col-span-full',
-  },
+  // {
+  //   key: 'status',
+  //   label: 'Status',
+  //   type: FieldType.select,
+  //   options: ASSET_STATUS_OPTIONS,
+  //   class: 'col-span-full',
+  // },
   {
     key: 'reserved',
     label: 'Reserved',
@@ -61,7 +62,7 @@ export function assetUpsertBtn(comp: BaseComponent, assetSubcategoryUid?: string
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
         model: {
-          assetSubcategoryUid: data?.assetSubcategory?.uid ?? assetSubcategoryUid,
+          assetSubcategoryUid: data?.assetSubcategory?.id ?? assetSubcategoryUid,
           ...data,
         },
         title: 'Asset',
@@ -71,7 +72,7 @@ export function assetUpsertBtn(comp: BaseComponent, assetSubcategoryUid?: string
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { input: value },
+            variables: { input: toAssetRegistryInput(value) },
             mutation: SAVE_ASSET,
             successFn: (res) => {
               asset$.next(res?.data);
@@ -117,7 +118,7 @@ export function assetStatusBtn(comp: BaseComponent): ActionButton {
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { uid: data?.uid, status: value?.status },
+            variables: { uid: data?.id, status: value?.status },
             mutation: UPDATE_ASSET_STATUS,
             successFn: (res) => {
               asset$.next(res?.data);
@@ -137,7 +138,7 @@ export function assetViewBtn(comp: BaseComponent): ActionButton {
   return {
     icon: 'view',
     label: 'View Asset',
-    click: (data: Asset) => navigateRelativeTo(comp, 'assets', data?.uid),
+    click: (data: Asset) => navigateRelativeTo(comp, 'assets', data?.id),
     permissions: ASSET_VIEW_PERMISSIONS,
   };
 }
@@ -148,7 +149,7 @@ export function assetDeleteBtn(comp: BaseComponent): ActionButton {
       await comp.fs.fetch({
         notify: true,
         loadingOn: 'content',
-        variables: { uid: data.uid },
+        variables: { uid: data.id },
         mutation: DELETE_ASSET,
         finalFn: (res) => asset$.next(res?.data),
       });

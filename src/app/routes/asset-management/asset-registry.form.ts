@@ -11,9 +11,25 @@ import { AssetStatus } from './asset-registry.interface';
  * (`ASTY-…`, `ASCT-…`, `ASST-…`), so it is only worth filling in when the
  * number comes from an existing paper record.
  */
+/**
+ * Maps a form value onto the mutation input.
+ *
+ * The form carries the identifier as `id`, matching the records these screens
+ * read. The backend input still names it `uid` — a blank one creates, a populated
+ * one updates — so it is renamed here, at the single point where the two meet,
+ * rather than every component having to remember.
+ */
+export const toAssetRegistryInput = (value: Record<string, unknown>) => {
+  const { id, ...rest } = value ?? {};
+  return id ? { ...rest, uid: id } : rest;
+};
+
 export const assetRegistryBaseFields = (): FieldConfig[] => [
+  // Hidden carrier for the record identifier, populated from the record's `id`
+  // when editing and left blank when creating. Without it the backend cannot
+  // tell an update from a create, and every edit would save as a new record.
   {
-    key: 'uid',
+    key: 'id',
     type: FieldType.input,
     visible: false,
   },

@@ -96,7 +96,9 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
   {
     key: 'designationUid',
     type: FieldType.select,
-    optionsVariables: { fetchParameter: { query: ALL_DESIGNATIONS } },
+    // Pinned to uid: Designation lives in uaa and has one, and the backend
+    // resolves this field with findByUid. mapOptions now defaults to `id`.
+    optionsVariables: { valueKey: 'uid', fetchParameter: { query: ALL_DESIGNATIONS } },
     class: 'col-span-full',
     showWhen: [{ key: 'isStaff' }],
     validations: [],

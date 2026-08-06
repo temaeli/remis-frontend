@@ -32,8 +32,13 @@ export class LandRegistrationsComponent extends BaseComponent {
     'assignedNumber',
     'name',
     'description',
-    'asset.name',
-    'active',
+    'asset.name as Asset',
+    {
+      field: 'active',
+      valueFn: (row) => (row?.active ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.active ? 'text-success' : 'text-danger'),
+    },
+
     'actions',
   ];
 

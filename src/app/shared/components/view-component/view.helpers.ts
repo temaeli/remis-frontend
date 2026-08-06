@@ -164,7 +164,7 @@ export function getLastIdFromUrl(url: string) {
   return arr.find((p) => isValidHex((p.split('-').pop() as any)));
 }
 
-export function getUpsertBtnProps(entityName?: string, idKey = 'uid') {
+export function getUpsertBtnProps(entityName?: string, idKey = 'id') {
   return {
     iconMapper: (d?: any) => (!d?.[idKey] ? 'add' : 'edit'),
     labelMapper: (d?: any) => `${!d?.[idKey] ? 'Add' : 'Edit'} ${entityName ?? ''}`,

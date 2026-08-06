@@ -13,6 +13,7 @@ import {
 
 import { AssetType } from '../asset-registry.interface';
 import {
+  toAssetRegistryInput,
   assetRegistryBaseFields,
   ASSET_TYPE_DELETE_PERMISSIONS,
   ASSET_TYPE_UPSERT_PERMISSIONS,
@@ -48,7 +49,7 @@ export function assetTypeUpsertBtn(comp: BaseComponent): ActionButton {
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { input: value },
+            variables: { input: toAssetRegistryInput(value) },
             mutation: SAVE_ASSET_TYPE,
             successFn: (res) => {
               assetType$.next(res?.data);
@@ -69,7 +70,7 @@ export function assetTypeViewBtn(comp: BaseComponent): ActionButton {
   return {
     icon: 'view',
     label: 'View Asset Type',
-    click: (data: AssetType) => navigateRelativeTo(comp, 'asset-types', data?.uid),
+    click: (data: AssetType) => navigateRelativeTo(comp, 'asset-types', data?.id),
     permissions: ASSET_TYPE_VIEW_PERMISSIONS,
   };
 }
@@ -80,7 +81,7 @@ export function assetTypeDeleteBtn(comp: BaseComponent): ActionButton {
       await comp.fs.fetch({
         notify: true,
         loadingOn: 'content',
-        variables: { uid: data.uid },
+        variables: { uid: data.id },
         mutation: DELETE_ASSET_TYPE,
         finalFn: (res) => assetType$.next(res?.data),
       });

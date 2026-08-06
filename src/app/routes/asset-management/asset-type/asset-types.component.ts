@@ -20,7 +20,7 @@ import { assetType$, assetTypeTableBtns, assetTypeUpsertBtn } from './asset-type
 })
 export class AssetTypesComponent extends BaseComponent {
   override title = 'Asset Types';
-  override subtitle = 'Top level of the asset classification hierarchy';
+  override subtitle = 'Broadest grouping of assets — land types carry land registrations';
   override actionButtons: ActionButton[] = [assetTypeUpsertBtn(this)];
 
   keyColumns: GridKeyColumn[] = [
@@ -28,8 +28,16 @@ export class AssetTypesComponent extends BaseComponent {
     'assignedNumber',
     'name',
     'description',
-    'forLand',
-    'active',
+    {
+      field: 'forLand',
+      valueFn: (row) => (row?.forLand ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.forLand ? 'text-success' : 'text-danger'),
+    },
+    {
+      field: 'active',
+      valueFn: (row) => (row?.active ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.active ? 'text-success' : 'text-danger'),
+    },
     'actions',
   ];
 

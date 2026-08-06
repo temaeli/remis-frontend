@@ -27,10 +27,18 @@ export class AssetsComponent extends BaseComponent {
     'index',
     'assignedNumber',
     'name',
-    'assetSubcategory.name',
+    'assetSubcategory.name as Sub Category',
     'status',
-    'reserved',
-    'active',
+    {
+      field: 'reserved',
+      valueFn: (row) => (row?.reserved ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.reserved ? 'text-success' : 'text-danger'),
+    },
+    {
+      field: 'active',
+      valueFn: (row) => (row?.active ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.active ? 'text-success' : 'text-danger'),
+    },
     'actions',
   ];
 

@@ -135,7 +135,7 @@ export class DynamicFormService {
 
         if ((path = stringAfter(when.key, '.'))) {
           const options = fields?.find((f) => f.key === key)?.options ?? [];
-          const selected = options?.find((o: any) => valueIsEither(o?.value ?? o?.uid, value));
+          const selected = options?.find((o: any) => valueIsEither(o?.value ?? o?.id, value));
           formValues[when.key] = getPathValue(selected, path) ?? formValues[when.key];
         }
 

@@ -102,7 +102,7 @@ export function mapOptions(options: any[], optionsVariables?: OptionsVariable) {
     return options.map((o: any) => ({
       ...o,
       label: getPathValue(o, mapObject?.label ?? 'name'),
-      value: getPathValue(o, mapObject?.value ?? 'uid'),
+      value: getPathValue(o, mapObject?.value ?? 'id'),
     }));
   }
 
@@ -119,7 +119,7 @@ export function mapOptions(options: any[], optionsVariables?: OptionsVariable) {
       labelKey = ['name', 'label', 'title', 'fullName'].find((k) => !!first[k]) ?? 'name';
     }
 
-    if (!valueKey) valueKey = 'uid';
+    if (!valueKey) valueKey = 'id';
     return options.map((o: any) => ({ ...o, label: o[labelKey ?? valueKey], value: o[valueKey] }));
   }
 

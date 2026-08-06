@@ -13,6 +13,7 @@ import {
 
 import { AssetVerification } from '../asset-registry.interface';
 import {
+  toAssetRegistryInput,
   assetRegistryBaseFields,
   ASSET_VERIFICATION_DELETE_PERMISSIONS,
   ASSET_VERIFICATION_UPSERT_PERMISSIONS,
@@ -41,7 +42,7 @@ export function assetVerificationUpsertBtn(comp: BaseComponent): ActionButton {
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { input: value },
+            variables: { input: toAssetRegistryInput(value) },
             mutation: SAVE_ASSET_VERIFICATION,
             successFn: (res) => {
               assetVerification$.next(res?.data);
@@ -63,7 +64,7 @@ export function assetVerificationViewBtn(comp: BaseComponent): ActionButton {
     icon: 'view',
     label: 'View Asset Verification',
     click: (data: AssetVerification) =>
-      navigateRelativeTo(comp, 'asset-verifications', data?.uid),
+      navigateRelativeTo(comp, 'asset-verifications', data?.id),
     permissions: ASSET_VERIFICATION_VIEW_PERMISSIONS,
   };
 }
@@ -74,7 +75,7 @@ export function assetVerificationDeleteBtn(comp: BaseComponent): ActionButton {
       await comp.fs.fetch({
         notify: true,
         loadingOn: 'content',
-        variables: { uid: data.uid },
+        variables: { uid: data.id },
         mutation: DELETE_ASSET_VERIFICATION,
         finalFn: (res) => assetVerification$.next(res?.data),
       });
