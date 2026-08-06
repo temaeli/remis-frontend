@@ -12,9 +12,14 @@ export enum AssetStatus {
   INACTIVE = 'INACTIVE',
 }
 
-/** Audit + shared columns carried by every asset registry record. */
+/**
+ * Audit + shared columns carried by every asset registry record.
+ *
+ * `id` is a uuid string, not a number — these tables are keyed on uuid. There is
+ * no `updatedAt` or `deletedAt`: the DBA-owned schema does not record them.
+ */
 export interface AssetRegistryEntity {
-  id?: number;
+  id?: string;
   uid?: string;
   assignedNumber?: string;
   name?: string;
@@ -22,8 +27,6 @@ export interface AssetRegistryEntity {
   active?: boolean;
   isDeleted?: boolean;
   createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string;
 }
 
 /** Fields common to every asset registry input; `assignedNumber` is generated when blank. */
@@ -78,10 +81,8 @@ export interface LandRegistrationDtoInput extends AssetRegistryDtoInput {
   assetUid: string;
 }
 
-export interface AssetVerification extends AssetRegistryEntity {
-  asset?: Asset;
-}
+// A verification carries no reference to the asset it verified: the backing
+// table has no assets_id column. Unlike LandRegistration above, which does.
+export type AssetVerification = AssetRegistryEntity;
 
-export interface AssetVerificationDtoInput extends AssetRegistryDtoInput {
-  assetUid: string;
-}
+export type AssetVerificationDtoInput = AssetRegistryDtoInput;

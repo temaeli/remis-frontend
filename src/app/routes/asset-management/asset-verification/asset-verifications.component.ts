@@ -32,7 +32,6 @@ export class AssetVerificationsComponent extends BaseComponent {
     'assignedNumber',
     'name',
     'description',
-    'asset.name',
     'createdAt',
     'active',
     'actions',

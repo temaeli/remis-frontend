@@ -1,13 +1,11 @@
 import { gql } from '@apollo/client/core';
 import { pageGqlFields, responseGqlFields } from '@shared/fetch/graphql.constants';
-import { assetRefGqlFields, assetRegistryGqlFields } from '../asset-registry.graphql';
+import { assetRegistryGqlFields } from '../asset-registry.graphql';
 
+// No asset field: remis_core_schema.verification_of_assets has no assets_id
+// column, so a verification does not record which asset it was made against.
 export const assetVerificationGqlFields = `
   ${assetRegistryGqlFields}
-  asset {
-    ${assetRefGqlFields}
-    status
-  }
 `;
 
 //  Queries
@@ -19,13 +17,8 @@ export const ALL_ASSET_VERIFICATIONS = gql`
   }
 `;
 
-export const ASSET_VERIFICATIONS_BY_ASSET = gql`
-  query assetVerificationsByAsset($assetUid: String) {
-    assetVerificationsByAsset(assetUid: $assetUid) {
-      ${assetVerificationGqlFields}
-    }
-  }
-`;
+// ASSET_VERIFICATIONS_BY_ASSET removed with the backend query of the same name —
+// verifications cannot be filtered by asset without an assets_id column.
 
 export const ALL_ASSET_VERIFICATIONS_PAGEABLE = gql`
   query allAssetVerificationsPageable($pageableParam: PageableParamInput, $active: Boolean) {

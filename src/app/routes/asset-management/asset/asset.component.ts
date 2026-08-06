@@ -15,12 +15,6 @@ import {
   landRegistrationTableBtns,
   landRegistrationUpsertBtn,
 } from '../land-registration/land-registration.form';
-import { ASSET_VERIFICATIONS_BY_ASSET } from '../asset-verification/asset-verification.graphql';
-import {
-  assetVerification$,
-  assetVerificationTableBtns,
-  assetVerificationUpsertBtn,
-} from '../asset-verification/asset-verification.form';
 import { FIND_ASSET } from './asset.graphql';
 import { asset$, assetStatusBtn, assetUpsertBtn } from './asset.form';
 
@@ -60,7 +54,6 @@ export class AssetComponent extends BaseComponent implements OnInit {
     await this.setContents();
     this.subs.add(asset$.subscribe(() => this.setContents()));
     this.subs.add(landRegistration$.subscribe(() => this.setContents()));
-    this.subs.add(assetVerification$.subscribe(() => this.setContents()));
   }
 
   async setContents() {
@@ -100,19 +93,9 @@ export class AssetComponent extends BaseComponent implements OnInit {
           variables: { assetUid: this.assetUid },
         },
       },
-      {
-        type: 'table',
-        name: 'Verifications',
-        label: 'Verifications',
-        icon: 'check',
-        keyColumns: childColumns,
-        actionButtons: assetVerificationTableBtns(this),
-        headerButtons: [assetVerificationUpsertBtn(this, this.assetUid ?? undefined)],
-        fetchParameter: {
-          query: ASSET_VERIFICATIONS_BY_ASSET,
-          variables: { assetUid: this.assetUid },
-        },
-      },
+      // Verifications tab removed: verification_of_assets records no assets_id,
+      // so there is no way to list the verifications made against this asset.
+      // Manage them from the Asset Verifications page instead.
     ];
 
     this.cdr.detectChanges();

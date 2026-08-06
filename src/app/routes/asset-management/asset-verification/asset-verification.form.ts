@@ -3,8 +3,7 @@ import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
-import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
+import { FieldConfig } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import {
   getDeleteBtnProps,
@@ -19,34 +18,22 @@ import {
   ASSET_VERIFICATION_UPSERT_PERMISSIONS,
   ASSET_VERIFICATION_VIEW_PERMISSIONS,
 } from '../asset-registry.form';
-import { ALL_ASSETS } from '../asset/asset.graphql';
 import { DELETE_ASSET_VERIFICATION, SAVE_ASSET_VERIFICATION } from './asset-verification.graphql';
 
 // Listener for all AssetVerification actions
 export const assetVerification$ = new Subject<AssetVerification | any>();
 
+// No asset picker: the backing table cannot store which asset was verified.
 export const getAssetVerificationFormFields = (): FieldConfig[] => [
   ...assetRegistryBaseFields(),
-  {
-    key: 'assetUid',
-    label: 'Asset',
-    type: FieldType.select,
-    optionsVariables: {
-      labelKey: 'name',
-      valueKey: 'uid',
-      fetchParameter: { query: ALL_ASSETS },
-    },
-    validations: [VALIDATOR_REQUIRED],
-    class: 'col-span-full',
-  },
 ];
 
-export function assetVerificationUpsertBtn(comp: BaseComponent, assetUid?: string): ActionButton {
+export function assetVerificationUpsertBtn(comp: BaseComponent): ActionButton {
   return {
     click: (data?: AssetVerification) => {
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
-        model: { assetUid: data?.asset?.uid ?? assetUid, ...data },
+        model: { ...data },
         title: 'Asset Verification',
         fields: getAssetVerificationFormFields(),
         closeAction$: close$,
