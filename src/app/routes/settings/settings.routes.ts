@@ -83,6 +83,24 @@ export const SETTINGS_ROUTES: TypedRoutes = [
       import('./departments/department.component').then((m) => m.DepartmentComponent),
   },
 
+  // Business Names — organisations on the register, held in remis_core_schema
+  {
+    path: 'business-names',
+    data: {
+      isMenu: true,
+      name: 'Business Names',
+      icon: 'suitcase',
+      permissions: ['ROLE_VIEW_ALL_BUSINESS_NAME', 'ROLE_VIEW_BUSINESS_NAME'],
+    },
+    loadComponent: () =>
+      import('./business-names/business-names.component').then((m) => m.BusinessNamesComponent),
+  },
+  {
+    matcher: (url) => matchRoute(url, 'business-names', 'uid'),
+    loadComponent: () =>
+      import('./business-names/business-name.component').then((m) => m.BusinessNameComponent),
+  },
+
   // Regions Management
   {
     path: 'regions',
