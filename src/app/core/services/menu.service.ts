@@ -36,6 +36,12 @@ export interface AppRouteData extends Menu {
   description?: string;
   /** Mounts a shared detail component in view-only mode (no mutation actions). */
   readOnly?: boolean;
+  /**
+   * Slug of the `remis_core_schema` lookup table this route renders. The settings
+   * module's billing and reference screens are one generic pair of components,
+   * and this is how each route says which table it is.
+   */
+  lookup?: string;
 }
 
 export interface TypedRoute<TData = AppRouteData> extends Omit<Route, 'data' | 'children'> {
