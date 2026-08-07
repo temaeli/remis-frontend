@@ -54,7 +54,7 @@ export const getRegistryProjectFormFields = (): FieldConfig[] => [
     key: 'endedAt',
     label: 'End Date',
     type: FieldType.date,
-    hint: 'Required — the schema does not yet allow an open-ended project',
+    hint: 'Required — does not yet allow an open-ended project',
     validations: [VALIDATOR_REQUIRED],
   },
 ];
