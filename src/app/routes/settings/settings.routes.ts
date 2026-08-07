@@ -101,6 +101,24 @@ export const SETTINGS_ROUTES: TypedRoutes = [
       import('./business-names/business-name.component').then((m) => m.BusinessNameComponent),
   },
 
+  // Identity Types — how business names and people are identified
+  {
+    path: 'identity-types',
+    data: {
+      isMenu: true,
+      name: 'Identity Types',
+      icon: 's-settings',
+      permissions: ['ROLE_VIEW_ALL_IDENTITY_TYPE', 'ROLE_VIEW_IDENTITY_TYPE'],
+    },
+    loadComponent: () =>
+      import('./identity-types/identity-types.component').then((m) => m.IdentityTypesComponent),
+  },
+  {
+    matcher: (url) => matchRoute(url, 'identity-types', 'uid'),
+    loadComponent: () =>
+      import('./identity-types/identity-type.component').then((m) => m.IdentityTypeComponent),
+  },
+
   // Regions Management
   {
     path: 'regions',

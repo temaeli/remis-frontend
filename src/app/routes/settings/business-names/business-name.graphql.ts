@@ -16,7 +16,11 @@ export const businessNameGqlFields = `
   assignedNumber
   name
   description
-  identityTypesId
+  identityType {
+    id
+    uid: id
+    name
+  }
   isPublic
   active
   isDeleted

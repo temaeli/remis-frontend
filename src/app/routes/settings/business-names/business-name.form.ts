@@ -12,6 +12,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 
+import { ALL_IDENTITY_TYPES } from '../identity-types/identity-type.graphql';
 import { SAVE_BUSINESS_NAME, DELETE_BUSINESS_NAME } from './business-name.graphql';
 import { BusinessName } from './business-name.interface';
 
@@ -51,10 +52,14 @@ export const getBusinessNameFormFields = (): FieldConfig[] => [
     class: 'col-span-full',
   },
   {
-    key: 'identityTypesId',
+    key: 'identityTypeUid',
     label: 'Identity Type',
-    type: FieldType.input,
-    hint: 'Identity type id — there is no lookup endpoint for these yet',
+    type: FieldType.select,
+    optionsVariables: {
+      labelKey: 'name',
+      valueKey: 'id',
+      fetchParameter: { query: ALL_IDENTITY_TYPES },
+    },
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
   },
@@ -71,7 +76,7 @@ export function businessNameUpsertBtn(comp: BaseComponent): ActionButton {
   return {
     click: (data?: BusinessName) => {
       const formParameter: FormParameters = {
-        model: { ...data },
+        model: { ...data, identityTypeUid: data?.identityType?.id },
         title: 'Business Name',
         fields: getBusinessNameFormFields(),
         closeAction$: businessName$,

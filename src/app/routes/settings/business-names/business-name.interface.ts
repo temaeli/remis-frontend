@@ -1,3 +1,5 @@
+import { IdentityType } from '../identity-types/identity-type.interface';
+
 /**
  * A named entity — an organisation and the like — in the DBA-owned
  * `remis_core_schema`.
@@ -12,7 +14,7 @@ export interface BusinessName {
   assignedNumber?: string;
   name?: string;
   description?: string;
-  identityTypesId?: string;
+  identityType?: IdentityType;
   isPublic?: boolean;
   active?: boolean;
   isDeleted?: boolean;
@@ -24,6 +26,6 @@ export interface BusinessNameDtoInput {
   assignedNumber?: string;
   name: string;
   description: string;
-  identityTypesId: string;
+  identityTypeUid: string;
   isPublic?: boolean;
 }
