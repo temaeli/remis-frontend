@@ -15,15 +15,14 @@ export const baseGqlFields = `
   deletedAt
 `;
 
-export const Order = `
- orders{
-    direction
-    ignoreCase
-    nullHandlingHint
-    property
-  }
-`;
-
+/**
+ * Deliberately does not select `sort`. The backend returns Spring Data's own
+ * `Sort`, which exposes only `sorted`, `unsorted` and `empty` — it has no
+ * `getOrders()`, so the `orders { direction … }` selection this file inherited
+ * from the gasco fork names a field that does not exist and fails the whole
+ * query. Nothing here reads the sort back anyway: the grid sorts through
+ * MatSort and sends the order out via `pageableParam`.
+ */
 export const basePaginationGqlFields = `
   size
   number
@@ -31,9 +30,6 @@ export const basePaginationGqlFields = `
   last
   totalElements
   totalPages
-  sort{
-   ${Order}
-  }
 `;
 
 export const baseGqlResponseFields = `
