@@ -2,23 +2,36 @@ import { Subject } from 'rxjs';
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 
-import { ALL_BUSINESS_NAMES } from '../business-names/business-name.graphql';
-import { buildCoreLookupGql, coreLookupRefGqlFields } from './core-lookup.graphql';
-import { CoreLookupConfig, CoreLookupModule } from './core-lookup.interface';
+import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
+import { ContentParameter } from '@shared/components/view-component/view-interface';
+import { USERS_BY_DESIGNATION_PAGEABLE } from '@routes/users-managment/users/user.graphql';
+
+import { buildLookupGql, lookupRefGqlFields } from './lookup.graphql';
+import { LookupConfig, LookupModule } from './lookup.interface';
 
 /**
- * The lookup tables the backend maps under `modules.setting.billing` and
- * `modules.setting.reference`.
+ * Every lookup table in the settings module: the general configuration, the GePG
+ * billing codes and the reference data costing and valuation share.
  *
- * All twenty-one are the same table with a different name — `CoreNamedEntity`
- * plus, for a few of them, an amount, a date range or a parent — so they are
- * declared here as configs and rendered by one pair of generic screens rather
- * than copied out twenty-one times.
+ * They are all the same screen with a different name — a paged list, a detail
+ * page and an upsert form over a five-operation CRUD API — so they are declared
+ * here as configs and rendered by one pair of generic components rather than
+ * copied out twenty-five times.
+ *
+ * The only structural differences are which schema the table lives in, which
+ * decides its audit columns and identifier, and what its descriptive columns are.
+ * Both are stated per config; everything else follows.
  */
-const build = (config: CoreLookupConfig): CoreLookupModule => ({
+const build = (config: LookupConfig): LookupModule => ({
   ...config,
-  gql: buildCoreLookupGql(config.entity, config.entityPlural, config.extraGqlFields),
+  gql: buildLookupGql(config.entity, config.entityPlural, {
+    schema: config.schema,
+    saveArg: config.saveArg,
+    descriptiveGqlFields: config.descriptiveGqlFields,
+    extraGqlFields: config.extraGqlFields,
+  }),
   changed$: new Subject(),
+  idKey: config.schema === 'uaa' ? 'uid' : 'id',
   viewPermissions: [`ROLE_VIEW_ALL_${config.permission}`, `ROLE_VIEW_${config.permission}`],
   upsertPermissions: [`ROLE_CREATE_${config.permission}`, `ROLE_UPDATE_${config.permission}`],
   deletePermissions: [`ROLE_DELETE_${config.permission}`],
@@ -50,6 +63,169 @@ const dateRangeFields = (): FieldConfig[] => [
   },
 ];
 
+//  General — configuration that is not access control, under `modules.setting.general`.
+
+export const IDENTITY_TYPE = build({
+  slug: 'identity-types',
+  entity: 'IdentityType',
+  entityPlural: 'IdentityTypes',
+  permission: 'IDENTITY_TYPE',
+  label: 'Identity Type',
+  pluralLabel: 'Identity Types',
+  subtitle: 'How people and organisations on the register are identified',
+  icon: 'id_card',
+});
+
+export const BUSINESS_NAME = build({
+  slug: 'business-names',
+  entity: 'BusinessName',
+  entityPlural: 'BusinessNames',
+  permission: 'BUSINESS_NAME',
+  label: 'Business Name',
+  pluralLabel: 'Business Names',
+  subtitle: 'Organisations and other named entities on the register',
+  icon: 'institution',
+  extraGqlFields: `
+  identityType {
+    ${lookupRefGqlFields}
+  }
+  isPublic
+`,
+  extraFields: [
+    {
+      key: 'identityTypeUid',
+      label: 'Identity Type',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: IDENTITY_TYPE.gql.all },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'isPublic',
+      label: 'Publicly Visible',
+      type: FieldType.toggle,
+      value: true,
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    { field: 'identityType', valueFn: (row) => row?.identityType?.name },
+    {
+      field: 'isPublic',
+      header: 'Public',
+      valueFn: (row) => (row?.isPublic ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.isPublic ? 'text-success' : 'text-danger'),
+    },
+  ],
+  toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
+});
+
+/**
+ * Departments and designations live in `uaa`, not the DBA's schema: they carry a
+ * real generated `uid`, a different audit block, and their own descriptive
+ * columns rather than the assignedNumber/name/description triple. Their
+ * controllers also leave the save argument named `dto`.
+ */
+export const DEPARTMENT = build({
+  slug: 'departments',
+  entity: 'Department',
+  entityPlural: 'Departments',
+  permission: 'DEPARTMENT',
+  label: 'Department',
+  pluralLabel: 'Departments',
+  subtitle: 'Departments staff are assigned to',
+  icon: 'group',
+  schema: 'uaa',
+  saveArg: 'dto',
+  descriptiveGqlFields: `
+  name
+  code
+`,
+  baseFields: [
+    { key: 'uid', type: FieldType.input, visible: false },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'code',
+      label: 'Code',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: ['index', 'name', 'code'],
+});
+
+export const DESIGNATION = build({
+  slug: 'designations',
+  entity: 'Designation',
+  entityPlural: 'Designations',
+  permission: 'DESIGNATION',
+  label: 'Designation',
+  pluralLabel: 'Designations',
+  subtitle: 'Job titles staff hold',
+  icon: 'designation',
+  schema: 'uaa',
+  saveArg: 'dto',
+  // The display name is `title` here, not `name`.
+  nameKey: 'title',
+  descriptiveGqlFields: `
+  code
+  title
+`,
+  baseFields: [
+    { key: 'uid', type: FieldType.input, visible: false },
+    {
+      key: 'code',
+      label: 'Code',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'title',
+      label: 'Title',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: ['index', 'code', 'title'],
+  extraContents: (comp, record): ContentParameter[] => {
+    const keyColumns: GridKeyColumn[] = [
+      'index',
+      'bioData.firstName as First Name',
+      'bioData.thirdName as Last Name',
+      'email',
+      'bioData.mobileNumber as Phone Number',
+    ];
+
+    return [
+      {
+        type: 'table',
+        name: 'Associated Users',
+        label: 'Associated Users',
+        icon: 'users',
+        keyColumns,
+        isPageable: true,
+        fetchParameter: {
+          query: USERS_BY_DESIGNATION_PAGEABLE,
+          variables: { designationUid: record?.uid },
+        },
+      },
+    ];
+  },
+});
+
 //  Billing — the GePG configuration, under `modules.setting.billing`.
 
 export const BANK_ACCOUNT = build({
@@ -63,7 +239,7 @@ export const BANK_ACCOUNT = build({
   icon: 'bank',
   extraGqlFields: `
   issuer {
-    ${coreLookupRefGqlFields}
+    ${lookupRefGqlFields}
   }
 `,
   extraFields: [
@@ -74,7 +250,7 @@ export const BANK_ACCOUNT = build({
       optionsVariables: {
         labelKey: 'name',
         valueKey: 'id',
-        fetchParameter: { query: ALL_BUSINESS_NAMES },
+        fetchParameter: { query: BUSINESS_NAME.gql.all },
       },
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
@@ -305,7 +481,7 @@ export const CURRENCY = build({
   icon: 'coins',
   extraGqlFields: `
   country {
-    ${coreLookupRefGqlFields}
+    ${lookupRefGqlFields}
   }
 `,
   extraFields: [
@@ -340,7 +516,7 @@ export const EXCHANGE_RATE = build({
   latitude
   longitude
   currency {
-    ${coreLookupRefGqlFields}
+    ${lookupRefGqlFields}
   }
 `,
   extraFields: [
@@ -401,7 +577,14 @@ export const METER = build({
 });
 
 /** Grouped the way the backend groups the packages they come from. */
-export const BILLING_LOOKUPS: CoreLookupModule[] = [
+export const GENERAL_LOOKUPS: LookupModule[] = [
+  BUSINESS_NAME,
+  IDENTITY_TYPE,
+  DEPARTMENT,
+  DESIGNATION,
+];
+
+export const BILLING_LOOKUPS: LookupModule[] = [
   BANK_ACCOUNT,
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -420,7 +603,7 @@ export const BILLING_LOOKUPS: CoreLookupModule[] = [
   SYSTEM_CODE,
 ];
 
-export const REFERENCE_LOOKUPS: CoreLookupModule[] = [
+export const REFERENCE_LOOKUPS: LookupModule[] = [
   COUNTRY,
   CURRENCY,
   EXCHANGE_RATE,
@@ -429,7 +612,8 @@ export const REFERENCE_LOOKUPS: CoreLookupModule[] = [
 ];
 
 /** Keyed by slug — how the two generic screens find the config for their route. */
-export const CORE_LOOKUPS: Record<string, CoreLookupModule> = [
+export const LOOKUPS: Record<string, LookupModule> = [
+  ...GENERAL_LOOKUPS,
   ...BILLING_LOOKUPS,
   ...REFERENCE_LOOKUPS,
 ].reduce((all, lookup) => ({ ...all, [lookup.slug]: lookup }), {});

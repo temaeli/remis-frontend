@@ -26,7 +26,7 @@ import {
   navigateRelativeTo,
 } from '@shared/components/view-component/view.helpers';
 import { getDisplayName } from '@core/helpers/view.helpers';
-import { ALL_DESIGNATIONS } from '@routes/settings/designations/designations.graphql';
+import { DESIGNATION } from '@routes/settings/lookups/lookups';
 
 // Listener for all User actions
 export const user$ = new Subject<UserAccount | any>();
@@ -98,7 +98,7 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
     type: FieldType.select,
     // Pinned to uid: Designation lives in uaa and has one, and the backend
     // resolves this field with findByUid. mapOptions now defaults to `id`.
-    optionsVariables: { valueKey: 'uid', fetchParameter: { query: ALL_DESIGNATIONS } },
+    optionsVariables: { valueKey: 'uid', fetchParameter: { query: DESIGNATION.gql.all } },
     class: 'col-span-full',
     showWhen: [{ key: 'isStaff' }],
     validations: [],

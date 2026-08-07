@@ -167,3 +167,12 @@ export const MY_PROFILE = gql`
     }
   }
 `;
+
+/** Backs the associated-users panel on the designation detail page. */
+export const USERS_BY_DESIGNATION_PAGEABLE = gql`
+  query usersByDesignationPageable($pageableParam: PageableParamInput, $active: Boolean, $designationUid: String) {
+    usersByDesignationPageable(pageableParam: $pageableParam, active: $active, designationUid: $designationUid) {
+      ${pageGqlFields(userMinimalGqlFields)}
+    }
+  }
+`;

@@ -12,20 +12,22 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 
-import { CoreLookup, CoreLookupModule } from './core-lookup.interface';
+import { Lookup, LookupModule } from './lookup.interface';
 
 /**
- * The controls every one of these tables shares. Each config appends its own —
- * a relation select, an amount, a date range.
+ * The controls for the `assignedNumber`/`name`/`description` triple the core
+ * tables repeat. A config whose table is a different shape supplies its own
+ * through `baseFields`.
  *
  * `assignedNumber` is optional: leave it blank and the backend generates one, so
  * it is only worth filling in when the number comes from an existing record.
+ *
+ * The first control is a hidden carrier for the identifier, seeded when editing
+ * and left blank when creating. Without it the backend cannot tell an update from
+ * a create, and every edit would save as a new record.
  */
-export const coreLookupBaseFields = (): FieldConfig[] => [
-  // Hidden carrier for the identifier, seeded from `id` when editing and left
-  // blank when creating. Without it the backend cannot tell an update from a
-  // create, and every edit would save as a new record.
-  { key: 'id', type: FieldType.input, visible: false },
+export const namedLookupFields = (idKey: 'id' | 'uid' = 'id'): FieldConfig[] => [
+  { key: idKey, type: FieldType.input, visible: false },
   {
     key: 'name',
     label: 'Name',
@@ -50,12 +52,22 @@ export const coreLookupBaseFields = (): FieldConfig[] => [
   },
 ];
 
-/** The columns every one of these lists shows, with the config's own in between. */
-export const coreLookupColumns = (lookup: CoreLookupModule): GridKeyColumn[] => [
+/** Columns matching {@link namedLookupFields}. */
+export const namedLookupColumns: GridKeyColumn[] = [
   'index',
   'assignedNumber',
   'name',
   'description',
+];
+
+export const lookupFields = (lookup: LookupModule): FieldConfig[] => [
+  ...(lookup.baseFields ?? namedLookupFields(lookup.idKey)),
+  ...(lookup.extraFields ?? []),
+];
+
+/** The columns a list shows, with the config's own between the base block and `active`. */
+export const lookupColumns = (lookup: LookupModule): GridKeyColumn[] => [
+  ...(lookup.baseColumns ?? namedLookupColumns),
   ...(lookup.extraColumns ?? []),
   {
     field: 'active',
@@ -68,28 +80,30 @@ export const coreLookupColumns = (lookup: CoreLookupModule): GridKeyColumn[] => 
 /**
  * Maps a form value onto the mutation input.
  *
- * The form carries the identifier as `id`, matching the records these screens
- * read. The mutation input still names it `uid` — blank creates, populated
- * updates — so it is renamed here, at the single point where the two meet.
+ * The input names the identifier `uid` on every one of these controllers — blank
+ * creates, populated updates. A uaa record already carries one, so it passes
+ * straight through; a core record's identifier is its `id`, which is renamed here,
+ * at the single point where the form meets the API.
  */
-export const toCoreLookupInput = (value: Record<string, unknown>) => {
+export const toLookupInput = (lookup: LookupModule, value: Record<string, unknown>) => {
   const { id, ...rest } = value ?? {};
+  if (lookup.idKey === 'uid') return rest;
   return id ? { ...rest, uid: id } : rest;
 };
 
-export function coreLookupUpsertBtn(comp: BaseComponent, lookup: CoreLookupModule): ActionButton {
+export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
   return {
-    click: (data?: CoreLookup) => {
+    click: (data?: Lookup) => {
       const formParameter: FormParameters = {
         model: { ...data, ...lookup.toModel?.(data) },
         title: lookup.label,
-        fields: [...coreLookupBaseFields(), ...(lookup.extraFields ?? [])],
+        fields: lookupFields(lookup),
         closeAction$: lookup.changed$,
 
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
             notify: true,
-            variables: { input: toCoreLookupInput(value) },
+            variables: { input: toLookupInput(lookup, value) },
             mutation: lookup.gql.save,
             successFn: (res) => lookup.changed$.next(res?.data),
           });
@@ -99,43 +113,43 @@ export function coreLookupUpsertBtn(comp: BaseComponent, lookup: CoreLookupModul
       comp.vs?.openModal(FormComponent, formParameter, '60%');
     },
     permissions: lookup.upsertPermissions,
-    ...getUpsertBtnProps(lookup.label),
+    ...getUpsertBtnProps(lookup.label, lookup.idKey),
   };
 }
 
-export function coreLookupViewBtn(comp: BaseComponent, lookup: CoreLookupModule): ActionButton {
+export function lookupViewBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
   return {
     icon: 'view',
     label: `View ${lookup.label}`,
-    click: (data: CoreLookup) => navigateRelativeTo(comp, lookup.slug, data?.id),
+    click: (data: Lookup) => navigateRelativeTo(comp, lookup.slug, data?.[lookup.idKey]),
     permissions: lookup.viewPermissions,
   };
 }
 
-export function coreLookupDeleteBtn(comp: BaseComponent, lookup: CoreLookupModule): ActionButton {
+export function lookupDeleteBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
   return {
-    click: async (data: CoreLookup) => {
+    click: async (data: Lookup) => {
       await comp.fs.fetch({
         notify: true,
         loadingOn: 'content',
-        variables: { uid: data.id },
+        variables: { uid: data?.[lookup.idKey] },
         mutation: lookup.gql.delete,
         successFn: (res) => lookup.changed$.next(res?.data),
       });
     },
-    ...getDeleteBtnProps(lookup.label, 'name'),
+    ...getDeleteBtnProps(lookup.label, lookup.nameKey ?? 'name'),
     permissions: lookup.deletePermissions,
   };
 }
 
-export function coreLookupTableBtns(comp: BaseComponent, lookup: CoreLookupModule): ActionButton[] {
+export function lookupTableBtns(comp: BaseComponent, lookup: LookupModule): ActionButton[] {
   return [
     {
       ...MORE_BTN,
       buttons: [
-        coreLookupViewBtn(comp, lookup),
-        coreLookupUpsertBtn(comp, lookup),
-        coreLookupDeleteBtn(comp, lookup),
+        lookupViewBtn(comp, lookup),
+        lookupUpsertBtn(comp, lookup),
+        lookupDeleteBtn(comp, lookup),
       ],
     },
   ];

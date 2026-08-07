@@ -5,16 +5,16 @@ import { DataGridComponent } from '@shared/components/data-grid/data-grid.compon
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridParameter } from '@shared/components/data-grid/data-grid.interfaces';
 
-import { CORE_LOOKUPS } from './core-lookups';
-import { CoreLookupModule } from './core-lookup.interface';
-import { coreLookupColumns, coreLookupTableBtns, coreLookupUpsertBtn } from './core-lookup.form';
+import { LOOKUPS } from './lookups';
+import { LookupModule } from './lookup.interface';
+import { lookupColumns, lookupTableBtns, lookupUpsertBtn } from './lookup.form';
 
 /**
- * The list for any one of the `remis_core_schema` lookup tables. Which one comes
- * from the route: every generated route carries its slug in `data.lookup`.
+ * The list for any one of the settings lookup tables. Which one comes from the
+ * route: every generated route carries its slug in `data.lookup`.
  */
 @Component({
-  selector: 'app-core-lookups',
+  selector: 'app-lookups',
   imports: [DataGridComponent, PageHeaderComponent],
   template: `
     <div class="size-full flex-1 flex flex-col gap-3">
@@ -23,19 +23,19 @@ import { coreLookupColumns, coreLookupTableBtns, coreLookupUpsertBtn } from './c
     </div>
   `,
 })
-export class CoreLookupsComponent extends BaseComponent {
-  lookup: CoreLookupModule = CORE_LOOKUPS[this.route.snapshot.data['lookup']];
+export class LookupsComponent extends BaseComponent {
+  lookup: LookupModule = LOOKUPS[this.route.snapshot.data['lookup']];
 
   override title = this.lookup.pluralLabel;
   override subtitle = this.lookup.subtitle;
-  override actionButtons: ActionButton[] = [coreLookupUpsertBtn(this, this.lookup)];
+  override actionButtons: ActionButton[] = [lookupUpsertBtn(this, this.lookup)];
 
   gridParameter: GridParameter = {
     title: this.lookup.pluralLabel,
     icon: this.lookup.icon,
-    keyColumns: coreLookupColumns(this.lookup),
+    keyColumns: lookupColumns(this.lookup),
     isPageable: true,
-    actionButtons: coreLookupTableBtns(this, this.lookup),
+    actionButtons: lookupTableBtns(this, this.lookup),
     reloadActions$: [this.lookup.changed$],
     fetchParameter: { query: this.lookup.gql.allPageable },
   };

@@ -1,8 +1,8 @@
 import { TypedRoutes } from '@core';
 import { matchRoute } from '@shared/components/view-component/view.helpers';
 
-import { coreLookupRoutes } from './core-lookups/core-lookup.routes';
-import { BILLING_LOOKUPS, REFERENCE_LOOKUPS } from './core-lookups/core-lookups';
+import { lookupRoutes } from './lookups/lookup.routes';
+import { BILLING_LOOKUPS, GENERAL_LOOKUPS, REFERENCE_LOOKUPS } from './lookups/lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),
@@ -80,68 +80,7 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     },
     children: [
       { path: '', redirectTo: 'business-names', pathMatch: 'full' },
-
-      // Business Names — organisations on the register, held in remis_core_schema
-      {
-        path: 'business-names',
-        data: {
-          isMenu: true,
-          name: 'Business Names',
-          icon: 'suitcase',
-          permissions: ['ROLE_VIEW_ALL_BUSINESS_NAME', 'ROLE_VIEW_BUSINESS_NAME'],
-        },
-        loadComponent: () =>
-          import('./business-names/business-names.component').then((m) => m.BusinessNamesComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'business-names', 'uid'),
-        loadComponent: () =>
-          import('./business-names/business-name.component').then((m) => m.BusinessNameComponent),
-      },
-
-      // Identity Types — how business names and people are identified
-      {
-        path: 'identity-types',
-        data: {
-          isMenu: true,
-          name: 'Identity Types',
-          icon: 's-settings',
-          permissions: ['ROLE_VIEW_ALL_IDENTITY_TYPE', 'ROLE_VIEW_IDENTITY_TYPE'],
-        },
-        loadComponent: () =>
-          import('./identity-types/identity-types.component').then((m) => m.IdentityTypesComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'identity-types', 'uid'),
-        loadComponent: () =>
-          import('./identity-types/identity-type.component').then((m) => m.IdentityTypeComponent),
-      },
-
-      // Departments Management
-      {
-        path: 'departments',
-        data: { isMenu: true, name: 'Departments', icon: 'suitcase' },
-        loadComponent: () =>
-          import('./departments/departments.component').then((m) => m.DepartmentsComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'departments', 'departmentUid'),
-        loadComponent: () =>
-          import('./departments/department.component').then((m) => m.DepartmentComponent),
-      },
-
-      // Designations Management
-      {
-        path: 'designations',
-        data: { isMenu: true, name: 'Designations', icon: 's-settings' },
-        loadComponent: () =>
-          import('./designations/designations.component').then((m) => m.DesignationsComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'designations', 'uid'),
-        loadComponent: () =>
-          import('./designations/designation.component').then((m) => m.DesignationComponent),
-      },
+      ...lookupRoutes(GENERAL_LOOKUPS),
 
       // System Settings
       {
@@ -159,23 +98,6 @@ export const SETTINGS_ROUTES: TypedRoutes = [
             (m) => m.SystemSettingComponent,
           ),
       },
-
-      // Report Templates
-      // {
-      //   path: 'report-template',
-      //   data: { isMenu: true, name: 'Report Templates', icon: 'report' },
-      //   loadComponent: () =>
-      //     import('./report-template/report-templates.component').then(
-      //       (m) => m.ReportTemplatesComponent,
-      //     ),
-      // },
-      // {
-      //   matcher: (url) => matchRoute(url, 'report-template', 'reportTemplateUid'),
-      //   loadComponent: () =>
-      //     import('./report-template/report-template.component').then(
-      //       (m) => m.ReportTemplateComponent,
-      //     ),
-      // },
     ],
   },
 
@@ -223,7 +145,7 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     },
     children: [
       { path: '', redirectTo: 'countries', pathMatch: 'full' },
-      ...coreLookupRoutes(REFERENCE_LOOKUPS),
+      ...lookupRoutes(REFERENCE_LOOKUPS),
     ],
   },
 
@@ -238,7 +160,7 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     },
     children: [
       { path: '', redirectTo: 'bank-accounts', pathMatch: 'full' },
-      ...coreLookupRoutes(BILLING_LOOKUPS),
+      ...lookupRoutes(BILLING_LOOKUPS),
     ],
   },
 

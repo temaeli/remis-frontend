@@ -7,12 +7,16 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
-import { IdentityType } from './identity-type.interface';
-import { FIND_IDENTITY_TYPE } from './identity-type.graphql';
-import { identityType$, identityTypeUpsertBtn } from './identity-type.form';
+import { LOOKUPS } from './lookups';
+import { lookupUpsertBtn } from './lookup.form';
+import { Lookup, LookupModule } from './lookup.interface';
 
+/**
+ * The detail page for any one of the settings lookup tables, resolved from
+ * `data.lookup` the same way the list is.
+ */
 @Component({
-  selector: 'app-identity-type',
+  selector: 'app-lookup',
   imports: [CommonModule, PageHeaderComponent, ContentsViewComponent],
   template: `
     <div class="size-full flex-1 flex flex-col gap-2">
@@ -20,48 +24,51 @@ import { identityType$, identityTypeUpsertBtn } from './identity-type.form';
         [title]="title"
         [subtitle]="subtitle"
         [actionButtons]="actionButtons"
-        [data]="identityType"
+        [data]="record"
       />
       <contents-view class="block grow" [contents]="contents" />
     </div>
   `,
 })
-export class IdentityTypeComponent extends BaseComponent implements OnInit {
-  override title = 'Identity Type';
-  override subtitle = 'Identity Type Details';
+export class LookupComponent extends BaseComponent implements OnInit {
+  lookup: LookupModule = LOOKUPS[this.route.snapshot.data['lookup']];
 
-  identityType: IdentityType | undefined;
-  identityTypeUid: string | null = this.route.snapshot?.paramMap?.get('uid');
+  override title = this.lookup.label;
+  override subtitle = `${this.lookup.label} Details`;
+
+  record: Lookup | undefined;
+  recordUid: string | null = this.route.snapshot?.paramMap?.get('uid');
 
   override contents: ContentParameter[] = [];
-  override actionButtons: ActionButton[] = [identityTypeUpsertBtn(this)];
+  override actionButtons: ActionButton[] = [lookupUpsertBtn(this, this.lookup)];
 
   fetchParameter: FetchParameter = {
     loadingOn: 'no-content',
-    query: FIND_IDENTITY_TYPE,
-    successFn: (res) => (this.title = res?.data?.name),
-    variables: { uid: this.identityTypeUid },
+    query: this.lookup.gql.find,
+    successFn: (res) => (this.title = res?.data?.[this.lookup.nameKey ?? 'name']),
+    variables: { uid: this.recordUid },
   };
 
   async ngOnInit(): Promise<void> {
     await this.setContents();
-    this.subs.add(identityType$.subscribe(() => this.setContents()));
+    this.subs.add(this.lookup.changed$.subscribe(() => this.setContents()));
   }
 
   async setContents() {
     const response = await this.fs.fetch(this.fetchParameter);
-    this.identityType = response?.data ?? response;
+    this.record = response?.data ?? response;
 
     this.contents = [
       {
         type: 'details',
-        name: 'Identity Type Details',
-        label: 'Identity Type Details',
+        name: `${this.lookup.label} Details`,
+        label: `${this.lookup.label} Details`,
         icon: 'notes',
         showUndefined: true,
-        entity: this.identityType,
+        entity: this.record,
         fetchParameter: this.fetchParameter,
       },
+      ...(this.lookup.extraContents?.(this, this.record) ?? []),
     ];
 
     this.cdr.detectChanges();
