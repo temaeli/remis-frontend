@@ -46,6 +46,7 @@ export const billGqlFields = `
   gepgPayType { ${refFields} }
   payPlan { ${refFields} }
   spCode { ${refFields} }
+  paymentServiceProvider { ${refFields} }
 `;
 
 export const billItemGqlFields = `
@@ -68,6 +69,7 @@ export const billItemGqlFields = `
   gfsCode { ${refFields} }
   useItemRefOnPay { ${refFields} }
   financialYear { ${refFields} }
+  collsp { ${refFields} }
 `;
 
 //  Queries

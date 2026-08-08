@@ -25,6 +25,8 @@ export const BILL_OPTION_QUERIES: Record<string, DocumentNode> = {
   gepgBillTypes: gql`query allGepgBillTypes { allGepgBillTypes { ${named} } }`,
   gepgPayTypes: gql`query allGepgPayTypes { allGepgPayTypes { ${named} } }`,
   payPlans: gql`query allPayPlans { allPayPlans { ${named} } }`,
+  paymentServiceProviders: gql`query allPaymentServiceProviders { allPaymentServiceProviders { ${named} } }`,
+  collsps: gql`query allCollsps { allCollsps { ${named} } }`,
   useItemRefOnPays: gql`query allUseItemRefOnPays { allUseItemRefOnPays { ${named} } }`,
   financialYears: gql`query allFinancialYears { allFinancialYears { ${named} } }`,
   currencies: gql`query allCurrencies { allCurrencies { ${named} } }`,

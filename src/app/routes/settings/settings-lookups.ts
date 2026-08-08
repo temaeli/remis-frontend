@@ -302,6 +302,59 @@ export const BANK_ACCOUNT = defineLookup({
   toModel: (data) => ({ issuerUid: data?.issuer?.id }),
 });
 
+/**
+ * The bank or mobile operator a bill is settled through. Each one is an
+ * organisation already on the business name register, so the row points at one
+ * rather than repeating its details.
+ */
+export const PAYMENT_SERVICE_PROVIDER = defineLookup({
+  slug: 'payment-service-providers',
+  entity: 'PaymentServiceProvider',
+  entityPlural: 'PaymentServiceProviders',
+  permission: 'PAYMENT_SERVICE_PROVIDER',
+  label: 'Payment Service Provider',
+  pluralLabel: 'Payment Service Providers',
+  subtitle: 'The banks and operators a bill can be paid through',
+  icon: 'payment',
+  extraGqlFields: `
+  businessName {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    {
+      key: 'businessNameUid',
+      label: 'Business Name',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: BUSINESS_NAME.gql.all },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [{ field: 'businessName', valueFn: (row) => row?.businessName?.name }],
+  toModel: (data) => ({ businessNameUid: data?.businessName?.id }),
+});
+
+/**
+ * The collection service provider a bill line is collected through. The table is
+ * named `collsp` and the screen keeps that spelling, so the code and the DBA's
+ * schema stay recognisable as the same thing.
+ */
+export const COLLSP = defineLookup({
+  slug: 'collsps',
+  entity: 'Collsp',
+  entityPlural: 'Collsps',
+  permission: 'COLLSP',
+  label: 'Collection Service Provider',
+  pluralLabel: 'Collection Service Providers',
+  subtitle: 'The providers a bill item is collected through',
+  icon: 'payment',
+});
+
 export const BILL_PAY_OPTION = defineLookup({
   slug: 'bill-pay-options',
   entity: 'BillPayOption',
@@ -903,6 +956,8 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
   COLLECTION_CENTER,
+  COLLSP,
+  PAYMENT_SERVICE_PROVIDER,
   DISCOUNT,
   GEPG_BILL_TYPE,
   GEPG_PAY_TYPE,
