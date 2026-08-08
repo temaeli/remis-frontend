@@ -1,6 +1,8 @@
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { gql } from '@apollo/client/core';
+
+import { projectAssetsPanel } from './project-asset';
 import {
   defineLookup,
   lookupChildGqlFields,
@@ -171,6 +173,7 @@ export const REGISTRY_PROJECT = defineLookup({
     lookupChildPanel(comp, () => PROJECT_CONNECTION, PROJECT_CONNECTIONS_BY_PARENT, {
       parentUid: record?.id,
     }),
+    projectAssetsPanel(comp, record?.id),
   ],
 });
 

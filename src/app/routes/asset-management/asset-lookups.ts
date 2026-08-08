@@ -9,6 +9,7 @@ import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
+import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import {
   defineLookup,
   lookupChildGqlFields,
@@ -193,6 +194,7 @@ export const ASSET = defineLookup({
     lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
       assetUid: record?.id,
     }),
+    assetProjectsPanel(comp, record?.id),
   ],
 });
 
