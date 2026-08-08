@@ -149,8 +149,17 @@ export function lookupTableBtns(comp: BaseComponent, lookup: LookupModule): Acti
       buttons: [
         lookupViewBtn(comp, lookup),
         lookupUpsertBtn(comp, lookup),
+        ...(lookup.extraActions?.(comp, lookup) ?? []),
         lookupDeleteBtn(comp, lookup),
       ],
     },
   ];
+}
+
+/**
+ * The buttons on a page header — the list's and the detail's alike. Create or
+ * edit, then whatever else the table can do.
+ */
+export function lookupHeaderBtns(comp: BaseComponent, lookup: LookupModule): ActionButton[] {
+  return [lookupUpsertBtn(comp, lookup), ...(lookup.extraActions?.(comp, lookup) ?? [])];
 }

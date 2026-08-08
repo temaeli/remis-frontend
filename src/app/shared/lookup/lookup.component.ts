@@ -8,7 +8,7 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
 import { getLookup } from './lookup.registry';
-import { lookupUpsertBtn } from './lookup.form';
+import { lookupHeaderBtns } from './lookup.form';
 import { Lookup, LookupModule } from './lookup.interface';
 
 /**
@@ -40,7 +40,7 @@ export class LookupComponent extends BaseComponent implements OnInit {
   recordUid: string | null = this.route.snapshot?.paramMap?.get('uid');
 
   override contents: ContentParameter[] = [];
-  override actionButtons: ActionButton[] = [lookupUpsertBtn(this, this.lookup)];
+  override actionButtons: ActionButton[] = lookupHeaderBtns(this, this.lookup);
 
   fetchParameter: FetchParameter = {
     loadingOn: 'no-content',

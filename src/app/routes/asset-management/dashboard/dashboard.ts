@@ -4,13 +4,15 @@ import { CommonModule } from '@angular/common';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 
-import { ALL_ASSETS } from '../asset/asset.graphql';
-import { ALL_ASSET_TYPES } from '../asset-type/asset-type.graphql';
-import { ALL_ASSET_CATEGORIES } from '../asset-category/asset-category.graphql';
-import { ALL_ASSET_SUBCATEGORIES } from '../asset-subcategory/asset-subcategory.graphql';
-import { ALL_LAND_REGISTRATIONS } from '../land-registration/land-registration.graphql';
-import { ALL_ASSET_VERIFICATIONS } from '../asset-verification/asset-verification.graphql';
-import { Asset } from '../asset-registry.interface';
+import { Lookup } from '@shared/lookup';
+import {
+  ASSET,
+  ASSET_CATEGORY,
+  ASSET_SUBCATEGORY,
+  ASSET_TYPE,
+  ASSET_VERIFICATION,
+  LAND_REGISTRATION,
+} from '../asset-lookups';
 
 interface Tile {
   label: string;
@@ -105,7 +107,7 @@ export class Dashboard extends BaseComponent implements OnInit {
   override title = 'Asset Management';
   override subtitle = 'Registry totals and the current spread of asset statuses';
 
-  private readonly assets = signal<Asset[]>([]);
+  private readonly assets = signal<Lookup[]>([]);
   private readonly counts = signal<Record<string, number>>({});
 
   readonly totalAssets = computed(() => this.assets().length);
@@ -126,7 +128,11 @@ export class Dashboard extends BaseComponent implements OnInit {
         value: c['subcategories'] ?? 0,
         route: 'configurations/asset-subcategories',
       },
-      { label: 'Land registrations', value: c['landRegistrations'] ?? 0, route: 'land-registrations' },
+      {
+        label: 'Land registrations',
+        value: c['landRegistrations'] ?? 0,
+        route: 'land-registrations',
+      },
       { label: 'Verifications', value: c['verifications'] ?? 0, route: 'asset-verifications' },
     ];
   });
@@ -164,19 +170,24 @@ export class Dashboard extends BaseComponent implements OnInit {
     const [assets, types, categories, subcategories, landRegistrations, verifications] =
       await Promise.all(
         [
-          ALL_ASSETS,
-          ALL_ASSET_TYPES,
-          ALL_ASSET_CATEGORIES,
-          ALL_ASSET_SUBCATEGORIES,
-          ALL_LAND_REGISTRATIONS,
-          ALL_ASSET_VERIFICATIONS,
-        ].map((query) =>
-          // One failing query should leave the rest of the dashboard readable.
-          this.fs.fetch({ query, showLoading: false }).then(asList).catch(() => []),
-        ),
+          ASSET,
+          ASSET_TYPE,
+          ASSET_CATEGORY,
+          ASSET_SUBCATEGORY,
+          LAND_REGISTRATION,
+          ASSET_VERIFICATION,
+        ]
+          .map((lookup) => lookup.gql.all)
+          .map((query) =>
+            // One failing query should leave the rest of the dashboard readable.
+            this.fs
+              .fetch({ query, showLoading: false })
+              .then(asList)
+              .catch(() => []),
+          ),
       );
 
-    this.assets.set(assets as Asset[]);
+    this.assets.set(assets as Lookup[]);
     this.counts.set({
       types: types.length,
       categories: categories.length,

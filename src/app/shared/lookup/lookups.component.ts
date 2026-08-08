@@ -7,7 +7,7 @@ import { GridParameter } from '@shared/components/data-grid/data-grid.interfaces
 
 import { getLookup } from './lookup.registry';
 import { LookupModule } from './lookup.interface';
-import { lookupColumns, lookupTableBtns, lookupUpsertBtn } from './lookup.form';
+import { lookupColumns, lookupHeaderBtns, lookupTableBtns } from './lookup.form';
 
 /**
  * The list for any one of the settings lookup tables. Which one comes from the
@@ -28,7 +28,7 @@ export class LookupsComponent extends BaseComponent {
 
   override title = this.lookup.pluralLabel;
   override subtitle = this.lookup.subtitle;
-  override actionButtons: ActionButton[] = [lookupUpsertBtn(this, this.lookup)];
+  override actionButtons: ActionButton[] = lookupHeaderBtns(this, this.lookup);
 
   gridParameter: GridParameter = {
     title: this.lookup.pluralLabel,

@@ -3,6 +3,7 @@ import { DocumentNode } from '@apollo/client/core';
 import { FieldConfig } from '@shared/components/generic-form/field.interface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
+import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 
 /**
@@ -127,6 +128,13 @@ export interface LookupConfig {
 
   /** Panels appended to the detail page, below the details block. */
   extraContents?: (comp: BaseComponent, record?: Lookup) => ContentParameter[];
+
+  /**
+   * Actions this table has beyond create, edit and delete — a status transition,
+   * an approval. They appear both in the list's row menu and on the detail
+   * page's header, which is where a reader looking at one record expects them.
+   */
+  extraActions?: (comp: BaseComponent, lookup: LookupModule) => ActionButton[];
 }
 
 /** A config with everything derived from it — what the screens actually consume. */
