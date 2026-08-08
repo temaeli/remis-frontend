@@ -437,6 +437,97 @@ export const SYSTEM_CODE = defineLookup({
   extraColumns: [{ field: 'systemCodes', header: 'System Code Value' }],
 });
 
+/**
+ * The only billing table with no assigned number. Its `assignedCode` is numeric
+ * where the rest of the module has a string, so it is a field of its own rather
+ * than the inherited one, and the base block is overridden to match: it is
+ * required, because a column with a -90..90 CHECK on it cannot be generated.
+ */
+export const MINIMUM_PAYMENT = defineLookup({
+  slug: 'minimum-payments',
+  entity: 'MinimumPayment',
+  entityPlural: 'MinimumPayments',
+  permission: 'MINIMUM_PAYMENT',
+  label: 'Minimum Payment',
+  pluralLabel: 'Minimum Payments',
+  subtitle: 'The least a payment may be',
+  icon: 'money_alt',
+  descriptiveGqlFields: `
+  name
+  description
+  minimum
+  assignedCode
+`,
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    amountField('minimum', 'Minimum'),
+    amountField('assignedCode', 'Assigned Code', 'The table restricts this to -90..90'),
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedCode', header: 'Assigned Code' },
+    'name',
+    'description',
+    'minimum',
+  ],
+});
+
+export const PAYMENT_GRACE_PERIOD = defineLookup({
+  slug: 'payment-grace-periods',
+  entity: 'PaymentGracePeriod',
+  entityPlural: 'PaymentGracePeriods',
+  permission: 'PAYMENT_GRACE_PERIOD',
+  label: 'Payment Grace Period',
+  pluralLabel: 'Payment Grace Periods',
+  subtitle: 'How long a payment may be deferred, before, during and after construction',
+  icon: 'clock',
+  extraGqlFields: `
+  beforeConstructionGracePeriod
+  duringConstructionGracePeriod
+  afterConstructionGracePeriod
+  beforeConstructionDownPaymentPeriod
+  duringConstructionDownPaymentPeriod
+  afterConstructionDownPaymentPeriod
+  beforeConstructionBalanceGracePeriod
+  duringConstructionBalanceGracePeriod
+  afterConstructionBalanceGracePeriod
+`,
+  // Nine periods: a grace period, a down payment period and a balance grace
+  // period, each stated for the three phases of construction.
+  extraFields: [
+    amountField('beforeConstructionGracePeriod', 'Grace — Before Construction'),
+    amountField('duringConstructionGracePeriod', 'Grace — During Construction'),
+    amountField('afterConstructionGracePeriod', 'Grace — After Construction'),
+    amountField('beforeConstructionDownPaymentPeriod', 'Down Payment — Before Construction'),
+    amountField('duringConstructionDownPaymentPeriod', 'Down Payment — During Construction'),
+    amountField('afterConstructionDownPaymentPeriod', 'Down Payment — After Construction'),
+    amountField('beforeConstructionBalanceGracePeriod', 'Balance Grace — Before Construction'),
+    amountField('duringConstructionBalanceGracePeriod', 'Balance Grace — During Construction'),
+    amountField('afterConstructionBalanceGracePeriod', 'Balance Grace — After Construction'),
+  ],
+  // The nine read better on the detail page than squeezed into the list.
+  extraColumns: [
+    { field: 'beforeConstructionGracePeriod', header: 'Grace (Before)' },
+    { field: 'duringConstructionGracePeriod', header: 'Grace (During)' },
+    { field: 'afterConstructionGracePeriod', header: 'Grace (After)' },
+  ],
+});
+
 //  Reference — the data costing and valuation share, under `modules.setting.reference`.
 
 export const COUNTRY = defineLookup({
@@ -581,6 +672,8 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   SP_GRP_CODE,
   SUB_SP_CODE,
   SYSTEM_CODE,
+  MINIMUM_PAYMENT,
+  PAYMENT_GRACE_PERIOD,
 ];
 
 export const REFERENCE_LOOKUPS: LookupModule[] = [
