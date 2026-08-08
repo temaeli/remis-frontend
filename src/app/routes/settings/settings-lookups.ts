@@ -800,6 +800,68 @@ export const USE_ITEM_REF_ON_PAY = defineLookup({
   baseColumns: ['index', { field: 'assignedNumber', header: 'Code' }, 'name', 'description'],
 });
 
+/**
+ * What one unit of a billable thing costs. Every bill item starts here: its
+ * amount is this multiplied by the quantity, and the VAT, discount and
+ * withholding tax are all multiplied onto that.
+ */
+export const FEE = defineLookup({
+  slug: 'fees',
+  entity: 'Fee',
+  entityPlural: 'Fees',
+  permission: 'FEE',
+  label: 'Fee',
+  pluralLabel: 'Fees',
+  subtitle: 'What one unit of a billable thing costs',
+  icon: 'coins',
+  extraGqlFields: `
+  amount
+  minimumPayment {
+    id
+    uid: id
+    name
+  }
+  paymentGracePeriod {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    amountField('amount', 'Amount'),
+    {
+      key: 'minimumPaymentUid',
+      label: 'Minimum Payment',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: MINIMUM_PAYMENT.gql.all },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'paymentGracePeriodUid',
+      label: 'Payment Grace Period',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: PAYMENT_GRACE_PERIOD.gql.all },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    'amount',
+    { field: 'minimumPayment', valueFn: (row) => row?.minimumPayment?.name },
+  ],
+  toModel: (data) => ({
+    minimumPaymentUid: data?.minimumPayment?.id,
+    paymentGracePeriodUid: data?.paymentGracePeriod?.id,
+  }),
+});
+
 //  The parent-filtered reads the drill-downs above are built on. Exported so
 //  they are checked against the schema alongside the generated ones.
 
@@ -858,6 +920,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   VAT,
   WITHHOLDING_TAX,
   USE_ITEM_REF_ON_PAY,
+  FEE,
 ];
 
 export const REFERENCE_LOOKUPS: LookupModule[] = [
