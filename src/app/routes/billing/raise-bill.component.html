@@ -1,21 +1,29 @@
 <div class="size-full flex-1 flex flex-col gap-3">
   <page-header [title]="title" [subtitle]="subtitle" />
 
-  <form [formGroup]="form" class="flex flex-col gap-4 overflow-auto pb-4">
+  <form
+    [formGroup]="form"
+    class="grow bg-white rounded-lg shadow-sm p-6 flex flex-col gap-6 overflow-auto"
+  >
     <!-- The header the bill is raised under. -->
-    <section formGroupName="header" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <section formGroupName="header">
       <h3 class="font-semibold mb-3 flex items-center gap-2">
         <app-icon icon="bill" /> Bill Header
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <mat-form-field appearance="outline"><mat-label>Name</mat-label>
-          <input matInput formControlName="name" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Request Id</mat-label>
-          <input matInput formControlName="reqId" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Group Bill Id</mat-label>
-          <input matInput formControlName="grpBillId" /></mat-form-field>
-        <mat-form-field appearance="outline" class="md:col-span-3"><mat-label>Description</mat-label>
-          <textarea matInput rows="2" formControlName="description"></textarea></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Name</mat-label> <input matInput formControlName="name"
+        /></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Request Id</mat-label> <input matInput formControlName="reqId"
+        /></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Group Bill Id</mat-label> <input matInput formControlName="grpBillId"
+        /></mat-form-field>
+        <mat-form-field appearance="outline" class="md:col-span-3"
+          ><mat-label>Description</mat-label>
+          <textarea matInput rows="2" formControlName="description"></textarea>
+        </mat-form-field>
 
         @for (sel of headerSelects; track sel.control) {
           <mat-form-field appearance="outline">
@@ -28,23 +36,27 @@
           </mat-form-field>
         }
 
-        <mat-form-field appearance="outline"><mat-label>Applied Date</mat-label>
-          <input matInput type="date" formControlName="appliedDate" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Expiry Date</mat-label>
-          <input matInput type="date" formControlName="expiredDate" /></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Applied Date</mat-label>
+          <input matInput type="date" formControlName="appliedDate"
+        /></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Expiry Date</mat-label>
+          <input matInput type="date" formControlName="expiredDate"
+        /></mat-form-field>
       </div>
     </section>
 
     <!-- The bill itself: who it is for and how it is settled. -->
-    <section formGroupName="detail" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <h3 class="font-semibold mb-3 flex items-center gap-2">
-        <app-icon icon="receipt" /> Bill
-      </h3>
+    <section formGroupName="detail" class="border-t border-gray-200 pt-6">
+      <h3 class="font-semibold mb-3 flex items-center gap-2"><app-icon icon="receipt" /> Bill</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <mat-form-field appearance="outline"><mat-label>Name</mat-label>
-          <input matInput formControlName="name" /></mat-form-field>
-        <mat-form-field appearance="outline" class="md:col-span-2"><mat-label>Description</mat-label>
-          <input matInput formControlName="description" /></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Name</mat-label> <input matInput formControlName="name"
+        /></mat-form-field>
+        <mat-form-field appearance="outline" class="md:col-span-2"
+          ><mat-label>Description</mat-label> <input matInput formControlName="description"
+        /></mat-form-field>
 
         @for (sel of detailSelects; track sel.control) {
           <mat-form-field appearance="outline">
@@ -57,13 +69,14 @@
           </mat-form-field>
         }
 
-        <mat-form-field appearance="outline"><mat-label>Expires</mat-label>
-          <input matInput type="date" formControlName="expiredAt" /></mat-form-field>
+        <mat-form-field appearance="outline"
+          ><mat-label>Expires</mat-label> <input matInput type="date" formControlName="expiredAt"
+        /></mat-form-field>
       </div>
     </section>
 
     <!-- The lines. Amounts are shown as they are chosen and recomputed on save. -->
-    <section class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <section class="border-t border-gray-200 pt-6">
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold flex items-center gap-2"><app-icon icon="list" /> Bill Items</h3>
         <button mat-stroked-button type="button" (click)="addItem()">Add Item</button>
@@ -71,23 +84,31 @@
 
       <div class="flex flex-col gap-4" formArrayName="items">
         @for (item of items.controls; track item; let i = $index) {
-          <div [formGroupName]="i" class="rounded-md bg-gray-50 dark:bg-gray-800/40 p-3">
+          <div [formGroupName]="i" class="bg-white rounded-lg border border-gray-200 p-3">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium">Item {{ i + 1 }}</span>
               @if (items.length > 1) {
-                <button mat-button color="warn" type="button" (click)="removeItem(i)">Remove</button>
+                <button mat-button color="warn" type="button" (click)="removeItem(i)">
+                  Remove
+                </button>
               }
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <mat-form-field appearance="outline"><mat-label>Name</mat-label>
-                <input matInput formControlName="name" /></mat-form-field>
-              <mat-form-field appearance="outline"><mat-label>Description</mat-label>
-                <input matInput formControlName="description" /></mat-form-field>
-              <mat-form-field appearance="outline"><mat-label>Reference Bill Id</mat-label>
-                <input matInput formControlName="refBillId" /></mat-form-field>
-              <mat-form-field appearance="outline"><mat-label>Item Reference</mat-label>
-                <input matInput formControlName="billItemRef" /></mat-form-field>
+              <mat-form-field appearance="outline"
+                ><mat-label>Name</mat-label> <input matInput formControlName="name"
+              /></mat-form-field>
+              <mat-form-field appearance="outline"
+                ><mat-label>Description</mat-label> <input matInput formControlName="description"
+              /></mat-form-field>
+              <mat-form-field appearance="outline"
+                ><mat-label>Reference Bill Id</mat-label>
+                <input matInput formControlName="refBillId"
+              /></mat-form-field>
+              <mat-form-field appearance="outline"
+                ><mat-label>Item Reference</mat-label>
+                <input matInput formControlName="billItemRef"
+              /></mat-form-field>
 
               @for (sel of itemSelects; track sel.control) {
                 <mat-form-field appearance="outline">
@@ -100,19 +121,43 @@
                 </mat-form-field>
               }
 
-              <mat-form-field appearance="outline"><mat-label>Quantity</mat-label>
-                <input matInput type="number" step="0.01" formControlName="quantities" /></mat-form-field>
+              <mat-form-field appearance="outline"
+                ><mat-label>Quantity</mat-label>
+                <input matInput type="number" step="0.01" formControlName="quantities"
+              /></mat-form-field>
             </div>
 
             <!-- What this line comes to, by the same formula the backend applies. -->
             @if (lines()[i]; as line) {
               <div class="mt-2 grid grid-cols-2 md:grid-cols-6 gap-2 text-xs">
-                <div><span class="opacity-60">Amount</span><div class="font-medium">{{ line.billItemAmt | number: '1.2-2' }}</div></div>
-                <div><span class="opacity-60">VAT</span><div class="font-medium">{{ line.vatAmount | number: '1.2-2' }}</div></div>
-                <div><span class="opacity-60">Discount</span><div class="font-medium text-danger">-{{ line.discountAmount | number: '1.2-2' }}</div></div>
-                <div><span class="opacity-60">Withholding</span><div class="font-medium text-danger">-{{ line.withholdingAmount | number: '1.2-2' }}</div></div>
-                <div><span class="opacity-60">Final</span><div class="font-semibold">{{ line.finalBillItemAmt | number: '1.2-2' }}</div></div>
-                <div><span class="opacity-60">Final Equivalent</span><div class="font-semibold">{{ line.finalBillItemEqvAmt | number: '1.2-2' }}</div></div>
+                <div>
+                  <span class="opacity-60">Amount</span>
+                  <div class="font-medium">{{ line.billItemAmt | number: '1.2-2' }}</div>
+                </div>
+                <div>
+                  <span class="opacity-60">VAT</span>
+                  <div class="font-medium">{{ line.vatAmount | number: '1.2-2' }}</div>
+                </div>
+                <div>
+                  <span class="opacity-60">Discount</span>
+                  <div class="font-medium text-danger">
+                    -{{ line.discountAmount | number: '1.2-2' }}
+                  </div>
+                </div>
+                <div>
+                  <span class="opacity-60">Withholding</span>
+                  <div class="font-medium text-danger">
+                    -{{ line.withholdingAmount | number: '1.2-2' }}
+                  </div>
+                </div>
+                <div>
+                  <span class="opacity-60">Final</span>
+                  <div class="font-semibold">{{ line.finalBillItemAmt | number: '1.2-2' }}</div>
+                </div>
+                <div>
+                  <span class="opacity-60">Final Equivalent</span>
+                  <div class="font-semibold">{{ line.finalBillItemEqvAmt | number: '1.2-2' }}</div>
+                </div>
               </div>
             }
           </div>
@@ -121,7 +166,7 @@
     </section>
 
     <!-- The running total, which is what will be stored once the bill is saved. -->
-    <section class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-wrap items-center gap-6">
+    <section class="border-t border-gray-200 pt-6 flex flex-wrap items-center gap-6">
       <div>
         <div class="text-xs opacity-60">Billed Amount</div>
         <div class="text-xl font-semibold">{{ totals().billAmt | number: '1.2-2' }}</div>
@@ -131,13 +176,20 @@
         <div class="text-xl font-semibold">{{ totals().billEqvAmt | number: '1.2-2' }}</div>
       </div>
       <div class="text-xs opacity-60 max-w-md">
-        A preview. The backend recomputes every figure on save and stores its own
-        result; the header, the bill, its items and this total are written together
-        or not at all.
+        A preview. The backend recomputes every figure on save and stores its own result; the
+        header, the bill, its items and this total are written together or not at all.
       </div>
       <div class="ms-auto flex items-center gap-2">
-        @if (problem()) { <span class="text-danger text-sm">{{ problem() }}</span> }
-        <button mat-flat-button color="primary" type="button" [disabled]="saving()" (click)="submit()">
+        @if (problem()) {
+          <span class="text-danger text-sm">{{ problem() }}</span>
+        }
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="saving()"
+          (click)="submit()"
+        >
           {{ saving() ? 'Raising…' : 'Raise Bill' }}
         </button>
       </div>
