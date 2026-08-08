@@ -1,0 +1,246 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+
+import { BaseComponent } from '@shared/components/base-componet/base-component';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { IconComponent } from '@shared/components/icon/icon.component';
+
+import { RAISE_BILL } from './bill.graphql';
+import { bill$ } from './bill.form';
+import { BILL_OPTION_QUERIES, BillOptions, emptyOptions } from './bill-options.graphql';
+import { BillLineAmounts, calculateBillTotals, calculateLine } from './bill.calculator';
+
+/**
+ * Raises a bill: the header, the bill, and its lines, in one submission.
+ *
+ * Written by hand rather than through the generic form. A bill is not a flat
+ * record — it has a repeating set of lines whose amounts have to be shown as
+ * they are typed, and a running total under them — and the generic form has no
+ * proven way to express that.
+ *
+ * The figures on screen are a preview. The backend recomputes every one of them
+ * on save from the same formula and stores its own result, so nothing computed
+ * here is ever sent.
+ */
+@Component({
+  selector: 'app-raise-bill',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    PageHeaderComponent,
+    IconComponent,
+  ],
+  templateUrl: './raise-bill.component.html',
+})
+export class RaiseBillComponent extends BaseComponent implements OnInit {
+  override title = 'Raise Bill';
+  override subtitle = 'A header, the bill and its items — written together or not at all';
+
+  private fb = inject(FormBuilder);
+
+  /** Everything the selects choose from, fetched once. */
+  readonly options = signal<BillOptions>(emptyOptions());
+  readonly saving = signal(false);
+  readonly problem = signal<string | null>(null);
+
+  /** Recomputed on every keystroke so the preview follows what is typed. */
+  readonly formValue = signal<Record<string, unknown>>({});
+
+  form: FormGroup = this.fb.group({
+    header: this.fb.group({
+      name: ['', Validators.required],
+      description: ['', Validators.required],
+      reqId: ['', Validators.required],
+      grpBillId: ['', Validators.required],
+      systemCodeUid: ['', Validators.required],
+      spGrpCodeUid: ['', Validators.required],
+      billPayOptionUid: ['', Validators.required],
+      billPaymentPlanUid: ['', Validators.required],
+      financialYearUid: ['', Validators.required],
+      appliedDate: ['', Validators.required],
+      expiredDate: ['', Validators.required],
+    }),
+    detail: this.fb.group({
+      name: ['', Validators.required],
+      description: ['', Validators.required],
+      bioDataUid: ['', Validators.required],
+      identityTypeUid: ['', Validators.required],
+      tinDataUid: ['', Validators.required],
+      currencyUid: ['', Validators.required],
+      exchangeRateUid: ['', Validators.required],
+      financialYearUid: ['', Validators.required],
+      billPayOptionUid: ['', Validators.required],
+      billPaymentPlanUid: ['', Validators.required],
+      collectionCenterUid: ['', Validators.required],
+      gepgBillTypeUid: ['', Validators.required],
+      gepgPayTypeUid: ['', Validators.required],
+      payPlanUid: ['', Validators.required],
+      spCodeUid: ['', Validators.required],
+      expiredAt: ['', Validators.required],
+    }),
+    items: this.fb.array([this.newItem()]),
+  });
+
+  get items(): FormArray<FormGroup> {
+    return this.form.get('items') as FormArray<FormGroup>;
+  }
+
+  /**
+   * The selects on each section, as control-to-list pairs. Kept as data rather
+   * than written out three dozen times in the template, which would say the same
+   * thing at far greater length.
+   */
+  readonly headerSelects = [
+    { control: 'systemCodeUid', label: 'System Code', source: 'systemCodes' },
+    { control: 'spGrpCodeUid', label: 'SP Group Code', source: 'spGrpCodes' },
+    { control: 'billPayOptionUid', label: 'Bill Pay Option', source: 'billPayOptions' },
+    { control: 'billPaymentPlanUid', label: 'Bill Payment Plan', source: 'billPaymentPlans' },
+    { control: 'financialYearUid', label: 'Financial Year', source: 'financialYears' },
+  ] as const;
+
+  readonly detailSelects = [
+    { control: 'bioDataUid', label: 'Payer', source: 'people' },
+    { control: 'identityTypeUid', label: 'Identity Type', source: 'identityTypes' },
+    { control: 'tinDataUid', label: 'TIN', source: 'tinDatas' },
+    { control: 'currencyUid', label: 'Currency', source: 'currencies' },
+    { control: 'exchangeRateUid', label: 'Exchange Rate', source: 'exchangeRates' },
+    { control: 'financialYearUid', label: 'Financial Year', source: 'financialYears' },
+    { control: 'billPayOptionUid', label: 'Bill Pay Option', source: 'billPayOptions' },
+    { control: 'billPaymentPlanUid', label: 'Bill Payment Plan', source: 'billPaymentPlans' },
+    { control: 'collectionCenterUid', label: 'Collection Center', source: 'collectionCenters' },
+    { control: 'gepgBillTypeUid', label: 'GePG Bill Type', source: 'gepgBillTypes' },
+    { control: 'gepgPayTypeUid', label: 'GePG Pay Type', source: 'gepgPayTypes' },
+    { control: 'payPlanUid', label: 'Pay Plan', source: 'payPlans' },
+    { control: 'spCodeUid', label: 'SP Code', source: 'spCodes' },
+  ] as const;
+
+  readonly itemSelects = [
+    { control: 'feeUid', label: 'Fee', source: 'fees' },
+    { control: 'vatUid', label: 'VAT', source: 'vats' },
+    { control: 'discountUid', label: 'Discount', source: 'discounts' },
+    { control: 'withholdingTaxUid', label: 'Withholding Tax', source: 'withholdingTaxes' },
+    { control: 'subSpCodeUid', label: 'Sub SP Code', source: 'subSpCodes' },
+    { control: 'gfsCodeUid', label: 'GFS Code', source: 'gfsCodes' },
+    { control: 'useItemRefOnPayUid', label: 'Use Item Ref On Pay', source: 'useItemRefOnPays' },
+    { control: 'financialYearUid', label: 'Financial Year', source: 'financialYears' },
+  ] as const;
+
+  /** The rate the bill converts at, taken from the chosen exchange rate. */
+  readonly exchangeRate = computed(() => {
+    const uid = (this.formValue()['detail'] as any)?.exchangeRateUid;
+    return this.options().exchangeRates.find((r) => r.id === uid)?.rateAgainstTzs ?? 0;
+  });
+
+  /** One preview per line, in the order they appear. */
+  readonly lines = computed<BillLineAmounts[]>(() => {
+    const value = this.formValue()['items'] as any[] | undefined;
+    const opts = this.options();
+    const rate = this.exchangeRate();
+
+    return (value ?? []).map((item) =>
+      calculateLine({
+        feeAmount: opts.fees.find((f) => f.id === item?.feeUid)?.amount,
+        quantity: item?.quantities,
+        vatRate: opts.vats.find((v) => v.id === item?.vatUid)?.vat,
+        discountRate: opts.discounts.find((d) => d.id === item?.discountUid)?.discounts,
+        withholdingRate: opts.withholdingTaxes.find((w) => w.id === item?.withholdingTaxUid)
+          ?.withholdingTax,
+        exchangeRate: rate,
+      }),
+    );
+  });
+
+  readonly totals = computed(() => calculateBillTotals(this.lines()));
+
+  async ngOnInit(): Promise<void> {
+    this.formValue.set(this.form.getRawValue());
+    this.subs.add(
+      this.form.valueChanges.subscribe(() => this.formValue.set(this.form.getRawValue())),
+    );
+    await this.loadOptions();
+  }
+
+  /** Every select's list, fetched together so the form is usable at once. */
+  private async loadOptions(): Promise<void> {
+    const entries = await Promise.all(
+      Object.entries(BILL_OPTION_QUERIES).map(async ([key, query]) => {
+        const rows = await this.fs
+          .fetch({ query, showLoading: false })
+          .then((r: any) => (Array.isArray(r) ? r : (r?.data ?? [])))
+          .catch(() => []);
+        return [key, rows] as const;
+      }),
+    );
+    this.options.set(Object.fromEntries(entries) as unknown as BillOptions);
+    this.cdr.detectChanges();
+  }
+
+  newItem(): FormGroup {
+    return this.fb.group({
+      name: ['', Validators.required],
+      description: ['', Validators.required],
+      refBillId: ['', Validators.required],
+      billItemRef: ['', Validators.required],
+      feeUid: ['', Validators.required],
+      quantities: [1, [Validators.required, Validators.min(0.01)]],
+      vatUid: ['', Validators.required],
+      withholdingTaxUid: ['', Validators.required],
+      discountUid: ['', Validators.required],
+      subSpCodeUid: ['', Validators.required],
+      gfsCodeUid: ['', Validators.required],
+      useItemRefOnPayUid: ['', Validators.required],
+      financialYearUid: ['', Validators.required],
+    });
+  }
+
+  addItem(): void {
+    this.items.push(this.newItem());
+  }
+
+  /** A bill needs at least one line: its total CHECKs greater than zero. */
+  removeItem(index: number): void {
+    if (this.items.length > 1) this.items.removeAt(index);
+  }
+
+  async submit(): Promise<void> {
+    this.problem.set(null);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.problem.set('Some required fields are still empty.');
+      return;
+    }
+
+    this.saving.set(true);
+    const response = await this.fs.fetch({
+      notify: true,
+      mutation: RAISE_BILL,
+      variables: { input: this.form.getRawValue() },
+      successFn: (res: any) => {
+        bill$.next(res?.data);
+        this.router.navigate(['../bills', res?.data?.id], { relativeTo: this.route });
+      },
+    });
+    this.saving.set(false);
+
+    // The backend rolls the whole bill back on any failure, so a message here
+    // means nothing was written and the form can simply be corrected.
+    if (!response?.id) this.problem.set(response?.message ?? null);
+  }
+}

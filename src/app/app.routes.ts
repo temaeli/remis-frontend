@@ -7,6 +7,7 @@ import { permissionGuard } from './routes/auth/permission.guard';
 import { ResetComponent } from '@routes/auth/register/reset/reset.component';
 import { ProjectManagement } from './routes/project-management/project-management';
 import { AssetManagement } from './routes/asset-management/asset-management';
+import { Billing } from './routes/billing/billing';
 
 export const APP_ROUTES: TypedRoutes = [
   {
@@ -57,8 +58,8 @@ export const APP_ROUTES: TypedRoutes = [
       // ROLE_VIEW_LAND_MANAGEMENT_MODULE is kept alongside the new permission so
       // roles already granted the old module tile do not lose access on rename.
       permissions: ['ROLE_VIEW_ASSET_REGISTRY_MODULE', 'ROLE_VIEW_LAND_MANAGEMENT_MODULE'],
-    //   description:
-    //     'Classify assets by type, category and subcategory, register them, and record land registrations and verifications.',
+      //   description:
+      //     'Classify assets by type, category and subcategory, register them, and record land registrations and verifications.',
     },
     loadChildren: () => import('./routes/asset-management/asset-management.routes'),
   },
@@ -73,10 +74,24 @@ export const APP_ROUTES: TypedRoutes = [
       icon: 'suitcase',
       visibleFor: ['internal'],
       permissions: ['ROLE_VIEW_PROJECT_DEVELOPMENT_MODULE'],
-    //   description:
-    //     'Classify projects by category and subcategory, keep the register, link projects to one another, and record costs and master plans.',
+      //   description:
+      //     'Classify projects by category and subcategory, keep the register, link projects to one another, and record costs and master plans.',
     },
     loadChildren: () => import('./routes/project-management/project-management.routes'),
+  },
+
+  {
+    path: 'billing',
+    title: 'Billing',
+    component: Billing,
+    canActivate: [externalUserGuard, permissionGuard],
+    data: {
+      isMenu: true,
+      icon: 'billing',
+      visibleFor: ['internal'],
+      permissions: ['ROLE_VIEW_BILLING_MODULE'],
+    },
+    loadChildren: () => import('./routes/billing/billing.routes'),
   },
 
   {
