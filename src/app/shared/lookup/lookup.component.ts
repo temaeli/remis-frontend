@@ -7,12 +7,16 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
-import { ProjectConnection } from '../project-registry.interface';
-import { FIND_PROJECT_CONNECTION } from './project-connection.graphql';
-import { projectConnection$, projectConnectionUpsertBtn } from './project-connection.form';
+import { getLookup } from './lookup.registry';
+import { lookupUpsertBtn } from './lookup.form';
+import { Lookup, LookupModule } from './lookup.interface';
 
+/**
+ * The detail page for any one of the settings lookup tables, resolved from
+ * `data.lookup` the same way the list is.
+ */
 @Component({
-  selector: 'app-project-connection',
+  selector: 'app-lookup',
   imports: [CommonModule, PageHeaderComponent, ContentsViewComponent],
   template: `
     <div class="size-full flex-1 flex flex-col gap-2">
@@ -20,48 +24,51 @@ import { projectConnection$, projectConnectionUpsertBtn } from './project-connec
         [title]="title"
         [subtitle]="subtitle"
         [actionButtons]="actionButtons"
-        [data]="projectConnection"
+        [data]="record"
       />
       <contents-view class="block grow" [contents]="contents" />
     </div>
   `,
 })
-export class ProjectConnectionComponent extends BaseComponent implements OnInit {
-  override title = 'Project Connection';
-  override subtitle = 'Project Connection Details';
+export class LookupComponent extends BaseComponent implements OnInit {
+  lookup: LookupModule = getLookup(this.route.snapshot.data['lookup']);
 
-  projectConnection: ProjectConnection | undefined;
-  projectConnectionUid: string | null = this.route.snapshot?.paramMap?.get('uid');
+  override title = this.lookup.label;
+  override subtitle = `${this.lookup.label} Details`;
+
+  record: Lookup | undefined;
+  recordUid: string | null = this.route.snapshot?.paramMap?.get('uid');
 
   override contents: ContentParameter[] = [];
-  override actionButtons: ActionButton[] = [projectConnectionUpsertBtn(this)];
+  override actionButtons: ActionButton[] = [lookupUpsertBtn(this, this.lookup)];
 
   fetchParameter: FetchParameter = {
     loadingOn: 'no-content',
-    query: FIND_PROJECT_CONNECTION,
-    successFn: (res) => (this.title = res?.data?.name),
-    variables: { uid: this.projectConnectionUid },
+    query: this.lookup.gql.find,
+    successFn: (res) => (this.title = res?.data?.[this.lookup.nameKey ?? 'name']),
+    variables: { uid: this.recordUid },
   };
 
   async ngOnInit(): Promise<void> {
     await this.setContents();
-    this.subs.add(projectConnection$.subscribe(() => this.setContents()));
+    this.subs.add(this.lookup.changed$.subscribe(() => this.setContents()));
   }
 
   async setContents() {
     const response = await this.fs.fetch(this.fetchParameter);
-    this.projectConnection = response?.data ?? response;
+    this.record = response?.data ?? response;
 
     this.contents = [
       {
         type: 'details',
-        name: 'Project Connection Details',
-        label: 'Project Connection Details',
+        name: `${this.lookup.label} Details`,
+        label: `${this.lookup.label} Details`,
         icon: 'notes',
         showUndefined: true,
-        entity: this.projectConnection,
+        entity: this.record,
         fetchParameter: this.fetchParameter,
       },
+      ...(this.lookup.extraContents?.(this, this.record) ?? []),
     ];
 
     this.cdr.detectChanges();

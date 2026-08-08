@@ -26,7 +26,7 @@ import {
   navigateRelativeTo,
 } from '@shared/components/view-component/view.helpers';
 import { getDisplayName } from '@core/helpers/view.helpers';
-import { DESIGNATION } from '@routes/settings/lookups/lookups';
+import { DESIGNATION } from '@routes/settings/settings-lookups';
 
 // Listener for all User actions
 export const user$ = new Subject<UserAccount | any>();

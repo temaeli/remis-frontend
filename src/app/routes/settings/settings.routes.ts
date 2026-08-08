@@ -1,8 +1,8 @@
 import { TypedRoutes } from '@core';
 import { matchRoute } from '@shared/components/view-component/view.helpers';
 
-import { lookupRoutes } from './lookups/lookup.routes';
-import { BILLING_LOOKUPS, GENERAL_LOOKUPS, REFERENCE_LOOKUPS } from './lookups/lookups';
+import { lookupRoutes } from '@shared/lookup';
+import { BILLING_LOOKUPS, GENERAL_LOOKUPS, REFERENCE_LOOKUPS } from './settings-lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),

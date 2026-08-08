@@ -1,4 +1,3 @@
-import { Subject } from 'rxjs';
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 
@@ -6,8 +5,7 @@ import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import { USERS_BY_DESIGNATION_PAGEABLE } from '@routes/users-managment/users/user.graphql';
 
-import { buildLookupGql, lookupRefGqlFields } from './lookup.graphql';
-import { LookupConfig, LookupModule } from './lookup.interface';
+import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 
 /**
  * Every lookup table in the settings module: the general configuration, the GePG
@@ -15,27 +13,9 @@ import { LookupConfig, LookupModule } from './lookup.interface';
  *
  * They are all the same screen with a different name — a paged list, a detail
  * page and an upsert form over a five-operation CRUD API — so they are declared
- * here as configs and rendered by one pair of generic components rather than
- * copied out twenty-five times.
- *
- * The only structural differences are which schema the table lives in, which
- * decides its audit columns and identifier, and what its descriptive columns are.
- * Both are stated per config; everything else follows.
+ * here as configs and rendered by the shared lookup screens rather than copied
+ * out twenty-five times.
  */
-const build = (config: LookupConfig): LookupModule => ({
-  ...config,
-  gql: buildLookupGql(config.entity, config.entityPlural, {
-    schema: config.schema,
-    saveArg: config.saveArg,
-    descriptiveGqlFields: config.descriptiveGqlFields,
-    extraGqlFields: config.extraGqlFields,
-  }),
-  changed$: new Subject(),
-  idKey: config.schema === 'uaa' ? 'uid' : 'id',
-  viewPermissions: [`ROLE_VIEW_ALL_${config.permission}`, `ROLE_VIEW_${config.permission}`],
-  upsertPermissions: [`ROLE_CREATE_${config.permission}`, `ROLE_UPDATE_${config.permission}`],
-  deletePermissions: [`ROLE_DELETE_${config.permission}`],
-});
 
 /** A required amount, the shape the numeric columns on these tables take. */
 const amountField = (key: string, label: string, hint?: string): FieldConfig => ({
@@ -65,7 +45,7 @@ const dateRangeFields = (): FieldConfig[] => [
 
 //  General — configuration that is not access control, under `modules.setting.general`.
 
-export const IDENTITY_TYPE = build({
+export const IDENTITY_TYPE = defineLookup({
   slug: 'identity-types',
   entity: 'IdentityType',
   entityPlural: 'IdentityTypes',
@@ -76,7 +56,7 @@ export const IDENTITY_TYPE = build({
   icon: 'id_card',
 });
 
-export const BUSINESS_NAME = build({
+export const BUSINESS_NAME = defineLookup({
   slug: 'business-names',
   entity: 'BusinessName',
   entityPlural: 'BusinessNames',
@@ -130,7 +110,7 @@ export const BUSINESS_NAME = build({
  * columns rather than the assignedNumber/name/description triple. Their
  * controllers also leave the save argument named `dto`.
  */
-export const DEPARTMENT = build({
+export const DEPARTMENT = defineLookup({
   slug: 'departments',
   entity: 'Department',
   entityPlural: 'Departments',
@@ -165,7 +145,7 @@ export const DEPARTMENT = build({
   baseColumns: ['index', 'name', 'code'],
 });
 
-export const DESIGNATION = build({
+export const DESIGNATION = defineLookup({
   slug: 'designations',
   entity: 'Designation',
   entityPlural: 'Designations',
@@ -228,7 +208,7 @@ export const DESIGNATION = build({
 
 //  Billing — the GePG configuration, under `modules.setting.billing`.
 
-export const BANK_ACCOUNT = build({
+export const BANK_ACCOUNT = defineLookup({
   slug: 'bank-accounts',
   entity: 'BankAccount',
   entityPlural: 'BankAccounts',
@@ -260,7 +240,7 @@ export const BANK_ACCOUNT = build({
   toModel: (data) => ({ issuerUid: data?.issuer?.id }),
 });
 
-export const BILL_PAY_OPTION = build({
+export const BILL_PAY_OPTION = defineLookup({
   slug: 'bill-pay-options',
   entity: 'BillPayOption',
   entityPlural: 'BillPayOptions',
@@ -271,7 +251,7 @@ export const BILL_PAY_OPTION = build({
   icon: 'payment',
 });
 
-export const BILL_PAYMENT_PLAN = build({
+export const BILL_PAYMENT_PLAN = defineLookup({
   slug: 'bill-payment-plans',
   entity: 'BillPaymentPlan',
   entityPlural: 'BillPaymentPlans',
@@ -282,7 +262,7 @@ export const BILL_PAYMENT_PLAN = build({
   icon: 'bill',
 });
 
-export const COLLECTION_CENTER = build({
+export const COLLECTION_CENTER = defineLookup({
   slug: 'collection-centers',
   entity: 'CollectionCenter',
   entityPlural: 'CollectionCenters',
@@ -293,7 +273,7 @@ export const COLLECTION_CENTER = build({
   icon: 'location',
 });
 
-export const DISCOUNT = build({
+export const DISCOUNT = defineLookup({
   slug: 'discounts',
   entity: 'Discount',
   entityPlural: 'Discounts',
@@ -321,7 +301,7 @@ export const DISCOUNT = build({
   ],
 });
 
-export const GEPG_BILL_TYPE = build({
+export const GEPG_BILL_TYPE = defineLookup({
   slug: 'gepg-bill-types',
   entity: 'GepgBillType',
   entityPlural: 'GepgBillTypes',
@@ -332,7 +312,7 @@ export const GEPG_BILL_TYPE = build({
   icon: 'bill_alt',
 });
 
-export const GEPG_PAY_TYPE = build({
+export const GEPG_PAY_TYPE = defineLookup({
   slug: 'gepg-pay-types',
   entity: 'GepgPayType',
   entityPlural: 'GepgPayTypes',
@@ -343,7 +323,7 @@ export const GEPG_PAY_TYPE = build({
   icon: 'payment_alt',
 });
 
-export const GFS_CODE = build({
+export const GFS_CODE = defineLookup({
   slug: 'gfs-codes',
   entity: 'GfsCode',
   entityPlural: 'GfsCodes',
@@ -354,7 +334,7 @@ export const GFS_CODE = build({
   icon: 'numbers',
 });
 
-export const PAY_LIM_AMOUNT = build({
+export const PAY_LIM_AMOUNT = defineLookup({
   slug: 'pay-lim-amounts',
   entity: 'PayLimAmount',
   entityPlural: 'PayLimAmounts',
@@ -370,7 +350,7 @@ export const PAY_LIM_AMOUNT = build({
   extraColumns: [{ field: 'payLimAmounts', header: 'Limit Amount' }],
 });
 
-export const PAY_LIM_TYPE = build({
+export const PAY_LIM_TYPE = defineLookup({
   slug: 'pay-lim-types',
   entity: 'PayLimType',
   entityPlural: 'PayLimTypes',
@@ -381,7 +361,7 @@ export const PAY_LIM_TYPE = build({
   icon: 'scales',
 });
 
-export const PAY_PLAN = build({
+export const PAY_PLAN = defineLookup({
   slug: 'pay-plans',
   entity: 'PayPlan',
   entityPlural: 'PayPlans',
@@ -392,7 +372,7 @@ export const PAY_PLAN = build({
   icon: 'plan',
 });
 
-export const SERVICE_ITEM = build({
+export const SERVICE_ITEM = defineLookup({
   slug: 'service-items',
   entity: 'ServiceItem',
   entityPlural: 'ServiceItems',
@@ -403,7 +383,7 @@ export const SERVICE_ITEM = build({
   icon: 'services',
 });
 
-export const SP_CODE = build({
+export const SP_CODE = defineLookup({
   slug: 'sp-codes',
   entity: 'SpCode',
   entityPlural: 'SpCodes',
@@ -414,7 +394,7 @@ export const SP_CODE = build({
   icon: 'numbers',
 });
 
-export const SP_GRP_CODE = build({
+export const SP_GRP_CODE = defineLookup({
   slug: 'sp-grp-codes',
   entity: 'SpGrpCode',
   entityPlural: 'SpGrpCodes',
@@ -430,7 +410,7 @@ export const SP_GRP_CODE = build({
   extraColumns: [{ field: 'spgrpcodes', header: 'Group Code Value' }],
 });
 
-export const SUB_SP_CODE = build({
+export const SUB_SP_CODE = defineLookup({
   slug: 'sub-sp-codes',
   entity: 'SubSpCode',
   entityPlural: 'SubSpCodes',
@@ -441,7 +421,7 @@ export const SUB_SP_CODE = build({
   icon: 'numbers',
 });
 
-export const SYSTEM_CODE = build({
+export const SYSTEM_CODE = defineLookup({
   slug: 'system-codes',
   entity: 'SystemCode',
   entityPlural: 'SystemCodes',
@@ -459,7 +439,7 @@ export const SYSTEM_CODE = build({
 
 //  Reference — the data costing and valuation share, under `modules.setting.reference`.
 
-export const COUNTRY = build({
+export const COUNTRY = defineLookup({
   slug: 'countries',
   entity: 'Country',
   entityPlural: 'Countries',
@@ -470,7 +450,7 @@ export const COUNTRY = build({
   icon: 'flag',
 });
 
-export const CURRENCY = build({
+export const CURRENCY = defineLookup({
   slug: 'currencies',
   entity: 'Currency',
   entityPlural: 'Currencies',
@@ -502,7 +482,7 @@ export const CURRENCY = build({
   toModel: (data) => ({ countryUid: data?.country?.id }),
 });
 
-export const EXCHANGE_RATE = build({
+export const EXCHANGE_RATE = defineLookup({
   slug: 'exchange-rates',
   entity: 'ExchangeRate',
   entityPlural: 'ExchangeRates',
@@ -545,7 +525,7 @@ export const EXCHANGE_RATE = build({
   toModel: (data) => ({ currencyUid: data?.currency?.id }),
 });
 
-export const FINANCIAL_YEAR = build({
+export const FINANCIAL_YEAR = defineLookup({
   slug: 'financial-years',
   entity: 'FinancialYear',
   entityPlural: 'FinancialYears',
@@ -565,7 +545,7 @@ export const FINANCIAL_YEAR = build({
   ],
 });
 
-export const METER = build({
+export const METER = defineLookup({
   slug: 'meters',
   entity: 'Meter',
   entityPlural: 'Meters',
@@ -610,10 +590,3 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   FINANCIAL_YEAR,
   METER,
 ];
-
-/** Keyed by slug — how the two generic screens find the config for their route. */
-export const LOOKUPS: Record<string, LookupModule> = [
-  ...GENERAL_LOOKUPS,
-  ...BILLING_LOOKUPS,
-  ...REFERENCE_LOOKUPS,
-].reduce((all, lookup) => ({ ...all, [lookup.slug]: lookup }), {});

@@ -5,7 +5,7 @@ import { DataGridComponent } from '@shared/components/data-grid/data-grid.compon
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridParameter } from '@shared/components/data-grid/data-grid.interfaces';
 
-import { LOOKUPS } from './lookups';
+import { getLookup } from './lookup.registry';
 import { LookupModule } from './lookup.interface';
 import { lookupColumns, lookupTableBtns, lookupUpsertBtn } from './lookup.form';
 
@@ -24,7 +24,7 @@ import { lookupColumns, lookupTableBtns, lookupUpsertBtn } from './lookup.form';
   `,
 })
 export class LookupsComponent extends BaseComponent {
-  lookup: LookupModule = LOOKUPS[this.route.snapshot.data['lookup']];
+  lookup: LookupModule = getLookup(this.route.snapshot.data['lookup']);
 
   override title = this.lookup.pluralLabel;
   override subtitle = this.lookup.subtitle;

@@ -20,12 +20,17 @@ import { BaseComponent } from '@shared/components/base-componet/base-component';
 export type LookupSchema = 'core' | 'uaa';
 
 /**
- * A record from any of the settings lookup tables.
+ * A record from any lookup table.
  *
- * The descriptive columns differ between schemas — the core tables repeat
- * `assignedNumber`/`name`/`description`, while the uaa ones carry whatever they
- * were built with — so they are all optional here. Which of them a given table
- * has is stated by its config.
+ * Only what every one of them has is named. The descriptive columns differ by
+ * schema — the core tables repeat `assignedNumber`/`name`/`description`, the uaa
+ * ones carry whatever they were built with — and the rest is a relation, an
+ * amount or a date belonging to one table alone.
+ *
+ * The index signature is deliberately `any` rather than `unknown`: `toModel`
+ * reads relations off these records to seed a select (`data?.costType?.id`), and
+ * `unknown` would make every config cast. Enumerating each module's columns here
+ * instead would put three modules' domain knowledge in a shared type.
  */
 export interface Lookup {
   id?: string;
@@ -40,22 +45,7 @@ export interface Lookup {
   code?: string;
   title?: string;
 
-  /** Carried by only some of these tables. */
-  identityType?: Lookup;
-  issuer?: Lookup;
-  country?: Lookup;
-  currency?: Lookup;
-  isPublic?: boolean;
-  discounts?: number;
-  days?: number;
-  payLimAmounts?: number;
-  spgrpcodes?: number;
-  systemCodes?: number;
-  rateAgainstTzs?: number;
-  latitude?: number;
-  longitude?: number;
-  startedAt?: string;
-  endedAt?: string;
+  [column: string]: any;
 }
 
 /** The five operations every one of these controllers publishes. */
