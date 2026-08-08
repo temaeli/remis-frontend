@@ -7,13 +7,13 @@ import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
-import { ContentParameter } from '@shared/components/view-component/view-interface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import {
   defineLookup,
+  lookupChildGqlFields,
+  lookupChildPanel,
   lookupRefGqlFields,
-  lookupTableBtns,
   Lookup,
   LookupModule,
 } from '@shared/lookup';
@@ -65,44 +65,6 @@ const flagColumn = (field: string, header?: string): GridKeyColumn => ({
   valueClassMapper: (row) => (row?.[field] ? 'text-success' : 'text-danger'),
 });
 
-/**
- * Enough of a child record to fill a drill-down grid. The panels below list a
- * parent's children, so they do not need the child's own relations back.
- */
-const childGqlFields = `
-  id
-  uid: id
-  assignedNumber
-  name
-  description
-  active
-`;
-
-/** The columns those drill-down grids show. */
-const childColumns: GridKeyColumn[] = ['index', 'assignedNumber', 'name', 'description', 'actions'];
-
-/**
- * A panel listing the records of `child` that belong to the record on screen.
- *
- * The lookup is read at render time, not at definition time, so a parent may
- * point at a child declared after it.
- */
-const childPanel = (
-  comp: BaseComponent,
-  child: () => LookupModule,
-  query: unknown,
-  variables: Record<string, unknown>,
-): ContentParameter => ({
-  type: 'table',
-  name: child().pluralLabel,
-  label: child().pluralLabel,
-  icon: child().icon,
-  keyColumns: childColumns,
-  actionButtons: lookupTableBtns(comp, child()),
-  reloadActions$: [child().changed$],
-  fetchParameter: { query, variables },
-});
-
 //  The taxonomy that classifies the register.
 
 export const ASSET_TYPE = defineLookup({
@@ -128,7 +90,7 @@ export const ASSET_TYPE = defineLookup({
   ],
   extraColumns: [flagColumn('forLand', 'For Land')],
   extraContents: (comp, record) => [
-    childPanel(comp, () => ASSET_CATEGORY, ASSET_CATEGORIES_BY_TYPE, {
+    lookupChildPanel(comp, () => ASSET_CATEGORY, ASSET_CATEGORIES_BY_TYPE, {
       assetTypeUid: record?.id,
     }),
   ],
@@ -153,7 +115,7 @@ export const ASSET_CATEGORY = defineLookup({
   extraColumns: ['assetType.name as Type'],
   toModel: (data) => ({ assetTypeUid: data?.assetType?.id }),
   extraContents: (comp, record) => [
-    childPanel(comp, () => ASSET_SUBCATEGORY, ASSET_SUBCATEGORIES_BY_CATEGORY, {
+    lookupChildPanel(comp, () => ASSET_SUBCATEGORY, ASSET_SUBCATEGORIES_BY_CATEGORY, {
       assetCategoryUid: record?.id,
     }),
   ],
@@ -180,7 +142,7 @@ export const ASSET_SUBCATEGORY = defineLookup({
   extraColumns: ['assetCategory.name as Category'],
   toModel: (data) => ({ assetCategoryUid: data?.assetCategory?.id }),
   extraContents: (comp, record) => [
-    childPanel(comp, () => ASSET, ASSETS_BY_SUBCATEGORY, {
+    lookupChildPanel(comp, () => ASSET, ASSETS_BY_SUBCATEGORY, {
       assetSubcategoryUid: record?.id,
     }),
   ],
@@ -228,7 +190,7 @@ export const ASSET = defineLookup({
   toModel: (data) => ({ assetSubcategoryUid: data?.assetSubcategory?.id }),
   extraActions: (comp, lookup) => [assetStatusBtn(comp, lookup)],
   extraContents: (comp, record) => [
-    childPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
+    lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
       assetUid: record?.id,
     }),
   ],
@@ -258,6 +220,35 @@ export const LAND_REGISTRATION = defineLookup({
   toModel: (data) => ({ assetUid: data?.asset?.id }),
 });
 
+/**
+ * How a piece of land is used. Owned by the asset registry, which already owns
+ * land, and classified alongside the taxonomy rather than under it — nothing
+ * points at a land use, so it has no parent and no children.
+ */
+export const LAND_USE = defineLookup({
+  slug: 'land-uses',
+  entity: 'LandUse',
+  entityPlural: 'LandUses',
+  permission: 'LAND_USE',
+  label: 'Land Use',
+  pluralLabel: 'Land Uses',
+  subtitle: 'How a piece of land is put to use',
+  icon: 'land_administration',
+  extraGqlFields: `
+  landUses
+`,
+  extraFields: [
+    {
+      key: 'landUses',
+      label: 'Land Use Value',
+      type: FieldType.decimal,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [{ field: 'landUses', header: 'Land Use Value' }],
+});
+
 export const ASSET_VERIFICATION = defineLookup({
   slug: 'asset-verifications',
   entity: 'AssetVerification',
@@ -276,7 +267,7 @@ export const ASSET_VERIFICATION = defineLookup({
 export const ASSET_CATEGORIES_BY_TYPE = gql`
   query assetCategoriesByType($assetTypeUid: String) {
     assetCategoriesByType(assetTypeUid: $assetTypeUid) {
-      ${childGqlFields}
+      ${lookupChildGqlFields}
     }
   }
 `;
@@ -284,7 +275,7 @@ export const ASSET_CATEGORIES_BY_TYPE = gql`
 export const ASSET_SUBCATEGORIES_BY_CATEGORY = gql`
   query assetSubcategoriesByCategory($assetCategoryUid: String) {
     assetSubcategoriesByCategory(assetCategoryUid: $assetCategoryUid) {
-      ${childGqlFields}
+      ${lookupChildGqlFields}
     }
   }
 `;
@@ -292,7 +283,7 @@ export const ASSET_SUBCATEGORIES_BY_CATEGORY = gql`
 export const ASSETS_BY_SUBCATEGORY = gql`
   query assetsBySubcategory($assetSubcategoryUid: String) {
     assetsBySubcategory(assetSubcategoryUid: $assetSubcategoryUid) {
-      ${childGqlFields}
+      ${lookupChildGqlFields}
     }
   }
 `;
@@ -300,7 +291,7 @@ export const ASSETS_BY_SUBCATEGORY = gql`
 export const LAND_REGISTRATIONS_BY_ASSET = gql`
   query landRegistrationsByAsset($assetUid: String) {
     landRegistrationsByAsset(assetUid: $assetUid) {
-      ${childGqlFields}
+      ${lookupChildGqlFields}
     }
   }
 `;
@@ -308,7 +299,7 @@ export const LAND_REGISTRATIONS_BY_ASSET = gql`
 export const UPDATE_ASSET_STATUS = gql`
   mutation updateAssetStatus($uid: String, $status: AssetStatus) {
     updateAssetStatus(uid: $uid, status: $status) {
-      ${responseGqlFields(childGqlFields)}
+      ${responseGqlFields(lookupChildGqlFields)}
     }
   }
 `;
@@ -365,4 +356,5 @@ export const ASSET_CONFIGURATION_LOOKUPS: LookupModule[] = [
   ASSET_TYPE,
   ASSET_CATEGORY,
   ASSET_SUBCATEGORY,
+  LAND_USE,
 ];

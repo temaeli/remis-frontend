@@ -12,6 +12,8 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 
+import { ContentParameter } from '@shared/components/view-component/view-interface';
+
 import { Lookup, LookupModule } from './lookup.interface';
 
 /**
@@ -163,3 +165,49 @@ export function lookupTableBtns(comp: BaseComponent, lookup: LookupModule): Acti
 export function lookupHeaderBtns(comp: BaseComponent, lookup: LookupModule): ActionButton[] {
   return [lookupUpsertBtn(comp, lookup), ...(lookup.extraActions?.(comp, lookup) ?? [])];
 }
+
+/**
+ * Enough of a child record to fill a drill-down grid. A panel lists a parent's
+ * children, so it does not need the child's own relations back.
+ */
+export const lookupChildGqlFields = `
+  id
+  uid: id
+  assignedNumber
+  name
+  description
+  active
+`;
+
+/** The columns a drill-down grid shows. */
+export const lookupChildColumns: GridKeyColumn[] = [
+  'index',
+  'assignedNumber',
+  'name',
+  'description',
+  'actions',
+];
+
+/**
+ * A panel listing the records of `child` that belong to the record on screen —
+ * the currencies a country issues, the costs of a cost type.
+ *
+ * `child` is a thunk because the query it pairs with is usually declared below
+ * the parent's config; reading it at render time lets a parent point at a child
+ * defined after it.
+ */
+export const lookupChildPanel = (
+  comp: BaseComponent,
+  child: () => LookupModule,
+  query: unknown,
+  variables: Record<string, unknown>,
+): ContentParameter => ({
+  type: 'table',
+  name: child().pluralLabel,
+  label: child().pluralLabel,
+  icon: child().icon,
+  keyColumns: lookupChildColumns,
+  actionButtons: lookupTableBtns(comp, child()),
+  reloadActions$: [child().changed$],
+  fetchParameter: { query, variables },
+});

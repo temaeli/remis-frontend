@@ -1,6 +1,13 @@
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import { gql } from '@apollo/client/core';
+import {
+  defineLookup,
+  lookupChildGqlFields,
+  lookupChildPanel,
+  lookupRefGqlFields,
+  LookupModule,
+} from '@shared/lookup';
 
 /**
  * The project registry, every table of it.
@@ -68,6 +75,11 @@ export const PROJECT_CATEGORY = defineLookup({
   pluralLabel: 'Project Categories',
   subtitle: 'Top level of the project taxonomy',
   icon: 'category',
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => PROJECT_SUBCATEGORY, PROJECT_SUBCATEGORIES_BY_CATEGORY, {
+      categoryUid: record?.id,
+    }),
+  ],
 });
 
 export const PROJECT_SUBCATEGORY = defineLookup({
@@ -87,6 +99,11 @@ export const PROJECT_SUBCATEGORY = defineLookup({
   extraFields: [parentSelect('projectCategoryUid', 'Project Category', PROJECT_CATEGORY.gql.all)],
   extraColumns: ['projectCategory.name as Category'],
   toModel: (data) => ({ projectCategoryUid: data?.projectCategory?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => REGISTRY_PROJECT, REGISTRY_PROJECTS_BY_SUBCATEGORY, {
+      subcategoryUid: record?.id,
+    }),
+  ],
 });
 
 export const COST_TYPE = defineLookup({
@@ -103,6 +120,9 @@ export const COST_TYPE = defineLookup({
   ${coordinateGqlFields}
 `,
   extraFields: [numberField('costTypes', 'Cost Types Value'), ...coordinateFields()],
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => COST, COSTS_BY_COST_TYPE, { costTypeUid: record?.id }),
+  ],
 });
 
 //  The operational register.
@@ -147,6 +167,11 @@ export const REGISTRY_PROJECT = defineLookup({
   ],
   extraColumns: ['projectSubcategory.name as Subcategory', 'days'],
   toModel: (data) => ({ projectSubcategoryUid: data?.projectSubcategory?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => PROJECT_CONNECTION, PROJECT_CONNECTIONS_BY_PARENT, {
+      parentUid: record?.id,
+    }),
+  ],
 });
 
 export const PROJECT_CONNECTION = defineLookup({
@@ -214,6 +239,41 @@ export const REGISTRY_MASTER_PLAN = defineLookup({
   extraFields: [numberField('area', 'Area'), ...coordinateFields()],
   extraColumns: ['area'],
 });
+
+//  The parent-filtered reads the drill-downs above are built on. Exported so
+//  they are checked against the schema alongside the generated ones.
+
+export const PROJECT_SUBCATEGORIES_BY_CATEGORY = gql`
+  query projectSubcategoriesByCategory($categoryUid: String) {
+    projectSubcategoriesByCategory(categoryUid: $categoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const REGISTRY_PROJECTS_BY_SUBCATEGORY = gql`
+  query registryProjectsBySubcategory($subcategoryUid: String) {
+    registryProjectsBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const COSTS_BY_COST_TYPE = gql`
+  query costsByCostType($costTypeUid: String) {
+    costsByCostType(costTypeUid: $costTypeUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const PROJECT_CONNECTIONS_BY_PARENT = gql`
+  query projectConnectionsByParent($parentUid: String) {
+    projectConnectionsByParent(parentUid: $parentUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
 
 /** The operational screens, which lead the menu. */
 export const PROJECT_LOOKUPS: LookupModule[] = [

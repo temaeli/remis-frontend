@@ -5,7 +5,14 @@ import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import { USERS_BY_DESIGNATION_PAGEABLE } from '@routes/users-managment/users/user.graphql';
 
-import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import { gql } from '@apollo/client/core';
+import {
+  defineLookup,
+  lookupChildGqlFields,
+  lookupChildPanel,
+  lookupRefGqlFields,
+  LookupModule,
+} from '@shared/lookup';
 
 /**
  * Every lookup table in the settings module: the general configuration, the GePG
@@ -102,6 +109,11 @@ export const BUSINESS_NAME = defineLookup({
     },
   ],
   toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => BANK_ACCOUNT, BANK_ACCOUNTS_BY_ISSUER, {
+      issuerUid: record?.id,
+    }),
+  ],
 });
 
 /**
@@ -539,6 +551,9 @@ export const COUNTRY = defineLookup({
   pluralLabel: 'Countries',
   subtitle: 'Countries currencies are issued by',
   icon: 'flag',
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => CURRENCY, CURRENCIES_BY_COUNTRY, { countryUid: record?.id }),
+  ],
 });
 
 export const CURRENCY = defineLookup({
@@ -571,6 +586,11 @@ export const CURRENCY = defineLookup({
   ],
   extraColumns: [{ field: 'country', valueFn: (row) => row?.country?.name }],
   toModel: (data) => ({ countryUid: data?.country?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => EXCHANGE_RATE, EXCHANGE_RATES_BY_CURRENCY, {
+      currencyUid: record?.id,
+    }),
+  ],
 });
 
 export const EXCHANGE_RATE = defineLookup({
@@ -646,6 +666,33 @@ export const METER = defineLookup({
   subtitle: 'Meters on the register',
   icon: 'table',
 });
+
+//  The parent-filtered reads the drill-downs above are built on. Exported so
+//  they are checked against the schema alongside the generated ones.
+
+export const BANK_ACCOUNTS_BY_ISSUER = gql`
+  query bankAccountsByIssuer($issuerUid: String) {
+    bankAccountsByIssuer(issuerUid: $issuerUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const CURRENCIES_BY_COUNTRY = gql`
+  query currencysByCountry($countryUid: String) {
+    currencysByCountry(countryUid: $countryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const EXCHANGE_RATES_BY_CURRENCY = gql`
+  query exchangeRatesByCurrency($currencyUid: String) {
+    exchangeRatesByCurrency(currencyUid: $currencyUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
 
 /** Grouped the way the backend groups the packages they come from. */
 export const GENERAL_LOOKUPS: LookupModule[] = [
