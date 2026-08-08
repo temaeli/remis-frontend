@@ -117,6 +117,56 @@ export const BUSINESS_NAME = defineLookup({
 });
 
 /**
+ * A taxpayer's number, held beside the other ways a party is identified. The
+ * number is the record's own identifier and is nine characters, far shorter than
+ * the generator's twenty, so the form requires it.
+ */
+export const TIN_DATA = defineLookup({
+  slug: 'tin-data',
+  entity: 'TinData',
+  entityPlural: 'TinDatas',
+  permission: 'TIN_DATA',
+  label: 'TIN',
+  pluralLabel: 'TINs',
+  subtitle: 'Taxpayer identification numbers',
+  icon: 'id_card',
+  descriptiveGqlFields: `
+  assignedNumber
+  name
+  description
+  tin
+`,
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'assignedNumber',
+      label: 'TIN',
+      type: FieldType.input,
+      hint: 'Nine digits',
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    amountField('tin', 'TIN (numeric)', 'The table holds a second, numeric copy of the number'),
+  ],
+  baseColumns: ['index', { field: 'assignedNumber', header: 'TIN' }, 'name', 'description'],
+});
+
+/**
  * Departments and designations live in `uaa`, not the DBA's schema: they carry a
  * real generated `uid`, a different audit block, and their own descriptive
  * columns rather than the assignedNumber/name/description triple. Their
@@ -667,6 +717,89 @@ export const METER = defineLookup({
   icon: 'table',
 });
 
+/**
+ * The rates a bill item is priced with. Both hold a multiplier rather than a
+ * percentage — 0.18, not 18 — because the billing formula multiplies the bill
+ * item amount by them directly. The column is numeric(15,2), so a rate finer
+ * than two decimal places cannot be stored.
+ */
+export const VAT = defineLookup({
+  slug: 'vat-rates',
+  entity: 'Vat',
+  entityPlural: 'Vats',
+  permission: 'VAT',
+  label: 'VAT Rate',
+  pluralLabel: 'VAT Rates',
+  subtitle: 'The multiplier applied to a bill item for VAT',
+  icon: 'calculator',
+  extraGqlFields: `
+  vat
+`,
+  extraFields: [amountField('vat', 'Rate', 'A multiplier, not a percentage — 0.18 for 18%')],
+  extraColumns: [{ field: 'vat', header: 'Rate' }],
+});
+
+export const WITHHOLDING_TAX = defineLookup({
+  slug: 'withholding-taxes',
+  entity: 'WithholdingTax',
+  entityPlural: 'WithholdingTaxes',
+  permission: 'WITHHOLDING_TAX',
+  label: 'Withholding Tax',
+  pluralLabel: 'Withholding Taxes',
+  subtitle: 'The multiplier withheld from a bill item',
+  icon: 'scales',
+  extraGqlFields: `
+  withholdingTax
+`,
+  extraFields: [
+    amountField('withholdingTax', 'Rate', 'A multiplier, not a percentage — 0.05 for 5%'),
+  ],
+  extraColumns: [{ field: 'withholdingTax', header: 'Rate' }],
+});
+
+/**
+ * The code is a single character and is UNIQUE, so this table holds one row per
+ * distinct code. It cannot be generated — the column takes one character and the
+ * generator produces twenty — so the form requires it.
+ */
+export const USE_ITEM_REF_ON_PAY = defineLookup({
+  slug: 'use-item-ref-on-pay',
+  entity: 'UseItemRefOnPay',
+  entityPlural: 'UseItemRefOnPays',
+  permission: 'USE_ITEM_REF_ON_PAY',
+  label: 'Use Item Ref On Pay',
+  pluralLabel: 'Use Item Ref On Pay',
+  subtitle: 'Whether a bill item\'s own reference is used when paying',
+  icon: 'price_tag',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'assignedNumber',
+      label: 'Code',
+      type: FieldType.input,
+      hint: 'A single character',
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: ['index', { field: 'assignedNumber', header: 'Code' }, 'name', 'description'],
+});
+
 //  The parent-filtered reads the drill-downs above are built on. Exported so
 //  they are checked against the schema alongside the generated ones.
 
@@ -698,6 +831,7 @@ export const EXCHANGE_RATES_BY_CURRENCY = gql`
 export const GENERAL_LOOKUPS: LookupModule[] = [
   BUSINESS_NAME,
   IDENTITY_TYPE,
+  TIN_DATA,
   DEPARTMENT,
   DESIGNATION,
 ];
@@ -721,6 +855,9 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   SYSTEM_CODE,
   MINIMUM_PAYMENT,
   PAYMENT_GRACE_PERIOD,
+  VAT,
+  WITHHOLDING_TAX,
+  USE_ITEM_REF_ON_PAY,
 ];
 
 export const REFERENCE_LOOKUPS: LookupModule[] = [
