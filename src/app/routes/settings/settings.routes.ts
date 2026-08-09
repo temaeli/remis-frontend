@@ -3,11 +3,13 @@ import { matchRoute } from '@shared/components/view-component/view.helpers';
 
 import { lookupRoutes } from '@shared/lookup';
 import { BILLING_LOOKUPS, GENERAL_LOOKUPS, REFERENCE_LOOKUPS } from './settings-lookups';
+import { PROJECT_SETTING_LOOKUPS } from './project-setting-lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),
- * general configuration, locations, reference data and billing. Each group is a
- * componentless parent — the children render in the module's existing outlet.
+ * general configuration, locations, reference data, billing and project. Each
+ * group is a componentless parent — the children render in the module's existing
+ * outlet.
  *
  * A group declares no permissions of its own only where every child is gated;
  * MenuService then aggregates the children's, so the group appears when a user
@@ -161,6 +163,22 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'bank-accounts', pathMatch: 'full' },
       ...lookupRoutes(BILLING_LOOKUPS),
+    ],
+  },
+
+  // Project — the setting.project package: what a project is planned, measured
+  // and built in. The register itself, and the taxonomy that classifies it, are
+  // operational and stay in the project management module.
+  {
+    path: 'project',
+    data: {
+      isMenu: true,
+      name: 'Project',
+      icon: 'suitcase',
+    },
+    children: [
+      { path: '', redirectTo: 'tasks', pathMatch: 'full' },
+      ...lookupRoutes(PROJECT_SETTING_LOOKUPS),
     ],
   },
 
