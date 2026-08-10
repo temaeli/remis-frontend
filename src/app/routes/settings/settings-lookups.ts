@@ -34,6 +34,47 @@ const amountField = (key: string, label: string, hint?: string): FieldConfig => 
   class: 'col-span-full',
 });
 
+/**
+ * The coordinate pair every level of the location hierarchy carries. Both are
+ * required and stored as `numeric(9,6)`, so the controls round to six places to
+ * match rather than letting the database truncate.
+ */
+const coordinateFields = (): FieldConfig[] => [
+  {
+    key: 'latitude',
+    label: 'Latitude',
+    hint: 'Between -90 and 90',
+    type: FieldType.decimal,
+    decimals: 6,
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'longitude',
+    label: 'Longitude',
+    hint: 'Between -180 and 180',
+    type: FieldType.decimal,
+    decimals: 6,
+    validations: [VALIDATOR_REQUIRED],
+  },
+];
+
+/**
+ * The select each level of the location hierarchy uses to pick its parent. The
+ * lookup is passed as a thunk so a level can point at one declared after it.
+ */
+const parentSelect = (key: string, label: string, parent: () => LookupModule): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.select,
+  optionsVariables: {
+    labelKey: 'name',
+    valueKey: 'id',
+    fetchParameter: { query: parent().gql.all },
+  },
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
+
 /** The start/end pair that `Discount` and `FinancialYear` both carry. */
 const dateRangeFields = (): FieldConfig[] => [
   {
@@ -915,6 +956,133 @@ export const FEE = defineLookup({
   }),
 });
 
+//  Location — the administrative hierarchy, under `modules.setting.location`.
+//
+//  country -> region -> district -> council -> ward -> street, one table per
+//  level in remis_core_schema. `COUNTRY` sits with the reference data above
+//  because currencies hang off it too.
+//
+//  Every level is the same shape: the descriptive triple, a required coordinate
+//  pair, and a select onto the level above. `assignedNumber` is `assigned_code`
+//  on these tables and is capped at three characters.
+
+export const REGION = defineLookup({
+  slug: 'regions',
+  entity: 'Region',
+  entityPlural: 'Regions',
+  permission: 'REGION',
+  label: 'Region',
+  pluralLabel: 'Regions',
+  subtitle: 'First level of the administrative hierarchy, below the country',
+  icon: 'map',
+  extraGqlFields: `
+  latitude
+  longitude
+  country {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('countryUid', 'Country', () => COUNTRY), ...coordinateFields()],
+  extraColumns: [{ field: 'country', valueFn: (row) => row?.country?.name }],
+  toModel: (data) => ({ countryUid: data?.country?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => DISTRICT, DISTRICTS_BY_REGION, { regionUid: record?.id }),
+  ],
+});
+
+export const DISTRICT = defineLookup({
+  slug: 'districts',
+  entity: 'District',
+  entityPlural: 'Districts',
+  permission: 'DISTRICT',
+  label: 'District',
+  pluralLabel: 'Districts',
+  subtitle: 'Districts and the region each belongs to',
+  icon: 'location_city',
+  extraGqlFields: `
+  latitude
+  longitude
+  region {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('regionUid', 'Region', () => REGION), ...coordinateFields()],
+  extraColumns: [{ field: 'region', valueFn: (row) => row?.region?.name }],
+  toModel: (data) => ({ regionUid: data?.region?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => COUNCIL, COUNCILS_BY_DISTRICT, { districtUid: record?.id }),
+  ],
+});
+
+export const COUNCIL = defineLookup({
+  slug: 'councils',
+  entity: 'Council',
+  entityPlural: 'Councils',
+  permission: 'COUNCIL',
+  label: 'Council',
+  pluralLabel: 'Councils',
+  subtitle: 'Councils and the district each belongs to',
+  icon: 'domain',
+  extraGqlFields: `
+  latitude
+  longitude
+  district {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('districtUid', 'District', () => DISTRICT), ...coordinateFields()],
+  extraColumns: [{ field: 'district', valueFn: (row) => row?.district?.name }],
+  toModel: (data) => ({ districtUid: data?.district?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => WARD, WARDS_BY_COUNCIL, { councilUid: record?.id }),
+  ],
+});
+
+export const WARD = defineLookup({
+  slug: 'wards',
+  entity: 'Ward',
+  entityPlural: 'Wards',
+  permission: 'WARD',
+  label: 'Ward',
+  pluralLabel: 'Wards',
+  subtitle: 'Wards and the council each belongs to',
+  icon: 'place',
+  extraGqlFields: `
+  latitude
+  longitude
+  council {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('councilUid', 'Council', () => COUNCIL), ...coordinateFields()],
+  extraColumns: [{ field: 'council', valueFn: (row) => row?.council?.name }],
+  toModel: (data) => ({ councilUid: data?.council?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => STREET, STREETS_BY_WARD, { wardUid: record?.id }),
+  ],
+});
+
+export const STREET = defineLookup({
+  slug: 'streets',
+  entity: 'Street',
+  entityPlural: 'Streets',
+  permission: 'STREET',
+  label: 'Street',
+  pluralLabel: 'Streets',
+  subtitle: 'Streets and the ward each belongs to',
+  icon: 'near_me',
+  extraGqlFields: `
+  latitude
+  longitude
+  ward {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('wardUid', 'Ward', () => WARD), ...coordinateFields()],
+  extraColumns: [{ field: 'ward', valueFn: (row) => row?.ward?.name }],
+  toModel: (data) => ({ wardUid: data?.ward?.id }),
+});
+
 //  The parent-filtered reads the drill-downs above are built on. Exported so
 //  they are checked against the schema alongside the generated ones.
 
@@ -937,6 +1105,38 @@ export const CURRENCIES_BY_COUNTRY = gql`
 export const EXCHANGE_RATES_BY_CURRENCY = gql`
   query exchangeRatesByCurrency($currencyUid: String) {
     exchangeRatesByCurrency(currencyUid: $currencyUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const DISTRICTS_BY_REGION = gql`
+  query districtsByRegion($regionUid: String) {
+    districtsByRegion(regionUid: $regionUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const COUNCILS_BY_DISTRICT = gql`
+  query councilsByDistrict($districtUid: String) {
+    councilsByDistrict(districtUid: $districtUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const WARDS_BY_COUNCIL = gql`
+  query wardsByCouncil($councilUid: String) {
+    wardsByCouncil(councilUid: $councilUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const STREETS_BY_WARD = gql`
+  query streetsByWard($wardUid: String) {
+    streetsByWard(wardUid: $wardUid) {
       ${lookupChildGqlFields}
     }
   }
@@ -985,3 +1185,6 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   FINANCIAL_YEAR,
   METER,
 ];
+
+/** In hierarchy order, so the menu reads country-downwards. */
+export const LOCATION_LOOKUPS: LookupModule[] = [REGION, DISTRICT, COUNCIL, WARD, STREET];

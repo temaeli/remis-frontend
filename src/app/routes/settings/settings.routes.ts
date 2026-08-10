@@ -2,7 +2,12 @@ import { TypedRoutes } from '@core';
 import { matchRoute } from '@shared/components/view-component/view.helpers';
 
 import { lookupRoutes } from '@shared/lookup';
-import { BILLING_LOOKUPS, GENERAL_LOOKUPS, REFERENCE_LOOKUPS } from './settings-lookups';
+import {
+  BILLING_LOOKUPS,
+  GENERAL_LOOKUPS,
+  LOCATION_LOOKUPS,
+  REFERENCE_LOOKUPS,
+} from './settings-lookups';
 import { PROJECT_SETTING_LOOKUPS } from './project-setting-lookups';
 
 /**
@@ -114,26 +119,7 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     },
     children: [
       { path: '', redirectTo: 'regions', pathMatch: 'full' },
-
-      // Regions Management, and the districts and wards beneath them
-      {
-        path: 'regions',
-        data: { isMenu: true, name: 'Regions', icon: 'map' },
-        loadComponent: () => import('./regions/regions.component').then((m) => m.RegionsComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'regions', 'regionUid'),
-        loadComponent: () => import('./regions/region.component').then((m) => m.RegionComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'districts', 'districtUid'),
-        loadComponent: () =>
-          import('./regions/district/district.component').then((m) => m.DistrictComponent),
-      },
-      {
-        matcher: (url) => matchRoute(url, 'wards', 'wardUid'),
-        loadComponent: () => import('./regions/ward/ward.component').then((m) => m.WardComponent),
-      },
+      ...lookupRoutes(LOCATION_LOOKUPS),
     ],
   },
 
