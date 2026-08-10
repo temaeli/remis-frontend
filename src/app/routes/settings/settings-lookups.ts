@@ -13,6 +13,7 @@ import {
   lookupRefGqlFields,
   LookupModule,
 } from '@shared/lookup';
+import { businessNamePeoplePanel } from './person-links';
 
 /**
  * Every lookup table in the settings module: the general configuration, the GePG
@@ -154,6 +155,7 @@ export const BUSINESS_NAME = defineLookup({
     lookupChildPanel(comp, () => BANK_ACCOUNT, BANK_ACCOUNTS_BY_ISSUER, {
       issuerUid: record?.id,
     }),
+    businessNamePeoplePanel(comp, record?.id),
   ],
 });
 

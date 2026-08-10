@@ -24,6 +24,11 @@ export const bioDataGqlFields = `
     nin
     mobileNumber
     email
+    identityType {
+      id
+      uid: id
+      name
+    }
   }
 `;
 

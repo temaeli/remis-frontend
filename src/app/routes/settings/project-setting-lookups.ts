@@ -4,6 +4,7 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
+import { taskLinkPanels } from './task-links';
 
 /**
  * The project delivery configuration — `modules.setting.project` on the backend,
@@ -99,6 +100,9 @@ export const TASK = defineLookup({
   pluralLabel: 'Tasks',
   subtitle: 'Units of work a project is planned in',
   icon: 'assignment',
+  // A task is a bare catalogue row on its own table; everything it relates to
+  // hangs off a join table with its own link/unlink pair. One panel each.
+  extraContents: (comp, record) => taskLinkPanels(comp, record?.id),
 });
 
 export const DELIVERABLE = defineLookup({

@@ -39,10 +39,11 @@ export interface UserAccount {
 export interface UserDtoInput {
   firstName: string;
   lastName: string;
-  middleName?: string;
+  middleName: string;
   email: string;
-  phoneNumber?: string;
-  nationalId?: string;
+  phoneNumber: string;
+  nationalId: string;
+  identityTypeUid: string;
   username?: string;
   uid?: string;
   isStaff?: boolean;
@@ -61,4 +62,6 @@ export interface BioData {
   nin?: string;
   mobileNumber?: number | string;
   email?: string;
+  /** Required on create — `bio_data.identity_types_id` is NOT NULL. */
+  identityType?: { id?: string; uid?: string; name?: string };
 }

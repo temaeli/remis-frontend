@@ -26,7 +26,7 @@ import {
   navigateRelativeTo,
 } from '@shared/components/view-component/view.helpers';
 import { getDisplayName } from '@core/helpers/view.helpers';
-import { DESIGNATION } from '@routes/settings/settings-lookups';
+import { DESIGNATION, IDENTITY_TYPE } from '@routes/settings/settings-lookups';
 
 // Listener for all User actions
 export const user$ = new Subject<UserAccount | any>();
@@ -42,21 +42,36 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
     type: FieldType.input,
     validations: [VALIDATOR_REQUIRED],
   },
+  // Required because it lands on bio_data.second_name, which is NOT NULL.
   {
     key: 'middleName',
     type: FieldType.input,
-    validations: [],
+    validations: [VALIDATOR_REQUIRED],
   },
   {
     key: 'lastName',
     type: FieldType.input,
     validations: [VALIDATOR_REQUIRED],
   },
+  // UserDto marks these @NotBlank, so leaving them optional here only moved the
+  // rejection to the server.
   {
     key: 'nationalId',
     type: FieldType.input,
-    inputType: 'number',
-    validations: [],
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'identityTypeUid',
+    label: 'Identity Type',
+    hint: 'How this person is identified — required to create their person record',
+    type: FieldType.select,
+    optionsVariables: {
+      labelKey: 'name',
+      valueKey: 'id',
+      fetchParameter: { query: IDENTITY_TYPE.gql.all },
+    },
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
   },
   {
     key: 'email',
@@ -67,7 +82,7 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
   {
     key: 'phoneNumber',
     type: FieldType.input,
-    validations: [VALIDATOR_TANZINIA_PHONE],
+    validations: [VALIDATOR_REQUIRED, VALIDATOR_TANZINIA_PHONE],
     class: 'col-span-full',
   },
 
@@ -118,6 +133,7 @@ export function userUpsertBtn(comp: BaseComponent): ActionButton {
           middleName: data?.bioData?.secondName,
           lastName: data?.bioData?.thirdName,
           nationalId: data?.bioData?.nin,
+          identityTypeUid: data?.bioData?.identityType?.id,
           phoneNumber:
             data?.bioData?.mobileNumber != null ? String(data.bioData.mobileNumber) : undefined,
         },
