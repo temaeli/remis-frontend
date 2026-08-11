@@ -32,6 +32,23 @@ export const bioDataGqlFields = `
   }
 `;
 
+/**
+ * The people a login can be given to. A person is registered under
+ * Settings > General > People and exists whether or not they ever sign in, so
+ * this is a plain read of the register rather than anything user-shaped.
+ */
+export const LIST_PEOPLE = gql`
+  query allBioData {
+    allBioData {
+      id
+      firstName
+      secondName
+      thirdName
+      nin
+    }
+  }
+`;
+
 export const userMinimalGqlFields = `
   email
   isStaff

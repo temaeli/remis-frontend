@@ -13,7 +13,7 @@ import {
   lookupRefGqlFields,
   LookupModule,
 } from '@shared/lookup';
-import { businessNamePeoplePanel } from './person-links';
+import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
 
 /**
  * Every lookup table in the settings module: the general configuration, the GePG
@@ -103,6 +103,79 @@ export const IDENTITY_TYPE = defineLookup({
   pluralLabel: 'Identity Types',
   subtitle: 'How people and organisations on the register are identified',
   icon: 'id_card',
+});
+
+/**
+ * The people on the register — `bio_data`, the party record.
+ *
+ * The primary record of a person: someone exists here whether or not they ever
+ * sign in, and a login is attached to them afterwards through the user screen.
+ * Creating a user no longer creates a person.
+ *
+ * Its columns are not the usual `assignedNumber`/`name`/`description` triple —
+ * a person has three names, a national ID and contact details — so the
+ * descriptive block is replaced rather than extended.
+ */
+export const PERSON = defineLookup({
+  slug: 'people',
+  entity: 'BioData',
+  entityPlural: 'BioData',
+  permission: 'BIO_DATA',
+  label: 'Person',
+  pluralLabel: 'People',
+  subtitle: 'Everyone on the register, whether or not they hold a login',
+  icon: 'users',
+  descriptiveGqlFields: `
+  firstName
+  secondName
+  thirdName
+  name
+  nin
+  email
+  mobileNumber
+  identityType {
+    ${lookupRefGqlFields}
+  }
+`,
+  nameKey: 'firstName',
+  baseFields: [
+    { key: 'firstName', label: 'First Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
+    // bio_data.second_name is NOT NULL, so a middle name is not optional.
+    { key: 'secondName', label: 'Middle Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
+    { key: 'thirdName', label: 'Last Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'identityTypeUid',
+      label: 'Identity Type',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: IDENTITY_TYPE.gql.all },
+      },
+      validations: [VALIDATOR_REQUIRED],
+    },
+    // The four below are UNIQUE on the table where given, and all optional: a
+    // person can be registered before their documents are to hand.
+    { key: 'nin', label: 'National ID', type: FieldType.input },
+    { key: 'mobileNumber', label: 'Mobile Number', type: FieldType.input },
+    { key: 'email', label: 'Email', type: FieldType.input, class: 'col-span-full' },
+    {
+      key: 'name',
+      label: 'Listed Name',
+      hint: 'Optional. Must be unique — leave blank unless this person is listed under a particular name.',
+      type: FieldType.input,
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    { field: 'firstName', header: 'First Name' },
+    { field: 'secondName', header: 'Middle Name' },
+    { field: 'thirdName', header: 'Last Name' },
+    { field: 'nin', header: 'National ID' },
+    { field: 'mobileNumber', header: 'Mobile' },
+  ],
+  toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
+  extraContents: (comp, record) => [personOrganisationsPanel(comp, record?.id)],
 });
 
 export const BUSINESS_NAME = defineLookup({
@@ -1146,6 +1219,7 @@ export const STREETS_BY_WARD = gql`
 
 /** Grouped the way the backend groups the packages they come from. */
 export const GENERAL_LOOKUPS: LookupModule[] = [
+  PERSON,
   BUSINESS_NAME,
   IDENTITY_TYPE,
   TIN_DATA,

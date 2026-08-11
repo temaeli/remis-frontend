@@ -36,17 +36,17 @@ export interface UserAccount {
   rolesList?: UserRole[];
 }
 
+/**
+ * A login, for someone already on the register. Carries no personal data: the
+ * person is created and edited through `saveBioData`, and this only says which
+ * of them the account belongs to.
+ */
 export interface UserDtoInput {
-  firstName: string;
-  lastName: string;
-  middleName: string;
+  bioDataUid: string;
   email: string;
-  phoneNumber: string;
-  nationalId: string;
-  identityTypeUid: string;
-  username?: string;
   uid?: string;
   isStaff?: boolean;
+  designationUid?: string;
   roleUidList: [string];
 }
 

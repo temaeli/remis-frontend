@@ -6,7 +6,6 @@ import { BaseComponent } from '@shared/components/base-componet/base-component';
 import {
   VALIDATOR_EMAIL,
   VALIDATOR_REQUIRED,
-  VALIDATOR_TANZINIA_PHONE,
 } from '@shared/components/generic-form/form-constants';
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
@@ -16,20 +15,25 @@ import {
   ASSIGN_ROLES_TO_USER,
   CHANGE_PASSWORD,
   CREATE_USER,
+  LIST_PEOPLE,
   RESET_USER_PWD,
   UNLOCK_USER,
 } from './user.graphql';
 import { LIST_ALL_ROLES } from '../roles/role.graphql';
-import { UserAccount } from './user.interface';
+import { BioData, UserAccount } from './user.interface';
 import {
   getUpsertBtnProps,
   navigateRelativeTo,
 } from '@shared/components/view-component/view.helpers';
 import { getDisplayName } from '@core/helpers/view.helpers';
-import { DESIGNATION, IDENTITY_TYPE } from '@routes/settings/settings-lookups';
+import { DESIGNATION } from '@routes/settings/settings-lookups';
 
 // Listener for all User actions
 export const user$ = new Subject<UserAccount | any>();
+
+/** First, middle and last, skipping whichever are absent. */
+const personLabel = (person: BioData): string =>
+  [person?.firstName, person?.secondName, person?.thirdName].filter(Boolean).join(' ').trim();
 
 export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
   {
@@ -37,55 +41,33 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
     type: FieldType.input,
     visible: false,
   },
+  // A login is given to someone already on the register. The person's own
+  // details — names, national ID, phone, identity type — belong to them and are
+  // edited under Settings > General > People, not here.
   {
-    key: 'firstName',
-    type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED],
-  },
-  // Required because it lands on bio_data.second_name, which is NOT NULL.
-  {
-    key: 'middleName',
-    type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED],
-  },
-  {
-    key: 'lastName',
-    type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED],
-  },
-  // UserDto marks these @NotBlank, so leaving them optional here only moved the
-  // rejection to the server.
-  {
-    key: 'nationalId',
-    type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED],
-  },
-  {
-    key: 'identityTypeUid',
-    label: 'Identity Type',
-    hint: 'How this person is identified — required to create their person record',
+    key: 'bioDataUid',
+    label: 'Person',
+    hint: 'Who this login belongs to. Register the person first if they are not listed.',
     type: FieldType.select,
     optionsVariables: {
-      labelKey: 'name',
       valueKey: 'id',
-      fetchParameter: { query: IDENTITY_TYPE.gql.all },
+      fetchParameter: { query: LIST_PEOPLE },
+      mapFunction: (option: BioData) => ({
+        ...option,
+        label: personLabel(option),
+        value: option.id,
+      }),
     },
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
   },
   {
     key: 'email',
+    label: 'Login Email',
     type: FieldType.input,
     validations: [VALIDATOR_REQUIRED, VALIDATOR_EMAIL],
     class: 'col-span-full',
   },
-  {
-    key: 'phoneNumber',
-    type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED, VALIDATOR_TANZINIA_PHONE],
-    class: 'col-span-full',
-  },
-
   {
     key: 'roleUidList',
     label: 'Roles',
@@ -124,33 +106,17 @@ export function userUpsertBtn(comp: BaseComponent): ActionButton {
   return {
     click: (data?: UserAccount) => {
       const formParameter: FormParameters = {
-        // The form still submits the flat names UserDto expects, but the record
-        // carries them on bioData, under different names. Seed them across, or an
-        // edit opens blank and saves the blanks back over the person record.
-        model: {
-          ...data,
-          firstName: data?.bioData?.firstName,
-          middleName: data?.bioData?.secondName,
-          lastName: data?.bioData?.thirdName,
-          nationalId: data?.bioData?.nin,
-          identityTypeUid: data?.bioData?.identityType?.id,
-          phoneNumber:
-            data?.bioData?.mobileNumber != null ? String(data.bioData.mobileNumber) : undefined,
-        },
+        // The record carries the person as a nested bioData; the form submits the
+        // id. Seed it across, or an edit opens with no person selected.
+        model: { ...data, bioDataUid: data?.bioData?.id },
         title: 'User',
         fields: getUserFormFields(comp),
         closeAction$: user$,
 
         onSubmit: async (value: any) => {
-          const userDto = {
-            ...value,
-            phoneNumber: value.phoneNumber ? String(value.phoneNumber) : undefined,
-            nationalId: value.nationalId ? String(value.nationalId) : undefined,
-          };
-
           await comp.fs.fetch({
             notify: true,
-            variables: { userDto },
+            variables: { userDto: value },
             mutation: CREATE_USER,
             successFn: (res) => user$.next(res?.data),
           });

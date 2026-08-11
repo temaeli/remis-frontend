@@ -34,12 +34,34 @@ const linkRowGqlFields = `
     secondName
     thirdName
   }
+  businessName {
+    id
+    assignedNumber
+    name
+  }
 `;
 
 export const PEOPLE_OF_BUSINESS_NAME = gql`
   query personBusinessNamesByBusinessName($businessNameUid: String) {
     personBusinessNamesByBusinessName(businessNameUid: $businessNameUid) {
       ${linkRowGqlFields}
+    }
+  }
+`;
+
+export const BUSINESS_NAMES_OF_PERSON = gql`
+  query personBusinessNamesByPerson($personUid: String) {
+    personBusinessNamesByPerson(personUid: $personUid) {
+      ${linkRowGqlFields}
+    }
+  }
+`;
+
+const ALL_BUSINESS_NAMES_FOR_LINK = gql`
+  query allBusinessNames {
+    allBusinessNames {
+      id
+      name
     }
   }
 `;
@@ -161,6 +183,73 @@ function unlinkBtn(comp: BaseComponent): ActionButton {
     permissions: UNLINK_PERMISSIONS,
   };
 }
+
+function linkOrganisationBtn(comp: BaseComponent, personUid?: string): ActionButton {
+  return {
+    icon: 'add',
+    label: 'Link Organisation',
+    class: 'btn-add-primary',
+    click: () => {
+      const close$ = new Subject<void>();
+      const formParameter: FormParameters = {
+        model: {},
+        title: 'Link Organisation',
+        fields: [
+          {
+            key: 'businessNameUid',
+            label: 'Organisation',
+            type: FieldType.select,
+            optionsVariables: {
+              labelKey: 'name',
+              valueKey: 'id',
+              fetchParameter: { query: ALL_BUSINESS_NAMES_FOR_LINK },
+            },
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+        ],
+        closeAction$: close$,
+
+        onSubmit: async (value: any) => {
+          await comp.fs.fetch({
+            notify: true,
+            variables: { personUid, ...value },
+            mutation: LINK_PERSON_BUSINESS_NAME,
+            successFn: (res) => {
+              personBusinessName$.next(res?.data);
+              close$.next();
+            },
+          });
+        },
+      };
+
+      comp.vs?.openModal(FormComponent, formParameter, '40%');
+    },
+    permissions: LINK_PERMISSIONS,
+  };
+}
+
+/** The organisations one person is linked to, for their detail page. */
+export const personOrganisationsPanel = (
+  comp: BaseComponent,
+  personUid?: string,
+): ContentParameter => ({
+  type: 'table',
+  name: 'Linked Organisations',
+  label: 'Linked Organisations',
+  icon: 'institution',
+  permissions: VIEW_PERMISSIONS,
+  keyColumns: [
+    'index',
+    'businessName.assignedNumber as Assigned Number',
+    'businessName.name as Organisation',
+    'actions',
+  ],
+  headerButtons: [linkOrganisationBtn(comp, personUid)],
+  actionButtons: [{ ...MORE_BTN, buttons: [unlinkBtn(comp)] }],
+  reloadActions$: [personBusinessName$],
+  fetchParameter: { query: BUSINESS_NAMES_OF_PERSON, variables: { personUid } },
+});
 
 /** The people linked to one organisation, for its detail page. */
 export const businessNamePeoplePanel = (
