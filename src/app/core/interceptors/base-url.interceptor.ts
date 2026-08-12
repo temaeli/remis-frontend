@@ -10,18 +10,21 @@ export function hasHttpScheme(url: string) {
 export function baseUrlInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn) {
   const baseUrl = inject(BASE_URL, { optional: true });
 
-  const hasScheme = (url: string) => baseUrl && hasHttpScheme(url);
-
   if (hasHttpScheme(req.url)) {
     return next(req);
   }
 
-  //If BASE_URL missing developer friendly error-for toubleshooting
-  if (!baseUrl) {
+  // An empty string is a valid configuration: it means "serve from the current origin".
+  // Only a genuinely absent token is a misconfiguration worth warning about.
+  if (baseUrl == null) {
     console.error(
       `[BaseUrlInterceptor Error]: API request to '${req.url}' failed. ` +
       `BASE_URL is null or undefined! Please ensure 'environment.baseUrl' is set and provided in app.config.ts.`
     );
+    return next(req);
+  }
+
+  if (baseUrl === '') {
     return next(req);
   }
 
