@@ -110,6 +110,15 @@ const allRegistryProjects = gql`
   }
 `;
 
+const allRisks = gql`
+  query allRisks {
+    allRisks {
+      id
+      name
+    }
+  }
+`;
+
 const allQualitativeParameters = gql`
   query allQualitativeParameters {
     allQualitativeParameters {
@@ -237,6 +246,15 @@ const TASK_LINKS: TaskLinkConfig[] = [
     icon: 'institution',
     permission: 'TASK_BUSINESS_NAME',
     optionsQuery: allBusinessNames,
+  },
+  {
+    entity: 'TaskRisk',
+    field: 'risk',
+    label: 'Risk',
+    pluralLabel: 'Risks',
+    icon: 'warning',
+    permission: 'TASK_RISK',
+    optionsQuery: allRisks,
   },
 ];
 

@@ -9,6 +9,7 @@ import {
   REFERENCE_LOOKUPS,
 } from './settings-lookups';
 import { PROJECT_SETTING_LOOKUPS } from './project-setting-lookups';
+import { AGREEMENT_SETTING_LOOKUPS } from './agreement-setting-lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),
@@ -165,6 +166,22 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'tasks', pathMatch: 'full' },
       ...lookupRoutes(PROJECT_SETTING_LOOKUPS),
+    ],
+  },
+
+  // Agreement — the setting.agreement package: the reusable text an agreement is
+  // written from. The agreements themselves, and the taxonomy that classifies
+  // them, are operational and live in the agreement module.
+  {
+    path: 'agreement',
+    data: {
+      isMenu: true,
+      name: 'Agreement',
+      icon: 'description',
+    },
+    children: [
+      { path: '', redirectTo: 'sections', pathMatch: 'full' },
+      ...lookupRoutes(AGREEMENT_SETTING_LOOKUPS),
     ],
   },
 

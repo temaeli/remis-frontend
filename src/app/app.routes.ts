@@ -6,6 +6,7 @@ import { externalUserGuard } from './routes/auth/external-user.guard';
 import { permissionGuard } from './routes/auth/permission.guard';
 import { ResetComponent } from '@routes/auth/register/reset/reset.component';
 import { ProjectManagement } from './routes/project-management/project-management';
+import { AgreementManagement } from './routes/agreement-management/agreement-management';
 import { AssetManagement } from './routes/asset-management/asset-management';
 import { Billing } from './routes/billing/billing';
 
@@ -78,6 +79,20 @@ export const APP_ROUTES: TypedRoutes = [
       //     'Classify projects by category and subcategory, keep the register, link projects to one another, and record costs and master plans.',
     },
     loadChildren: () => import('./routes/project-management/project-management.routes'),
+  },
+
+  {
+    path: 'agreement-management',
+    title: 'Agreement Management',
+    component: AgreementManagement,
+    canActivate: [externalUserGuard, permissionGuard],
+    data: {
+      isMenu: true,
+      icon: 'handshake',
+      visibleFor: ['internal'],
+      permissions: ['ROLE_VIEW_AGREEMENT_MODULE'],
+    },
+    loadChildren: () => import('./routes/agreement-management/agreement-management.routes'),
   },
 
   {

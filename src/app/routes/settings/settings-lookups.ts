@@ -1,5 +1,6 @@
-import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
+import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
+import { getDisplayName } from '@shared/components/view-component/view.helpers';
 
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
@@ -541,6 +542,79 @@ export const GEPG_BILL_TYPE = defineLookup({
   pluralLabel: 'GePG Bill Types',
   subtitle: 'The bill types GePG recognises',
   icon: 'bill_alt',
+});
+
+/**
+ * What a configured GePG endpoint is for — mirrors the native PostgreSQL enum
+ * `remis_core_schema.gepg_end_point_type`, and so `GepgEndPointType` on the
+ * backend. The three lists have to stay in step.
+ */
+export enum GepgEndPointType {
+  BILL_CONTROL_NUMBER_REQUEST = 'BILL_CONTROL_NUMBER_REQUEST',
+  BILL_CONTROL_NUMBER_CANCELLATION = 'BILL_CONTROL_NUMBER_CANCELLATION',
+  RECONCILIATION_REQUEST = 'RECONCILIATION_REQUEST',
+  CONTROL_NUMBER_REUSE = 'CONTROL_NUMBER_REUSE',
+  BILL_CHANGE_UPDATE = 'BILL_CHANGE_UPDATE',
+}
+
+export const GEPG_END_POINT_TYPE_OPTIONS: Option[] = Object.values(GepgEndPointType).map(
+  (value) => ({ value, label: getDisplayName(value) as string }),
+);
+
+/**
+ * The only table in the core schema that is not name-and-description shaped: it
+ * carries a url and an endpoint type instead, so the descriptive block is
+ * declared rather than inherited and `assignedCode` stands in as the name.
+ */
+export const GEPG_END_POINT = defineLookup({
+  slug: 'gepg-end-points',
+  entity: 'GepgEndPoint',
+  entityPlural: 'GepgEndPoints',
+  permission: 'GEPG_END_POINT',
+  label: 'GePG Endpoint',
+  pluralLabel: 'GePG Endpoints',
+  subtitle: 'The URLs the GePG integration calls, one per operation',
+  icon: 'link',
+  nameKey: 'assignedCode',
+  descriptiveGqlFields: `
+  assignedCode
+  url
+  gepgEndPointType
+`,
+  baseFields: [
+    {
+      key: 'assignedCode',
+      label: 'Assigned Code',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'url',
+      label: 'URL',
+      // varchar(100) in the database, so a longer URL is rejected on save
+      // rather than truncated.
+      hint: 'Up to 100 characters',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'gepgEndPointType',
+      label: 'Endpoint Type',
+      hint: 'Only one endpoint may be configured per type',
+      type: FieldType.select,
+      options: GEPG_END_POINT_TYPE_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedCode', header: 'Assigned Code' },
+    { field: 'gepgEndPointType', header: 'Type' },
+    'url',
+  ],
 });
 
 export const GEPG_PAY_TYPE = defineLookup({
@@ -1236,6 +1310,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   PAYMENT_SERVICE_PROVIDER,
   DISCOUNT,
   GEPG_BILL_TYPE,
+  GEPG_END_POINT,
   GEPG_PAY_TYPE,
   GFS_CODE,
   PAY_LIM_AMOUNT,

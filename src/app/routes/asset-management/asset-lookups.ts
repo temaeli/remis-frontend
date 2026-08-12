@@ -223,6 +223,106 @@ export const LAND_REGISTRATION = defineLookup({
 });
 
 /**
+ * How an asset entered the register: what it cost, when, and where.
+ *
+ * Carries the coordinate pair the location hierarchy uses, with the same
+ * `numeric(9,6)` type and the same bounds, so the controls round to six places
+ * to match rather than letting the database truncate.
+ */
+export const ACQUISITION = defineLookup({
+  slug: 'acquisitions',
+  entity: 'Acquisition',
+  entityPlural: 'Acquisitions',
+  permission: 'ACQUISITION',
+  label: 'Acquisition',
+  pluralLabel: 'Acquisitions',
+  subtitle: 'How an asset was acquired, and for how much',
+  icon: 'shopping_cart',
+  extraGqlFields: `
+  acquisitionValue
+  acquisitionDate
+  latitude
+  longitude
+  asset {
+    ${lookupRefGqlFields}
+    status
+  }
+`,
+  extraFields: [
+    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    {
+      key: 'acquisitionValue',
+      label: 'Acquisition Value',
+      type: FieldType.decimal,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'acquisitionDate',
+      label: 'Acquisition Date',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'latitude',
+      label: 'Latitude',
+      hint: 'Between -90 and 90',
+      type: FieldType.decimal,
+      decimals: 6,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'longitude',
+      label: 'Longitude',
+      hint: 'Between -180 and 180',
+      type: FieldType.decimal,
+      decimals: 6,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    'asset.name as Asset',
+    'acquisitionValue',
+    { field: 'acquisitionDate', header: 'Acquired' },
+  ],
+  toModel: (data) => ({ assetUid: data?.asset?.id }),
+});
+
+/**
+ * How an asset left the register. The counterpart to {@link ACQUISITION}, but
+ * without its value or coordinate pair — the table records only when, and which
+ * asset. Nothing here moves the asset's own status; that stays a separate action.
+ */
+export const DISPOSE = defineLookup({
+  slug: 'disposes',
+  entity: 'Dispose',
+  entityPlural: 'Disposes',
+  permission: 'DISPOSE',
+  label: 'Disposal',
+  pluralLabel: 'Disposals',
+  subtitle: 'How an asset left the register',
+  icon: 'delete_sweep',
+  extraGqlFields: `
+  disposedAt
+  asset {
+    ${lookupRefGqlFields}
+    status
+  }
+`,
+  extraFields: [
+    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    {
+      key: 'disposedAt',
+      label: 'Disposed At',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: ['asset.name as Asset', { field: 'disposedAt', header: 'Disposed' }],
+  toModel: (data) => ({ assetUid: data?.asset?.id }),
+});
+
+/**
  * How a piece of land is used. Owned by the asset registry, which already owns
  * land, and classified alongside the taxonomy rather than under it — nothing
  * points at a land use, so it has no parent and no children.
@@ -351,7 +451,13 @@ function assetStatusBtn(comp: BaseComponent, lookup: LookupModule): ActionButton
 }
 
 /** The operational screens, which lead the menu. */
-export const ASSET_LOOKUPS: LookupModule[] = [ASSET, LAND_REGISTRATION, ASSET_VERIFICATION];
+export const ASSET_LOOKUPS: LookupModule[] = [
+  ASSET,
+  LAND_REGISTRATION,
+  ASSET_VERIFICATION,
+  ACQUISITION,
+  DISPOSE,
+];
 
 /** The taxonomy that classifies them, grouped behind one menu and kept last. */
 export const ASSET_CONFIGURATION_LOOKUPS: LookupModule[] = [

@@ -2,7 +2,7 @@ import { gql } from '@apollo/client/core';
 
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
 
@@ -253,6 +253,39 @@ export const RISK = defineLookup({
   pluralLabel: 'Risks',
   subtitle: 'What a project is exposed to',
   icon: 'report_problem',
+});
+
+export const MITIGATION = defineLookup({
+  slug: 'mitigations',
+  entity: 'Mitigation',
+  entityPlural: 'Mitigations',
+  permission: 'MITIGATION',
+  label: 'Mitigation',
+  pluralLabel: 'Mitigations',
+  subtitle: 'What can be done about a risk',
+  icon: 'shield',
+  // Which risks a mitigation answers is a join table with its own link/unlink
+  // pair, so it is a panel rather than a column. One mitigation can answer
+  // several risks and one risk can have several.
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'MitigationRisk',
+          byOwnerQuery: 'mitigationRisksByMitigation',
+          ownerArg: 'mitigationUid',
+          targetArg: 'riskUid',
+          field: 'risk',
+          label: 'Risk',
+          pluralLabel: 'Risks',
+          icon: 'report_problem',
+          permission: 'MITIGATION_RISK',
+          optionsQuery: RISK.gql.all,
+        },
+      ],
+      record?.id,
+    ),
 });
 
 export const SNAG = defineLookup({
@@ -610,6 +643,7 @@ export const PROJECT_SETTING_LOOKUPS: LookupModule[] = [
   MONTH,
   GRADE,
   RISK,
+  MITIGATION,
   SNAG,
   SERVICE_OFFERING,
   QUESTION,
