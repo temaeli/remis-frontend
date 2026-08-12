@@ -1,6 +1,7 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 import { Route } from '@angular/router';
 import { capFirstChar } from '@shared/components/details/util/util.helpers';
+import { IconsService, IconType } from '@shared/components/icon/icons.service';
 import { BehaviorSubject, Observable, share } from 'rxjs';
 import { Module } from './modules.service';
 import { APP_ROUTES } from 'app/app.routes';
@@ -15,6 +16,13 @@ export interface Menu {
   name?: string;
   type?: 'link' | 'sub' | 'extLink' | 'extTabLink';
   icon?: string;
+  /**
+   * Whether {@link icon} names an inline SVG or a Material font ligature. Set by
+   * `mapMenu`, not by the route that declares the icon — the sidebar has to know
+   * which of the two to render, and asking for a Material name through the SVG
+   * registry throws.
+   */
+  iconType?: IconType;
   label?: MenuTag;
   badge?: any | Observable<any>;
   badgeFn?: (badge: any) => any | Observable<any>;
@@ -55,6 +63,8 @@ export type TypedRoutes<TData = AppRouteData> = TypedRoute<TData>[];
   providedIn: 'root',
 })
 export class MenuService {
+  private readonly iconsService = inject(IconsService);
+
   private readonly menu$ = new BehaviorSubject<Menu[]>([]);
 
   readonly module_ = signal<Module | undefined>(undefined);
@@ -203,7 +213,11 @@ export class MenuService {
     //set // icon // linktype // external
     menu.forEach((item: Menu) => {
       item.type = item.type ?? (item?.children?.length ? 'sub' : 'link');
-      // this.iconsService.setType(item);
+      // Resolves icon to SVG or MATERIAL so the sidebar renders the right one.
+      // Without it every icon falls through to [svgIcon], and a Material name
+      // asked of the SVG registry throws instead of drawing anything. An
+      // unresolvable name is swapped for the default rather than left to fail.
+      this.iconsService.setType(item);
       if (item?.children?.length) this.mapMenu(item.children);
     });
   }

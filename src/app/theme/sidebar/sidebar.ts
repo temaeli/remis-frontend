@@ -10,6 +10,7 @@ import { UserPanel } from './user-panel';
 
 import { ModulesService } from '@core/services/modules.service';
 import { MenuService } from '@core';
+import { IconTypePipe } from '@shared/components/icon/icon-type.pipe';
 import { CommonModule } from '@angular/common';
 import { settings$ } from '@core/settings/settings.store';
 
@@ -27,6 +28,7 @@ import { settings$ } from '@core/settings/settings.store';
     Sidemenu,
     UserPanel,
     CommonModule,
+    IconTypePipe,
   ],
 })
 export class Sidebar {

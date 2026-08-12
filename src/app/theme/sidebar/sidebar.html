@@ -30,7 +30,14 @@
           class="absolute right-0 bottom-[-20px] w-[70px] h-[70px] opacity-5 delay-1000 --order-4"
         >
           @if (menu.icon) {
-            <mat-icon [svgIcon]="menu.icon" class="size-full icon-full {{ animation }}" />
+            @switch (menu.icon | iconType) {
+              @case ('SVG') {
+                <mat-icon [svgIcon]="menu.icon" class="size-full icon-full {{ animation }}" />
+              }
+              @case ('MATERIAL') {
+                <mat-icon class="size-full icon-full {{ animation }}">{{ menu.icon }}</mat-icon>
+              }
+            }
           }
         </div>
 
