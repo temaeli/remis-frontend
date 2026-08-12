@@ -8,6 +8,7 @@ import { findSidebarMatch } from '../view-component/view.helpers';
 import { Router } from '@angular/router';
 
 import { SignalPipe } from '../details/util/pipes/signal.pipe';
+import { IconTypePipe } from '../icon/icon-type.pipe';
 import { settings$, menuItems$ } from '@core/settings/settings.store';
 
 @Component({
@@ -27,7 +28,14 @@ import { settings$, menuItems$ } from '@core/settings/settings.store';
     >
       <div class="  bounce" style="--order: 8">
         @if (icon) {
-          <mat-icon class="icon-large text-black faded relative top-3" [svgIcon]="icon" />
+          @switch (icon | iconType) {
+            @case ('SVG') {
+              <mat-icon class="icon-large text-black faded relative top-3" [svgIcon]="icon" />
+            }
+            @case ('MATERIAL') {
+              <mat-icon class="icon-large text-black faded relative top-3">{{ icon }}</mat-icon>
+            }
+          }
         }
       </div>
       <div
@@ -37,7 +45,7 @@ import { settings$, menuItems$ } from '@core/settings/settings.store';
     </div>
   </div> `,
 
-  imports: [CommonModule, MatIconModule, SafeHtmlPipe, MergeClassesPipe, SignalPipe],
+  imports: [CommonModule, MatIconModule, SafeHtmlPipe, MergeClassesPipe, SignalPipe, IconTypePipe],
 })
 export class NoContentComponent implements OnInit {
   private readonly router = inject(Router);

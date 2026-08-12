@@ -198,7 +198,7 @@ const TASK_LINKS: TaskLinkConfig[] = [
     field: 'floor',
     label: 'Floor',
     pluralLabel: 'Floors',
-    icon: 'building',
+    icon: 'layers',
     permission: 'TASK_FLOOR',
     optionsQuery: allFloors,
   },

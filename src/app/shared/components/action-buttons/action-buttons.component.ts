@@ -12,6 +12,7 @@ import { ToObservablePipe } from '../../pipes/to-observable.pipe';
 import { SafeHtmlPipe } from '../../pipes/safe-html.pipe';
 import { LoadingDirective } from '@core/loading/loader.directive';
 import { ParseBase64Pipe } from '../details/util/base-64/parse-base-64.pipe';
+import { IconTypePipe } from '../icon/icon-type.pipe';
 import { MergeClassesPipe } from '../details/util/class-name/merge-classes.pipe';
 import { NotificationService } from '@shared/services/notification.service';
 import { settings$ } from '@core/settings/settings.store';
@@ -36,6 +37,7 @@ import { NotificationDialog } from '../confirm/confirm.interface';
     SafeHtmlPipe,
     LoadingDirective,
     MergeClassesPipe,
+    IconTypePipe,
   ],
 })
 export class ActionButtonsComponent implements OnInit, OnDestroy, OnChanges {

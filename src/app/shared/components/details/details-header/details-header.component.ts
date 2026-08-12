@@ -7,6 +7,7 @@ import { ActionButtonsComponent } from '@shared/components/action-buttons/action
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { SignalPipe } from '../util/pipes/signal.pipe';
 import { settings$ } from '@core/settings/settings.store';
+import { IconTypePipe } from '@shared/components/icon/icon-type.pipe';
 
 export interface HeaderParameter {
   title?: string;
@@ -29,7 +30,14 @@ export interface HeaderParameter {
   templateUrl: './details-header.component.html',
   styleUrls: ['./details-header.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, ActionButtonsComponent, MergeClassesPipe, SignalPipe],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    ActionButtonsComponent,
+    MergeClassesPipe,
+    SignalPipe,
+    IconTypePipe,
+  ],
 })
 export class DetailsHeaderComponent implements OnInit {
   @Input() animation = settings$.value.animations?.pages;

@@ -210,7 +210,14 @@
         </ng-container>
 
         <ng-container *ngSwitchDefault>
-          <mat-icon [svgIcon]="icon" class="{{ class_ }}" />
+          @switch (icon | iconType) {
+            @case ('SVG') {
+              <mat-icon [svgIcon]="icon" class="{{ class_ }}" />
+            }
+            @case ('MATERIAL') {
+              <mat-icon class="{{ class_ }}">{{ icon }}</mat-icon>
+            }
+          }
         </ng-container>
       </ng-container>
     }

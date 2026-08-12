@@ -5,11 +5,12 @@ import { CommonModule } from '@angular/common';
 import { findSidebarMatch } from '@shared/components/view-component/view.helpers';
 import { Router } from '@angular/router';
 import { menuItems$ } from '@core/settings/settings.store';
+import { IconTypePipe } from '@shared/components/icon/icon-type.pipe';
 
 @Component({
   selector: 'bg-icon-mark',
   standalone: true,
-  imports: [MatIcon, MergeClassesPipe, CommonModule],
+  imports: [MatIcon, MergeClassesPipe, CommonModule, IconTypePipe],
   template: ` <div
     class=" {{ outerClass ?? '' | mergeClasses: ' ' }}
        absolute overflow-hidden size-full top-0 left-0
@@ -17,11 +18,20 @@ import { menuItems$ } from '@core/settings/settings.store';
   >
     <div class="absolute top-[50%] right-[-40%] size-full">
       @if (icon) {
-        <mat-icon
-          [svgIcon]="icon"
-          class="absolute icon-full opacity-[0.015]"
-          [style.opacity]="opacity"
-        />
+        @switch (icon | iconType) {
+          @case ('SVG') {
+            <mat-icon
+              [svgIcon]="icon"
+              class="absolute icon-full opacity-[0.015]"
+              [style.opacity]="opacity"
+            />
+          }
+          @case ('MATERIAL') {
+            <mat-icon class="absolute icon-full opacity-[0.015]" [style.opacity]="opacity">{{
+              icon
+            }}</mat-icon>
+          }
+        }
       }
     </div>
   </div>`,

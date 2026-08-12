@@ -4,11 +4,21 @@
 >
   <div class="inline-flex items-center justify-center opacity-60">
     <ng-container *ngIf="icon || title">
-      <mat-icon
-        *ngIf="icon"
-        class="{{ 'me-2' | mergeClasses: iconClass }}    {{ animation }} --order-3"
-        [svgIcon]="icon"
-      />
+      @if (icon) {
+        @switch (icon | iconType) {
+          @case ('SVG') {
+            <mat-icon
+              class="{{ 'me-2' | mergeClasses: iconClass }}    {{ animation }} --order-3"
+              [svgIcon]="icon"
+            />
+          }
+          @case ('MATERIAL') {
+            <mat-icon class="{{ 'me-2' | mergeClasses: iconClass }}    {{ animation }} --order-3">{{
+              icon
+            }}</mat-icon>
+          }
+        }
+      }
 
       <div class="flex items-center h-full">
         <span
