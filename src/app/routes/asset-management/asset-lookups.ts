@@ -12,6 +12,7 @@ import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import {
   defineLookup,
+  entityLinkPanels,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
@@ -57,6 +58,30 @@ const parentSelect = (key: string, label: string, query: unknown, hint?: string)
   validations: [VALIDATOR_REQUIRED],
   class: 'col-span-full',
 });
+
+/**
+ * The survey point the located tables carry. Both are required and stored as
+ * `numeric(9,6)`, so the controls round to six places to match rather than
+ * letting the database truncate, and the hints mirror the CHECK constraints.
+ */
+const coordinateFields = (): FieldConfig[] => [
+  {
+    key: 'latitude',
+    label: 'Latitude',
+    hint: 'Between -90 and 90',
+    type: FieldType.decimal,
+    decimals: 6,
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'longitude',
+    label: 'Longitude',
+    hint: 'Between -180 and 180',
+    type: FieldType.decimal,
+    decimals: 6,
+    validations: [VALIDATOR_REQUIRED],
+  },
+];
 
 /** A yes/no column, the shape the registry's flags take on a list. */
 const flagColumn = (field: string, header?: string): GridKeyColumn => ({
@@ -195,6 +220,7 @@ export const ASSET = defineLookup({
       assetUid: record?.id,
     }),
     assetProjectsPanel(comp, record?.id),
+    ...assetLinkPanels(comp, record?.id),
   ],
 });
 
@@ -263,22 +289,7 @@ export const ACQUISITION = defineLookup({
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
-    {
-      key: 'latitude',
-      label: 'Latitude',
-      hint: 'Between -90 and 90',
-      type: FieldType.decimal,
-      decimals: 6,
-      validations: [VALIDATOR_REQUIRED],
-    },
-    {
-      key: 'longitude',
-      label: 'Longitude',
-      hint: 'Between -180 and 180',
-      type: FieldType.decimal,
-      decimals: 6,
-      validations: [VALIDATOR_REQUIRED],
-    },
+    ...coordinateFields(),
   ],
   extraColumns: [
     'asset.name as Asset',
@@ -320,6 +331,68 @@ export const DISPOSE = defineLookup({
   ],
   extraColumns: ['asset.name as Asset', { field: 'disposedAt', header: 'Disposed' }],
   toModel: (data) => ({ assetUid: data?.asset?.id }),
+});
+
+/** The people register, which the valuer points at — bio_data, not a login. */
+const ALL_PEOPLE = gql`
+  query allBioData {
+    allBioData {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * What an asset has been valued at, by whom, where and when.
+ *
+ * Unlike an acquisition or a disposal this does not point at an asset: which
+ * assets a valuation covers is `assets_valuations`, so one valuation can cover
+ * several. It appears as a panel on the asset and as a screen of its own here.
+ */
+export const VALUATION = defineLookup({
+  slug: 'valuations',
+  entity: 'Valuation',
+  entityPlural: 'Valuations',
+  permission: 'VALUATION',
+  label: 'Valuation',
+  pluralLabel: 'Valuations',
+  subtitle: 'What an asset has been valued at, and by whom',
+  icon: 'scale',
+  extraGqlFields: `
+  value
+  valuedAt
+  latitude
+  longitude
+  valuer {
+    id
+    uid: id
+    name
+  }
+`,
+  extraFields: [
+    {
+      key: 'value',
+      label: 'Value',
+      type: FieldType.decimal,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'valuedAt',
+      label: 'Valued At',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    parentSelect('valuerUid', 'Valuer', ALL_PEOPLE),
+    ...coordinateFields(),
+  ],
+  extraColumns: [
+    'valuer.name as Valuer',
+    { field: 'value', header: 'Value' },
+    { field: 'valuedAt', header: 'Valued' },
+  ],
+  toModel: (data) => ({ valuerUid: data?.valuer?.id }),
 });
 
 /**
@@ -450,6 +523,182 @@ function assetStatusBtn(comp: BaseComponent, lookup: LookupModule): ActionButton
   };
 }
 
+/**
+ * The far sides of the asset link tables.
+ *
+ * Declared here rather than imported from the project settings registry, which
+ * imports ASSET from this file — pulling it back the other way would be a cycle.
+ * `task-links.ts` declares its own for the same reason.
+ */
+const allCosts = gql`
+  query allCosts {
+    allCosts {
+      id
+      name
+    }
+  }
+`;
+
+const allTasks = gql`
+  query allTasks {
+    allTasks {
+      id
+      name
+    }
+  }
+`;
+
+const allQualitativeParameters = gql`
+  query allQualitativeParameters {
+    allQualitativeParameters {
+      id
+      name
+    }
+  }
+`;
+
+const allQualitativeParameterValues = gql`
+  query allQualitativeParameterValues {
+    allQualitativeParameterValues {
+      id
+      name
+    }
+  }
+`;
+
+const allQuantitativeParameters = gql`
+  query allQuantitativeParameters {
+    allQuantitativeParameters {
+      id
+      name
+    }
+  }
+`;
+
+const allQuantitativeParameterValues = gql`
+  query allQuantitativeParameterValues {
+    allQuantitativeParameterValues {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * What an asset links to. Eight two-column join tables, each with its own
+ * link/unlink pair, so each is a panel on the asset's detail page.
+ *
+ * Costs, floors, net asset values and projects are deliberately not all here.
+ * The DBA sent `assets_floors`, `assets_net_asset_values` and `assets_projects`
+ * as well, but each contradicts a relationship that already exists — floors and
+ * net asset values carry `assets_id` directly, and `projects_assets` is already
+ * mapped and driven by attachAssetToProject. Those three are unmapped on the
+ * backend until the DBA confirms which model wins.
+ */
+export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
+  entityLinkPanels(
+    comp,
+    [
+      {
+        entity: 'AssetCost',
+        byOwnerQuery: 'assetCostsByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'costUid',
+        field: 'cost',
+        label: 'Cost',
+        pluralLabel: 'Costs',
+        icon: 'receipt',
+        permission: 'ASSET_COST',
+        optionsQuery: allCosts,
+      },
+      {
+        entity: 'AssetValuation',
+        byOwnerQuery: 'assetValuationsByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'valuationUid',
+        field: 'valuation',
+        label: 'Valuation',
+        pluralLabel: 'Valuations',
+        icon: 'scale',
+        permission: 'ASSET_VALUATION',
+        optionsQuery: VALUATION.gql.all,
+      },
+      {
+        entity: 'AssetLandUse',
+        byOwnerQuery: 'assetLandUsesByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'landUseUid',
+        field: 'landUse',
+        label: 'Land Use',
+        pluralLabel: 'Land Uses',
+        icon: 'land_administration',
+        permission: 'ASSET_LAND_USE',
+        optionsQuery: LAND_USE.gql.all,
+      },
+      {
+        entity: 'AssetTask',
+        byOwnerQuery: 'assetTasksByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'taskUid',
+        field: 'task',
+        label: 'Task',
+        pluralLabel: 'Tasks',
+        icon: 'assignment',
+        permission: 'ASSET_TASK',
+        optionsQuery: allTasks,
+      },
+      {
+        entity: 'AssetQualitativeParameter',
+        byOwnerQuery: 'assetQualitativeParametersByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'qualitativeParameterUid',
+        field: 'qualitativeParameter',
+        label: 'Qualitative Parameter',
+        pluralLabel: 'Qualitative Parameters',
+        icon: 'assessment',
+        permission: 'ASSET_QUALITATIVE_PARAMETER',
+        optionsQuery: allQualitativeParameters,
+      },
+      {
+        entity: 'AssetQualitativeParameterValue',
+        byOwnerQuery: 'assetQualitativeParameterValuesByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'qualitativeParameterValueUid',
+        field: 'qualitativeParameterValue',
+        label: 'Qualitative Judgement',
+        pluralLabel: 'Qualitative Judgements',
+        icon: 'assessment',
+        permission: 'ASSET_QUALITATIVE_PARAMETER_VALUE',
+        optionsQuery: allQualitativeParameterValues,
+      },
+      {
+        entity: 'AssetQuantitativeParameter',
+        byOwnerQuery: 'assetQuantitativeParametersByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'quantitativeParameterUid',
+        field: 'quantitativeParameter',
+        label: 'Quantitative Parameter',
+        pluralLabel: 'Quantitative Parameters',
+        icon: 'poll',
+        permission: 'ASSET_QUANTITATIVE_PARAMETER',
+        optionsQuery: allQuantitativeParameters,
+      },
+      {
+        entity: 'AssetQuantitativeParameterValue',
+        byOwnerQuery: 'assetQuantitativeParameterValuesByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'quantitativeParameterValueUid',
+        field: 'quantitativeParameterValue',
+        label: 'Quantitative Measurement',
+        pluralLabel: 'Quantitative Measurements',
+        icon: 'poll',
+        permission: 'ASSET_QUANTITATIVE_PARAMETER_VALUE',
+        optionsQuery: allQuantitativeParameterValues,
+      },
+    ],
+    assetUid,
+  );
+
 /** The operational screens, which lead the menu. */
 export const ASSET_LOOKUPS: LookupModule[] = [
   ASSET,
@@ -457,6 +706,7 @@ export const ASSET_LOOKUPS: LookupModule[] = [
   ASSET_VERIFICATION,
   ACQUISITION,
   DISPOSE,
+  VALUATION,
 ];
 
 /** The taxonomy that classifies them, grouped behind one menu and kept last. */

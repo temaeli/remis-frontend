@@ -80,7 +80,7 @@ export const CLAUSE = defineLookup({
   label: 'Clause',
   pluralLabel: 'Clauses',
   subtitle: 'What a section is broken into',
-  icon: 'article',
+  icon: 'notes',
   extraContents: (comp, record) =>
     entityLinkPanels(
       comp,
@@ -110,7 +110,7 @@ export const SECTION = defineLookup({
   label: 'Section',
   pluralLabel: 'Sections',
   subtitle: 'The head of the clause hierarchy',
-  icon: 'menu_book',
+  icon: 'folder',
   extraContents: (comp, record) =>
     entityLinkPanels(
       comp,
@@ -123,7 +123,7 @@ export const SECTION = defineLookup({
           field: 'clause',
           label: 'Clause',
           pluralLabel: 'Clauses',
-          icon: 'article',
+          icon: 'notes',
           permission: 'SECTION_CLAUSE',
           optionsQuery: CLAUSE.gql.all,
         },

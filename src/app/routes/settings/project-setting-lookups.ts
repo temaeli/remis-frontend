@@ -263,7 +263,7 @@ export const MITIGATION = defineLookup({
   label: 'Mitigation',
   pluralLabel: 'Mitigations',
   subtitle: 'What can be done about a risk',
-  icon: 'shield',
+  icon: 'policy',
   // Which risks a mitigation answers is a join table with its own link/unlink
   // pair, so it is a panel rather than a column. One mitigation can answer
   // several risks and one risk can have several.

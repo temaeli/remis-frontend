@@ -88,7 +88,7 @@ export const APP_ROUTES: TypedRoutes = [
     canActivate: [externalUserGuard, permissionGuard],
     data: {
       isMenu: true,
-      icon: 'handshake',
+      icon: 'contract',
       visibleFor: ['internal'],
       permissions: ['ROLE_VIEW_AGREEMENT_MODULE'],
     },

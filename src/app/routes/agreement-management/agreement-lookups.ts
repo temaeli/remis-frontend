@@ -8,6 +8,9 @@ import {
   lookupRefGqlFields,
   LookupModule,
 } from '@shared/lookup';
+// Safe in this direction only: the settings registry imports nothing back from
+// here, so there is no cycle.
+import { SECTION } from '@routes/settings/agreement-setting-lookups';
 
 /**
  * The agreement register — `modules.agreement` on the backend.
@@ -105,7 +108,7 @@ export const AGREEMENT = defineLookup({
   label: 'Agreement',
   pluralLabel: 'Agreements',
   subtitle: 'The agreements on the register, and who they are with',
-  icon: 'handshake',
+  icon: 'contract',
   extraGqlFields: `
   agreementFrom
   agreementTo
@@ -171,6 +174,22 @@ export const AGREEMENT = defineLookup({
           icon: 'institution',
           permission: 'AGREEMENT_BUSINESS_NAME',
           optionsQuery: ALL_BUSINESS_NAMES,
+        },
+        // agreements_sections — the join to the clause hierarchy. Not to be
+        // confused with agreement_sections, the standalone catalogue that lives
+        // under settings and joins to nothing; the backend calls this one
+        // AgreementSectionLink for exactly that reason.
+        {
+          entity: 'AgreementSectionLink',
+          byOwnerQuery: 'agreementSectionLinksByAgreement',
+          ownerArg: 'agreementUid',
+          targetArg: 'sectionUid',
+          field: 'section',
+          label: 'Section',
+          pluralLabel: 'Sections',
+          icon: 'folder',
+          permission: 'AGREEMENT_SECTION_LINK',
+          optionsQuery: SECTION.gql.all,
         },
       ],
       record?.id,
