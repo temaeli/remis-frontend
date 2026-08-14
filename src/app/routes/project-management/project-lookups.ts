@@ -3,6 +3,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { gql } from '@apollo/client/core';
 
 import { projectAssetsPanel } from './project-asset';
+import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import {
   defineLookup,
   entityLinkPanels,
@@ -172,6 +173,7 @@ export const REGISTRY_PROJECT = defineLookup({
   extraColumns: ['projectSubcategory.name as Subcategory', 'days'],
   toModel: (data) => ({ projectSubcategoryUid: data?.projectSubcategory?.id }),
   extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'RegistryProject', record?.id),
     lookupChildPanel(comp, () => PROJECT_CONNECTION, PROJECT_CONNECTIONS_BY_PARENT, {
       parentUid: record?.id,
     }),

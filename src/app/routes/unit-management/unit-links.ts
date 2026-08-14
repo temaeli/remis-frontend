@@ -5,14 +5,18 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { entityLinkPanels, EntityLinkConfig } from '@shared/lookup';
 
 /**
- * What a unit links to. Every one is its own two-column join table with its own
- * link/unlink pair on the backend, so every one is a panel on the unit's detail
- * page listing that side and able to link and unlink.
+ * What a unit links to, from both ends — the same shape `project-asset.ts` uses
+ * for projects and assets.
  *
- * Declared here rather than in the lookup registry so that `UNIT` — which lives
- * in the project settings catalogue — can hang them off itself without importing
- * this module's registry back, which would be a cycle. The small `all…` reads the
- * link forms pick from are declared here for the same reason.
+ * Every one is its own two-column join table with its own link/unlink pair, and
+ * each side reads the same join rows filtered by the other. So a unit's page
+ * lists what it is linked to, and each of those records' pages lists the units it
+ * applies to, both able to link and unlink.
+ *
+ * Declared here rather than in either registry. `UNIT` lives in the project
+ * settings catalogue and the records live in this module, so having the two
+ * registries import each other would be a cycle; everything needed — the reads,
+ * and the lists the link form picks from — is declared here instead.
  *
  * Unlinking takes the join row's own uid rather than the pair, because that is
  * what the controllers ask for.
@@ -405,6 +409,15 @@ const ALL_SERVICE_OFFERING = gql`
   }
 `;
 
+const ALL_SOLUTION = gql`
+  query allSolutions {
+    allSolutions {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_STREET = gql`
   query allStreets {
     allStreets {
@@ -432,6 +445,15 @@ const ALL_TITLE_DEED = gql`
   }
 `;
 
+const ALL_UNIT = gql`
+  query allUnits {
+    allUnits {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_VALUATION = gql`
   query allValuations {
     allValuations {
@@ -450,6 +472,7 @@ const ALL_VISIT = gql`
   }
 `;
 
+/** Panels for a unit's own page: everything it is linked to. */
 const UNIT_LINKS: EntityLinkConfig[] = [
   {
     entity: 'SecurityDepositUnit',
@@ -1029,6 +1052,728 @@ const UNIT_LINKS: EntityLinkConfig[] = [
   },
 ];
 
-/** The panels appended to a unit's detail page, in the order declared above. */
+/**
+ * The same joins read from the other end, keyed by the record the panel belongs
+ * to. A booking's page lists the units it covers, and so on.
+ *
+ * A list rather than one config each: a problem is joined both to units and to
+ * solutions, so it earns two panels.
+ */
+const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
+  Agreement: [
+    {
+      entity: 'UnitAgreement',
+      byOwnerQuery: 'unitAgreementsByAgreement',
+      ownerArg: 'agreementUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_AGREEMENT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Asset: [
+    {
+      entity: 'UnitAsset',
+      byOwnerQuery: 'unitAssetsByAsset',
+      ownerArg: 'assetUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_ASSET',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  BankAccount: [
+    {
+      entity: 'UnitBankAccount',
+      byOwnerQuery: 'unitBankAccountsByBankAccount',
+      ownerArg: 'bankAccountUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_BANK_ACCOUNT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  BillPayOption: [
+    {
+      entity: 'UnitBillPayOption',
+      byOwnerQuery: 'unitBillPayOptionsByBillPayOption',
+      ownerArg: 'billPayOptionUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_BILL_PAY_OPTION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  BioData: [
+    {
+      entity: 'UnitBioData',
+      byOwnerQuery: 'unitBioDatasByBioData',
+      ownerArg: 'bioDataUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_BIO_DATA',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Booking: [
+    {
+      entity: 'UnitBooking',
+      byOwnerQuery: 'unitBookingsByBooking',
+      ownerArg: 'bookingUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_BOOKING',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  BusinessName: [
+    {
+      entity: 'UnitBusinessName',
+      byOwnerQuery: 'unitBusinessNamesByBusinessName',
+      ownerArg: 'businessNameUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_BUSINESS_NAME',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  CollectionCenter: [
+    {
+      entity: 'UnitCollectionCenter',
+      byOwnerQuery: 'unitCollectionCentersByCollectionCenter',
+      ownerArg: 'collectionCenterUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_COLLECTION_CENTER',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Commission: [
+    {
+      entity: 'UnitCommission',
+      byOwnerQuery: 'unitCommissionsByCommission',
+      ownerArg: 'commissionUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_COMMISSION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Cost: [
+    {
+      entity: 'UnitCost',
+      byOwnerQuery: 'unitCostsByCost',
+      ownerArg: 'costUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_COST',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Discount: [
+    {
+      entity: 'UnitDiscount',
+      byOwnerQuery: 'unitDiscountsByDiscount',
+      ownerArg: 'discountUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_DISCOUNT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Entry: [
+    {
+      entity: 'UnitEntry',
+      byOwnerQuery: 'unitEntriesByEntry',
+      ownerArg: 'entryUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_ENTRY',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Eviction: [
+    {
+      entity: 'UnitEviction',
+      byOwnerQuery: 'unitEvictionsByEviction',
+      ownerArg: 'evictionUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_EVICTION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Exit: [
+    {
+      entity: 'UnitExit',
+      byOwnerQuery: 'unitExitsByExit',
+      ownerArg: 'exitUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_EXIT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Fee: [
+    {
+      entity: 'UnitFee',
+      byOwnerQuery: 'unitFeesByFee',
+      ownerArg: 'feeUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_FEE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  GfsCode: [
+    {
+      entity: 'UnitGfsCode',
+      byOwnerQuery: 'unitGfsCodesByGfsCode',
+      ownerArg: 'gfsCodeUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_GFS_CODE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Grade: [
+    {
+      entity: 'UnitGrade',
+      byOwnerQuery: 'unitGradesByGrade',
+      ownerArg: 'gradeUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_GRADE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Handover: [
+    {
+      entity: 'UnitHandover',
+      byOwnerQuery: 'unitHandoversByHandover',
+      ownerArg: 'handoverUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_HANDOVER',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Inspection: [
+    {
+      entity: 'UnitInspection',
+      byOwnerQuery: 'unitInspectionsByInspection',
+      ownerArg: 'inspectionUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_INSPECTION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  LandUse: [
+    {
+      entity: 'UnitLandUse',
+      byOwnerQuery: 'unitLandUsesByLandUse',
+      ownerArg: 'landUseUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_LAND_USE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Lease: [
+    {
+      entity: 'UnitLease',
+      byOwnerQuery: 'unitLeasesByLease',
+      ownerArg: 'leaseUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_LEASE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Liability: [
+    {
+      entity: 'UnitLiability',
+      byOwnerQuery: 'unitLiabilitiesByLiability',
+      ownerArg: 'liabilityUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_LIABILITY',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Loan: [
+    {
+      entity: 'UnitLoan',
+      byOwnerQuery: 'unitLoansByLoan',
+      ownerArg: 'loanUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_LOAN',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Maintenance: [
+    {
+      entity: 'UnitMaintenance',
+      byOwnerQuery: 'unitMaintenancesByMaintenance',
+      ownerArg: 'maintenanceUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_MAINTENANCE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Meter: [
+    {
+      entity: 'UnitMeter',
+      byOwnerQuery: 'unitMetersByMeter',
+      ownerArg: 'meterUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_METER',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Notice: [
+    {
+      entity: 'UnitNotice',
+      byOwnerQuery: 'unitNoticesByNotice',
+      ownerArg: 'noticeUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_NOTICE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  NoticeDay: [
+    {
+      entity: 'UnitNoticeDay',
+      byOwnerQuery: 'unitNoticeDaysByNoticeDay',
+      ownerArg: 'noticeDayUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_NOTICE_DAY',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Penalty: [
+    {
+      entity: 'UnitPenalty',
+      byOwnerQuery: 'unitPenaltiesByPenalty',
+      ownerArg: 'penaltyUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_PENALTY',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Problem: [
+    {
+      entity: 'SolutionProblem',
+      byOwnerQuery: 'solutionProblemsByProblem',
+      ownerArg: 'problemUid',
+      targetArg: 'solutionUid',
+      field: 'solution',
+      label: 'Solution',
+      pluralLabel: 'Solutions',
+      icon: 'lightbulb',
+      permission: 'SOLUTION_PROBLEM',
+      optionsQuery: ALL_SOLUTION,
+    },
+    {
+      entity: 'UnitProblem',
+      byOwnerQuery: 'unitProblemsByProblem',
+      ownerArg: 'problemUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_PROBLEM',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Purchase: [
+    {
+      entity: 'UnitPurchase',
+      byOwnerQuery: 'unitPurchasesByPurchase',
+      ownerArg: 'purchaseUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_PURCHASE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  QualitativeParameter: [
+    {
+      entity: 'UnitQualitativeParameter',
+      byOwnerQuery: 'unitQualitativeParametersByQualitativeParameter',
+      ownerArg: 'qualitativeParameterUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_QUALITATIVE_PARAMETER',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  QuantitativeParameter: [
+    {
+      entity: 'UnitQuantitativeParameter',
+      byOwnerQuery: 'unitQuantitativeParametersByQuantitativeParameter',
+      ownerArg: 'quantitativeParameterUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_QUANTITATIVE_PARAMETER',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  RegistryMasterPlan: [
+    {
+      entity: 'UnitMasterPlan',
+      byOwnerQuery: 'unitMasterPlansByMasterPlan',
+      ownerArg: 'masterPlanUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_MASTER_PLAN',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  RegistryProject: [
+    {
+      entity: 'UnitProject',
+      byOwnerQuery: 'unitProjectsByProject',
+      ownerArg: 'projectUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_PROJECT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Rent: [
+    {
+      entity: 'UnitRent',
+      byOwnerQuery: 'unitRentsByRent',
+      ownerArg: 'rentUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_RENT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  RentBillingCycle: [
+    {
+      entity: 'UnitRentBillingCycle',
+      byOwnerQuery: 'unitRentBillingCyclesByRentBillingCycle',
+      ownerArg: 'rentBillingCycleUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_RENT_BILLING_CYCLE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Reservation: [
+    {
+      entity: 'UnitReservation',
+      byOwnerQuery: 'unitReservationsByReservation',
+      ownerArg: 'reservationUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_RESERVATION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Return: [
+    {
+      entity: 'UnitReturn',
+      byOwnerQuery: 'unitReturnsByUnitReturn',
+      ownerArg: 'unitReturnUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_RETURN',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  SecurityDeposit: [
+    {
+      entity: 'SecurityDepositUnit',
+      byOwnerQuery: 'securityDepositUnitsBySecurityDeposit',
+      ownerArg: 'securityDepositUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'SECURITY_DEPOSIT_UNIT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Sell: [
+    {
+      entity: 'UnitSell',
+      byOwnerQuery: 'unitSellsBySell',
+      ownerArg: 'sellUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_SELL',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  ServiceConnection: [
+    {
+      entity: 'UnitConnection',
+      byOwnerQuery: 'unitConnectionsByConnection',
+      ownerArg: 'connectionUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_CONNECTION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  ServiceDisconnection: [
+    {
+      entity: 'UnitDisconnection',
+      byOwnerQuery: 'unitDisconnectionsByDisconnection',
+      ownerArg: 'disconnectionUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_DISCONNECTION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  ServiceOffering: [
+    {
+      entity: 'UnitServiceOffering',
+      byOwnerQuery: 'unitServiceOfferingsByService',
+      ownerArg: 'serviceUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_SERVICE_OFFERING',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Solution: [
+    {
+      entity: 'SolutionProblem',
+      byOwnerQuery: 'solutionProblemsBySolution',
+      ownerArg: 'solutionUid',
+      targetArg: 'problemUid',
+      field: 'problem',
+      label: 'Problem',
+      pluralLabel: 'Problems',
+      icon: 'report_problem',
+      permission: 'SOLUTION_PROBLEM',
+      optionsQuery: ALL_PROBLEM,
+    },
+  ],
+  Street: [
+    {
+      entity: 'UnitStreet',
+      byOwnerQuery: 'unitStreetsByStreet',
+      ownerArg: 'streetUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_STREET',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Termination: [
+    {
+      entity: 'UnitTermination',
+      byOwnerQuery: 'unitTerminationsByTermination',
+      ownerArg: 'terminationUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_TERMINATION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  TitleDeed: [
+    {
+      entity: 'UnitTitleDeed',
+      byOwnerQuery: 'unitTitleDeedsByTitleDeed',
+      ownerArg: 'titleDeedUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_TITLE_DEED',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Valuation: [
+    {
+      entity: 'UnitValuation',
+      byOwnerQuery: 'unitValuationsByValuation',
+      ownerArg: 'valuationUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_VALUATION',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  Visit: [
+    {
+      entity: 'UnitVisit',
+      byOwnerQuery: 'unitVisitsByVisit',
+      ownerArg: 'visitUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_VISIT',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+};
+
+/** The panels appended to a unit's detail page. */
 export const unitLinkPanels = (comp: BaseComponent, unitUid?: string): ContentParameter[] =>
   entityLinkPanels(comp, UNIT_LINKS, unitUid);
+
+/**
+ * The panel appended to one record's detail page, listing what it is linked to
+ * from that side. Returns nothing for a record with no join table, so a lookup
+ * can call it unconditionally.
+ */
+export const recordLinkPanels = (
+  comp: BaseComponent,
+  record: string,
+  uid?: string,
+): ContentParameter[] => {
+  const configs = LINKS_BY_RECORD[record];
+  return configs ? entityLinkPanels(comp, configs, uid) : [];
+};

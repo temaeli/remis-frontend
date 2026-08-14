@@ -5,7 +5,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
-import { unitLinkPanels } from '@routes/unit-management/unit-links';
+import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
  * The project delivery configuration — `modules.setting.project` on the backend,
@@ -74,8 +74,7 @@ const ALL_PEOPLE = gql`
   }
 `;
 
-const personSelect = (key: string, label: string): FieldConfig =>
-  refSelect(key, label, ALL_PEOPLE);
+const personSelect = (key: string, label: string): FieldConfig => refSelect(key, label, ALL_PEOPLE);
 
 //  The work: what a project is broken into, and what it runs through.
 
@@ -243,6 +242,8 @@ export const GRADE = defineLookup({
     numberField('maximum', 'Maximum'),
   ],
   extraColumns: ['weight', 'minimum', 'maximum'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Grade', record?.id),
 });
 
 export const RISK = defineLookup({
@@ -311,6 +312,8 @@ export const SERVICE_OFFERING = defineLookup({
   pluralLabel: 'Service Offerings',
   subtitle: 'What is offered on a project',
   icon: 'local_offer',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'ServiceOffering', record?.id),
 });
 
 //  Assessment: the questions asked of a project and the parameters it scores on.
@@ -354,6 +357,8 @@ export const QUALITATIVE_PARAMETER = defineLookup({
   pluralLabel: 'Qualitative Parameters',
   subtitle: 'What a project is judged on, without a number',
   icon: 'assessment',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'QualitativeParameter', record?.id),
 });
 
 export const QUALITATIVE_PARAMETER_VALUE = defineLookup({
@@ -402,6 +407,8 @@ export const QUANTITATIVE_PARAMETER = defineLookup({
   pluralLabel: 'Quantitative Parameters',
   subtitle: 'What a project is measured on',
   icon: 'poll',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'QuantitativeParameter', record?.id),
 });
 
 export const QUANTITATIVE_PARAMETER_VALUE = defineLookup({
@@ -662,9 +669,21 @@ export const RENT = defineLookup({
     numberField('rentAmount', 'Rent amount'),
     numberField('minimum', 'Minimum'),
     numberField('maximum', 'Maximum'),
-    { key: 'rentStartedAt', label: 'Rent started at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'rentStartedAt',
+      label: 'Rent started at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
-  extraColumns: ['rentAmount', 'minimum', 'maximum', { field: 'rentStartedAt', header: 'Rent started at' }],
+  extraColumns: [
+    'rentAmount',
+    'minimum',
+    'maximum',
+    { field: 'rentStartedAt', header: 'Rent started at' },
+  ],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Rent', record?.id),
 });
 
 export const COMMISSION = defineLookup({
@@ -687,6 +706,8 @@ export const COMMISSION = defineLookup({
     numberField('minimum', 'Minimum'),
   ],
   extraColumns: ['commission', 'maximum', 'minimum'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Commission', record?.id),
 });
 
 export const PENALTY = defineLookup({
@@ -709,6 +730,8 @@ export const PENALTY = defineLookup({
     numberField('maximum', 'Maximum'),
   ],
   extraColumns: ['penalties', 'minimum', 'maximum'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Penalty', record?.id),
 });
 
 export const SECURITY_DEPOSIT = defineLookup({
@@ -731,6 +754,8 @@ export const SECURITY_DEPOSIT = defineLookup({
     numberField('maximum', 'Maximum'),
   ],
   extraColumns: ['securityDeposits', 'minimum', 'maximum'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'SecurityDeposit', record?.id),
 });
 
 export const SOLUTION = defineLookup({
@@ -745,6 +770,8 @@ export const SOLUTION = defineLookup({
   extraGqlFields: `
 
 `,
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Solution', record?.id),
 });
 
 export const NOTICE_DAY = defineLookup({
@@ -763,6 +790,8 @@ export const NOTICE_DAY = defineLookup({
 `,
   extraFields: [numberField('noticeDays', 'Notice Days'), ...coordinateFields()],
   extraColumns: ['noticeDays'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'NoticeDay', record?.id),
 });
 
 export const RENT_BILLING_CYCLE = defineLookup({
@@ -786,6 +815,8 @@ export const RENT_BILLING_CYCLE = defineLookup({
     numberField('secondStartDay', 'Second Start Day'),
   ],
   extraColumns: ['firstStartDay as First', 'secondStartDay as Second'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'RentBillingCycle', record?.id),
 });
 
 export const RESERVATION_MINUTE = defineLookup({

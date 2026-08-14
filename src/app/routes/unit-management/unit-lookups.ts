@@ -4,6 +4,8 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 
+import { recordLinkPanels } from './unit-links';
+
 /**
  * The unit module — `modules.unit` on the backend. Everything that happens to a
  * lettable unit over its life: how it was taken and given up, what is charged
@@ -111,11 +113,18 @@ export const BOOKING = defineLookup({
 `,
   extraFields: [
     numberField('value', 'Value'),
-    { key: 'bookedAt', label: 'Booked at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'bookedAt',
+      label: 'Booked at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('bookedByUid', 'Booked by', ALL_BIO_DATA),
   ],
   extraColumns: ['value', { field: 'bookedAt', header: 'Booked at' }, 'bookedBy.name as Booked by'],
   toModel: (data) => ({ bookedByUid: data?.bookedBy?.id }),
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Booking', record?.id),
 });
 
 export const ENTRY = defineLookup({
@@ -131,9 +140,16 @@ export const ENTRY = defineLookup({
   enteredAt
 `,
   extraFields: [
-    { key: 'enteredAt', label: 'Entered at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'enteredAt',
+      label: 'Entered at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'enteredAt', header: 'Entered at' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Entry', record?.id),
 });
 
 export const EVICTION = defineLookup({
@@ -158,11 +174,24 @@ export const EVICTION = defineLookup({
     numberField('owed', 'Owed'),
     numberField('minimum', 'Minimum'),
     numberField('maximum', 'Maximum'),
-    { key: 'evictedAt', label: 'Evicted at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'evictedAt',
+      label: 'Evicted at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('evictedByUid', 'Evicted by', ALL_BIO_DATA),
   ],
-  extraColumns: ['owed', 'minimum', 'maximum', { field: 'evictedAt', header: 'Evicted at' }, 'evictedBy.name as Evicted by'],
+  extraColumns: [
+    'owed',
+    'minimum',
+    'maximum',
+    { field: 'evictedAt', header: 'Evicted at' },
+    'evictedBy.name as Evicted by',
+  ],
   toModel: (data) => ({ evictedByUid: data?.evictedBy?.id }),
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Eviction', record?.id),
 });
 
 export const EXIT = defineLookup({
@@ -178,9 +207,16 @@ export const EXIT = defineLookup({
   exitedAt
 `,
   extraFields: [
-    { key: 'exitedAt', label: 'Exited at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'exitedAt',
+      label: 'Exited at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'exitedAt', header: 'Exited at' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Exit', record?.id),
 });
 
 export const HANDOVER = defineLookup({
@@ -210,12 +246,29 @@ export const HANDOVER = defineLookup({
     ...coordinateFields(),
     numberField('handovers', 'Handovers'),
     refSelect('actorUid', 'Actor', ALL_BIO_DATA),
-    { key: 'handedOverAt', label: 'Handed over at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'handedOverAt',
+      label: 'Handed over at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('handoverFromUid', 'Handover from', ALL_BIO_DATA),
     refSelect('handoverToUid', 'Handover to', ALL_BIO_DATA),
   ],
-  extraColumns: ['handovers', 'actor.name as Actor', { field: 'handedOverAt', header: 'Handed over at' }, 'handoverFrom.name as Handover from', 'handoverTo.name as Handover to'],
-  toModel: (data) => ({ actorUid: data?.actor?.id, handoverFromUid: data?.handoverFrom?.id, handoverToUid: data?.handoverTo?.id }),
+  extraColumns: [
+    'handovers',
+    'actor.name as Actor',
+    { field: 'handedOverAt', header: 'Handed over at' },
+    'handoverFrom.name as Handover from',
+    'handoverTo.name as Handover to',
+  ],
+  toModel: (data) => ({
+    actorUid: data?.actor?.id,
+    handoverFromUid: data?.handoverFrom?.id,
+    handoverToUid: data?.handoverTo?.id,
+  }),
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Handover', record?.id),
 });
 
 export const INSPECTION = defineLookup({
@@ -231,9 +284,16 @@ export const INSPECTION = defineLookup({
   inspectionDate
 `,
   extraFields: [
-    { key: 'inspectionDate', label: 'Inspection date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'inspectionDate',
+      label: 'Inspection date',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'inspectionDate', header: 'Inspection date' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Inspection', record?.id),
 });
 
 export const LEASE = defineLookup({
@@ -249,9 +309,16 @@ export const LEASE = defineLookup({
   leasedAt
 `,
   extraFields: [
-    { key: 'leasedAt', label: 'Leased at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'leasedAt',
+      label: 'Leased at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'leasedAt', header: 'Leased at' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Lease', record?.id),
 });
 
 export const LIABILITY = defineLookup({
@@ -269,9 +336,16 @@ export const LIABILITY = defineLookup({
 `,
   extraFields: [
     numberField('value', 'Value'),
-    { key: 'liabilityDate', label: 'Liability date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'liabilityDate',
+      label: 'Liability date',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: ['value', { field: 'liabilityDate', header: 'Liability date' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Liability', record?.id),
 });
 
 export const LOAN = defineLookup({
@@ -293,13 +367,32 @@ export const LOAN = defineLookup({
 `,
   extraFields: [
     numberField('balance', 'Balance'),
-    { key: 'loanStartedAt', label: 'Loan started at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
-    { key: 'loanEndedAt', label: 'Loan ended at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'loanStartedAt',
+      label: 'Loan started at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'loanEndedAt',
+      label: 'Loan ended at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     numberField('interest', 'Interest'),
     numberField('borrowAmount', 'Borrow amount'),
     numberField('returnAmount', 'Return amount'),
   ],
-  extraColumns: ['balance', { field: 'loanStartedAt', header: 'Loan started at' }, { field: 'loanEndedAt', header: 'Loan ended at' }, 'interest', 'borrowAmount', 'returnAmount'],
+  extraColumns: [
+    'balance',
+    { field: 'loanStartedAt', header: 'Loan started at' },
+    { field: 'loanEndedAt', header: 'Loan ended at' },
+    'interest',
+    'borrowAmount',
+    'returnAmount',
+  ],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Loan', record?.id),
 });
 
 export const MAINTENANCE = defineLookup({
@@ -322,10 +415,28 @@ export const MAINTENANCE = defineLookup({
     numberField('cost', 'Cost'),
     numberField('minimum', 'Minimum'),
     numberField('maximum', 'Maximum'),
-    { key: 'maintenanceFrom', label: 'Maintenance from', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
-    { key: 'maintenanceTo', label: 'Maintenance to', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'maintenanceFrom',
+      label: 'Maintenance from',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'maintenanceTo',
+      label: 'Maintenance to',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
-  extraColumns: ['cost', 'minimum', 'maximum', { field: 'maintenanceFrom', header: 'Maintenance from' }, { field: 'maintenanceTo', header: 'Maintenance to' }],
+  extraColumns: [
+    'cost',
+    'minimum',
+    'maximum',
+    { field: 'maintenanceFrom', header: 'Maintenance from' },
+    { field: 'maintenanceTo', header: 'Maintenance to' },
+  ],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Maintenance', record?.id),
 });
 
 export const NOTICE = defineLookup({
@@ -341,11 +452,10 @@ export const NOTICE = defineLookup({
   ${coordinateGqlFields}
   notices
 `,
-  extraFields: [
-    ...coordinateFields(),
-    numberField('notices', 'Notices'),
-  ],
+  extraFields: [...coordinateFields(), numberField('notices', 'Notices')],
   extraColumns: ['notices'],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Notice', record?.id),
 });
 
 export const PROBLEM = defineLookup({
@@ -361,9 +471,16 @@ export const PROBLEM = defineLookup({
   problemDate
 `,
   extraFields: [
-    { key: 'problemDate', label: 'Problem date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'problemDate',
+      label: 'Problem date',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'problemDate', header: 'Problem date' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Problem', record?.id),
 });
 
 export const PURCHASE = defineLookup({
@@ -380,10 +497,17 @@ export const PURCHASE = defineLookup({
   purchasedAmount
 `,
   extraFields: [
-    { key: 'purchasedAt', label: 'Purchased at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'purchasedAt',
+      label: 'Purchased at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     numberField('purchasedAmount', 'Purchased amount'),
   ],
   extraColumns: [{ field: 'purchasedAt', header: 'Purchased at' }, 'purchasedAmount'],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Purchase', record?.id),
 });
 
 export const READING = defineLookup({
@@ -393,7 +517,7 @@ export const READING = defineLookup({
   permission: 'READING',
   label: 'Reading',
   pluralLabel: 'Readings',
-  subtitle: 'Meter readings taken on a unit\'s connection',
+  subtitle: "Meter readings taken on a unit's connection",
   icon: 'speed',
   extraGqlFields: `
   unitConnection {
@@ -408,10 +532,20 @@ export const READING = defineLookup({
   extraFields: [
     refSelect('unitConnectionUid', 'Unit connection', ALL_UNIT_CONNECTION),
     numberField('readings', 'Readings'),
-    { key: 'readAt', label: 'Read at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'readAt',
+      label: 'Read at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('readByUid', 'Read by', ALL_BIO_DATA),
   ],
-  extraColumns: ['unitConnection.name as Unit connection', 'readings', { field: 'readAt', header: 'Read at' }, 'readBy.name as Read by'],
+  extraColumns: [
+    'unitConnection.name as Unit connection',
+    'readings',
+    { field: 'readAt', header: 'Read at' },
+    'readBy.name as Read by',
+  ],
   toModel: (data) => ({ unitConnectionUid: data?.unitConnection?.id, readByUid: data?.readBy?.id }),
 });
 
@@ -431,11 +565,21 @@ export const RESERVATION = defineLookup({
   }
 `,
   extraFields: [
-    { key: 'reservationAt', label: 'Reservation at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'reservationAt',
+      label: 'Reservation at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('reservationByUid', 'Reservation by', ALL_BIO_DATA),
   ],
-  extraColumns: [{ field: 'reservationAt', header: 'Reservation at' }, 'reservationBy.name as Reservation by'],
+  extraColumns: [
+    { field: 'reservationAt', header: 'Reservation at' },
+    'reservationBy.name as Reservation by',
+  ],
   toModel: (data) => ({ reservationByUid: data?.reservationBy?.id }),
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Reservation', record?.id),
 });
 
 export const RETURN = defineLookup({
@@ -451,9 +595,16 @@ export const RETURN = defineLookup({
   returnedDate
 `,
   extraFields: [
-    { key: 'returnedDate', label: 'Returned date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'returnedDate',
+      label: 'Returned date',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'returnedDate', header: 'Returned date' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Return', record?.id),
 });
 
 export const SELL = defineLookup({
@@ -468,10 +619,10 @@ export const SELL = defineLookup({
   extraGqlFields: `
   sellAmount
 `,
-  extraFields: [
-    numberField('sellAmount', 'Sell amount'),
-  ],
+  extraFields: [numberField('sellAmount', 'Sell amount')],
   extraColumns: ['sellAmount'],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Sell', record?.id),
 });
 
 export const SERVICE_CONNECTION = defineLookup({
@@ -490,11 +641,18 @@ export const SERVICE_CONNECTION = defineLookup({
   }
 `,
   extraFields: [
-    { key: 'connectedAt', label: 'Connected at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'connectedAt',
+      label: 'Connected at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('serviceUid', 'Service', ALL_SERVICE_OFFERING),
   ],
   extraColumns: [{ field: 'connectedAt', header: 'Connected at' }, 'service.name as Service'],
   toModel: (data) => ({ serviceUid: data?.service?.id }),
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'ServiceConnection', record?.id),
 });
 
 export const SERVICE_DISCONNECTION = defineLookup({
@@ -513,11 +671,18 @@ export const SERVICE_DISCONNECTION = defineLookup({
   }
 `,
   extraFields: [
-    { key: 'disconnectedAt', label: 'Disconnected at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'disconnectedAt',
+      label: 'Disconnected at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
     refSelect('serviceUid', 'Service', ALL_SERVICE_OFFERING),
   ],
   extraColumns: [{ field: 'disconnectedAt', header: 'Disconnected at' }, 'service.name as Service'],
   toModel: (data) => ({ serviceUid: data?.service?.id }),
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'ServiceDisconnection', record?.id),
 });
 
 export const TERMINATION = defineLookup({
@@ -533,9 +698,16 @@ export const TERMINATION = defineLookup({
   terminatedAt
 `,
   extraFields: [
-    { key: 'terminatedAt', label: 'Terminated at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'terminatedAt',
+      label: 'Terminated at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
   extraColumns: [{ field: 'terminatedAt', header: 'Terminated at' }],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Termination', record?.id),
 });
 
 export const TITLE_DEED = defineLookup({
@@ -551,11 +723,10 @@ export const TITLE_DEED = defineLookup({
   ${coordinateGqlFields}
   titleDeeds
 `,
-  extraFields: [
-    ...coordinateFields(),
-    numberField('titleDeeds', 'Title deeds'),
-  ],
+  extraFields: [...coordinateFields(), numberField('titleDeeds', 'Title deeds')],
   extraColumns: ['titleDeeds'],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'TitleDeed', record?.id),
 });
 
 export const UNIT_STATUS_RECORD = defineLookup({
@@ -565,7 +736,7 @@ export const UNIT_STATUS_RECORD = defineLookup({
   permission: 'UNIT_STATUS_RECORD',
   label: 'Unit Status Record',
   pluralLabel: 'Unit Status Records',
-  subtitle: 'How a unit\'s status has changed over time',
+  subtitle: "How a unit's status has changed over time",
   icon: 'history',
   extraGqlFields: `
   unit {
@@ -579,7 +750,13 @@ export const UNIT_STATUS_RECORD = defineLookup({
       key: 'status',
       label: 'Status',
       type: FieldType.select,
-      options: [{ value: 'AVAILABLE', label: 'Available' }, { value: 'RESERVED', label: 'Reserved' }, { value: 'SOLD', label: 'Sold' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'UNDER_MAINTENANCE', label: 'Under Maintenance' }],
+      options: [
+        { value: 'AVAILABLE', label: 'Available' },
+        { value: 'RESERVED', label: 'Reserved' },
+        { value: 'SOLD', label: 'Sold' },
+        { value: 'OCCUPIED', label: 'Occupied' },
+        { value: 'UNDER_MAINTENANCE', label: 'Under Maintenance' },
+      ],
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
@@ -601,11 +778,10 @@ export const VISIT = defineLookup({
   ${coordinateGqlFields}
   visits
 `,
-  extraFields: [
-    ...coordinateFields(),
-    numberField('visits', 'Visits'),
-  ],
+  extraFields: [...coordinateFields(), numberField('visits', 'Visits')],
   extraColumns: ['visits'],
+  // The join read from this side — which units this record applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Visit', record?.id),
 });
 
 /** Ordered as a unit's life runs: taken, occupied, charged, maintained, given up. */
