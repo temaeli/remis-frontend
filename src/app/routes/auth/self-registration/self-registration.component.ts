@@ -13,7 +13,14 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormControl, NgControl } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormControl,
+  NgControl,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { take, interval, takeWhile } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -135,10 +142,7 @@ export class SelfRegistrationComponent implements OnInit {
   step4Form: FormGroup | null = null;
 
   // OTP inputs array (6 separate controls - no validators, validation handled in component)
-  otpControls = Array.from(
-    { length: 6 },
-    () => new FormControl(''),
-  );
+  otpControls = Array.from({ length: 6 }, () => new FormControl(''));
 
   // Step2Form containing the OTP controls
   step2Form = new FormGroup({
@@ -160,7 +164,6 @@ export class SelfRegistrationComponent implements OnInit {
   attemptsLeft = signal<number | undefined>(undefined);
   canResendOtp = signal(false);
   resendCountdown = signal(0);
-
 
   applicationReference = computed(() => this.store.applicationReference());
   approvalStatus = computed(() => this.store.approvalStatus());
@@ -277,14 +280,7 @@ export class SelfRegistrationComponent implements OnInit {
 
     this.step4Form = this.fb.group(
       {
-        password: [
-          '',
-          [
-            Validators.required,
-            Validators.minLength(8),
-            this.passwordValidator(),
-          ],
-        ],
+        password: ['', [Validators.required, Validators.minLength(8), this.passwordValidator()]],
         confirmPassword: ['', Validators.required],
       },
       {
@@ -618,9 +614,7 @@ export class SelfRegistrationComponent implements OnInit {
 
   private startOtpCountdownTimer() {
     interval(1000)
-      .pipe(
-        takeWhile(() => this.otpCountdown() > 0),
-      )
+      .pipe(takeWhile(() => this.otpCountdown() > 0))
       .subscribe(() => {
         this.otpCountdown.update((v) => Math.max(0, v - 1));
       });
@@ -628,9 +622,7 @@ export class SelfRegistrationComponent implements OnInit {
 
   private startResendCountdownTimer() {
     interval(1000)
-      .pipe(
-        takeWhile(() => this.resendCountdown() > 0),
-      )
+      .pipe(takeWhile(() => this.resendCountdown() > 0))
       .subscribe(() => {
         this.resendCountdown.update((v) => Math.max(0, v - 1));
         this.canResendOtp.set(this.resendCountdown() === 0);

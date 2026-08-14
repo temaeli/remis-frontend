@@ -89,7 +89,7 @@ export const APP_ROUTES: TypedRoutes = [
     canActivate: [externalUserGuard, permissionGuard],
     data: {
       isMenu: true,
-      icon: 'domain',
+      icon: 'house_alt',
       visibleFor: ['internal'],
       permissions: ['ROLE_VIEW_UNIT_MODULE'],
     },

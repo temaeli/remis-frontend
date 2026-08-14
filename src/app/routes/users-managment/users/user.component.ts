@@ -105,7 +105,6 @@ import { UserAccount } from './user.interface';
               }
             }
           </div>
-
         </div>
       </div>
     </div>

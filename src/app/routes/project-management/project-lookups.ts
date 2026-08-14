@@ -207,7 +207,7 @@ const PROJECT_STREET_LINK: EntityLinkConfig[] = [
     field: 'street',
     label: 'Street',
     pluralLabel: 'Streets',
-    icon: 'signpost',
+    icon: 'place',
     permission: 'PROJECT_STREET',
     optionsQuery: ALL_STREETS,
   },

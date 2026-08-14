@@ -1,5 +1,12 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { RegistrationState, SelfRegistrationStep1, SelfRegistrationStep2, SelfRegistrationStep3, SelfRegistrationStep4, ApprovalStatus } from './self-registration.interfaces';
+import {
+  RegistrationState,
+  SelfRegistrationStep1,
+  SelfRegistrationStep2,
+  SelfRegistrationStep3,
+  SelfRegistrationStep4,
+  ApprovalStatus,
+} from './self-registration.interfaces';
 
 @Injectable({
   providedIn: 'root',

@@ -4,7 +4,11 @@ import {
   VALIDATOR_EMAIL,
   VALIDATOR_TANZINIA_PHONE,
 } from '@shared/components/generic-form/form-constants';
-import { FieldConfig, FieldType, FormStepper } from '@shared/components/generic-form/field.interface';
+import {
+  FieldConfig,
+  FieldType,
+  FormStepper,
+} from '@shared/components/generic-form/field.interface';
 import { CustomerCategory, Ward, District, SubWard, Region } from './self-registration.interfaces';
 
 /**
@@ -126,9 +130,14 @@ export function getSelfRegistrationFormSteps(
             regionUid$.next(value);
             // Load districts for selected region
             const districts = await getDistrictsByRegion(value);
-            const districtSelect = steps[2].fields?.find((f: FieldConfig) => f.key === 'districtUid');
+            const districtSelect = steps[2].fields?.find(
+              (f: FieldConfig) => f.key === 'districtUid',
+            );
             if (districtSelect) {
-              districtSelect.options = districts.map((d: District) => ({ value: d.uid, label: d.name }));
+              districtSelect.options = districts.map((d: District) => ({
+                value: d.uid,
+                label: d.name,
+              }));
             }
             // Reset dependent cascades
             districtUid$.next(null);
@@ -169,7 +178,10 @@ export function getSelfRegistrationFormSteps(
             const subWards = await getSubWardsByWard(value);
             const subWardSelect = steps[2].fields?.find((f: FieldConfig) => f.key === 'subWardUid');
             if (subWardSelect) {
-              subWardSelect.options = subWards.map((sw: SubWard) => ({ value: sw.uid, label: sw.name }));
+              subWardSelect.options = subWards.map((sw: SubWard) => ({
+                value: sw.uid,
+                label: sw.name,
+              }));
             }
             selectedCategories$.next([]);
           },

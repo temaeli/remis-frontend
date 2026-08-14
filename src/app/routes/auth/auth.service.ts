@@ -157,9 +157,7 @@ export class AuthService implements OnDestroy {
     return this.http.post<any>(this.backendUrl + '/graphql', { query }).pipe(
       map((res) => {
         const roles: string[] =
-          res?.data?.myProfile?.rolesList
-            ?.map((r: any) => r?.role?.name)
-            .filter(Boolean) ?? [];
+          res?.data?.myProfile?.rolesList?.map((r: any) => r?.role?.name).filter(Boolean) ?? [];
         this.storage.set('roles', roles);
         user.roles = roles;
       }),

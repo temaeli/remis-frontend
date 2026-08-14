@@ -1,4 +1,11 @@
-import { Component, inject, computed, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  computed,
+  signal,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { LocalStorageService } from '@core/settings/local-storage.service';
@@ -27,7 +34,7 @@ export class StaffLanding implements OnInit {
 
   private allModules = this.ms.modules;
   private userPermissionsSignal = signal<string[]>([]);
-  
+
   // Computed signal to filter modules by permissions
   modules = computed(() => {
     return this.filterModulesByPermissions(this.allModules, this.userPermissionsSignal());
@@ -47,7 +54,7 @@ export class StaffLanding implements OnInit {
       if (!module.permissions || module.permissions.length === 0) {
         return true;
       }
-      
+
       // Check if user has at least one required permission
       return module.permissions.some((perm: string) => userPermissions.includes(perm));
     });

@@ -23,7 +23,15 @@ const GOLD_BTN = 'bg-secondary !border-secondary text-primary hover:opacity-90';
     >
       <div class="relative z-10 flex items-center gap-3 min-w-0">
         <svg class="w-8 h-8 shrink-0" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-          <rect x="4" y="4" width="32" height="32" rx="2" stroke="var(--color-primary)" stroke-width="1.5" />
+          <rect
+            x="4"
+            y="4"
+            width="32"
+            height="32"
+            rx="2"
+            stroke="var(--color-primary)"
+            stroke-width="1.5"
+          />
           <path d="M20 4v32M4 20h32" stroke="var(--color-primary)" stroke-width="1" opacity="0.3" />
           <path d="M12 26V16l8-5 8 5v10" stroke="var(--color-accent-green)" stroke-width="1.6" />
           <circle cx="20" cy="20" r="2.4" fill="var(--color-secondary)" />

@@ -277,9 +277,7 @@ import { Observable } from 'rxjs';
       <p><strong>Reference:</strong> {{ status.applicationReference }}</p>
       <p><strong>Status:</strong> {{ status.approvalStatus }}</p>
       <p>{{ status.statusMessage }}</p>
-      <p *ngIf="status.customerId">
-        <strong>Customer ID:</strong> {{ status.customerId }}
-      </p>
+      <p *ngIf="status.customerId"><strong>Customer ID:</strong> {{ status.customerId }}</p>
     </div>
   `,
 })
@@ -289,9 +287,7 @@ export class ExampleStatusTrackingComponent {
   // Properly typed observable of MyClientStatusResponse
   statusData$: Observable<MyClientStatusResponse | null> = this.apollo
     .query({ query: GET_MY_CLIENT_STATUS })
-    .pipe(
-      map((result: any) => result?.data?.myClientStatus || null),
-    );
+    .pipe(map((result: any) => result?.data?.myClientStatus || null));
 }
 
 /**
@@ -333,9 +329,7 @@ import { interval, takeWhile } from 'rxjs';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <p *ngIf="secondsRemaining() > 0">
-      Time remaining: {{ formatTime(secondsRemaining()) }}
-    </p>
+    <p *ngIf="secondsRemaining() > 0">Time remaining: {{ formatTime(secondsRemaining()) }}</p>
     <p *ngIf="secondsRemaining() === 0">OTP has expired</p>
   `,
 })

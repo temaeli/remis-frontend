@@ -279,7 +279,7 @@ const TASK_LINKS: TaskLinkConfig[] = [
     field: 'street',
     label: 'Street',
     pluralLabel: 'Streets',
-    icon: 'signpost',
+    icon: 'place',
     permission: 'TASK_STREET',
     optionsQuery: allStreets,
   },

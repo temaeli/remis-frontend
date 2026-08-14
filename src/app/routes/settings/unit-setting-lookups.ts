@@ -128,7 +128,7 @@ export const RENT = defineLookup({
   label: 'Rent',
   pluralLabel: 'Rents',
   subtitle: 'The rent set on a unit',
-  icon: 'real_estate_agent',
+  icon: 'home',
   extraGqlFields: `
   rentAmount
   minimum
@@ -164,7 +164,7 @@ export const COMMISSION = defineLookup({
   label: 'Commission',
   pluralLabel: 'Commissions',
   subtitle: 'What is charged for placing a unit',
-  icon: 'percent',
+  icon: 'money',
   extraGqlFields: `
   commission
   maximum
@@ -212,7 +212,7 @@ export const SECURITY_DEPOSIT = defineLookup({
   label: 'Security Deposit',
   pluralLabel: 'Security Deposits',
   subtitle: 'Deposits held against a unit',
-  icon: 'savings',
+  icon: 'account_balance',
   extraGqlFields: `
   securityDeposits
   minimum
@@ -236,7 +236,7 @@ export const SOLUTION = defineLookup({
   label: 'Solution',
   pluralLabel: 'Solutions',
   subtitle: 'Remedies that can be applied to a problem',
-  icon: 'lightbulb',
+  icon: 'highlight',
   extraGqlFields: `
 
 `,
@@ -272,7 +272,7 @@ export const RENT_BILLING_CYCLE = defineLookup({
   label: 'Rent Billing Cycle',
   pluralLabel: 'Rent Billing Cycles',
   subtitle: 'The days of the month rent is raised on',
-  icon: 'calendar_month',
+  icon: 'calendar_today',
   // The database constrains neither day. 1..31 is enforced by the application
   // only, and days 29-31 do not exist in every month — the billing job decides
   // whether to clamp to the month end or skip.

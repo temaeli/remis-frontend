@@ -390,7 +390,10 @@ export class Home implements AfterViewInit, OnDestroy {
     queueMicrotask(() => {
       this.el.nativeElement
         .querySelector('#expPanel')
-        ?.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+        ?.scrollIntoView({
+          behavior: this.prefersReducedMotion() ? 'auto' : 'smooth',
+          block: 'nearest',
+        });
     });
   }
 
@@ -411,7 +414,10 @@ export class Home implements AfterViewInit, OnDestroy {
     queueMicrotask(() => {
       this.el.nativeElement
         .querySelector('#nbhdPanel')
-        ?.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+        ?.scrollIntoView({
+          behavior: this.prefersReducedMotion() ? 'auto' : 'smooth',
+          block: 'nearest',
+        });
     });
   }
 

@@ -107,7 +107,7 @@ export const BOOKING = defineLookup({
   label: 'Booking',
   pluralLabel: 'Bookings',
   subtitle: 'Holds placed on a unit before it is taken',
-  icon: 'book_online',
+  icon: 'event_available',
   extraGqlFields: `
   value
   bookedAt
@@ -293,7 +293,7 @@ export const INSPECTION = defineLookup({
   label: 'Inspection',
   pluralLabel: 'Inspections',
   subtitle: 'Inspections carried out on a unit',
-  icon: 'fact_check',
+  icon: 'assignment_turned_in',
   extraGqlFields: `
   inspectionDate
 `,
@@ -370,7 +370,7 @@ export const LOAN = defineLookup({
   label: 'Loan',
   pluralLabel: 'Loans',
   subtitle: 'Borrowing recorded against a unit',
-  icon: 'payments',
+  icon: 'account_balance_wallet',
   extraGqlFields: `
   balance
   loanStartedAt
@@ -461,7 +461,7 @@ export const NOTICE = defineLookup({
   label: 'Notice',
   pluralLabel: 'Notices',
   subtitle: 'Notices served in relation to a unit',
-  icon: 'campaign',
+  icon: 'announcement',
   extraGqlFields: `
   ${coordinateGqlFields}
   notices
@@ -532,7 +532,7 @@ export const READING = defineLookup({
   label: 'Reading',
   pluralLabel: 'Readings',
   subtitle: "Meter readings taken on a unit's connection",
-  icon: 'speed',
+  icon: 'shutter_speed',
   extraGqlFields: `
   unitConnection {
     id
@@ -643,7 +643,7 @@ export const SELL = defineLookup({
   label: 'Sell',
   pluralLabel: 'Sales',
   subtitle: 'Units sold, and for how much',
-  icon: 'sell',
+  icon: 'local_offer',
   extraGqlFields: `
   sellAmount
 `,
@@ -746,7 +746,7 @@ export const TITLE_DEED = defineLookup({
   label: 'Title Deed',
   pluralLabel: 'Title Deeds',
   subtitle: 'Title deeds held over a unit',
-  icon: 'verified',
+  icon: 'verified_user',
   extraGqlFields: `
   ${coordinateGqlFields}
   titleDeeds

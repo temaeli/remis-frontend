@@ -360,7 +360,7 @@ export const VALUATION = defineLookup({
   label: 'Valuation',
   pluralLabel: 'Valuations',
   subtitle: 'What an asset has been valued at, and by whom',
-  icon: 'scale',
+  icon: 'linear_scale',
   extraGqlFields: `
   value
   valuedAt
@@ -625,7 +625,7 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
         field: 'valuation',
         label: 'Valuation',
         pluralLabel: 'Valuations',
-        icon: 'scale',
+        icon: 'linear_scale',
         permission: 'ASSET_VALUATION',
         optionsQuery: VALUATION.gql.all,
       },
