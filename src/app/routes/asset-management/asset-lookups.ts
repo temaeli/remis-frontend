@@ -10,6 +10,7 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { assetProjectsPanel } from '@routes/project-management/project-asset';
+import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import {
   defineLookup,
   entityLinkPanels,
@@ -216,6 +217,7 @@ export const ASSET = defineLookup({
   toModel: (data) => ({ assetSubcategoryUid: data?.assetSubcategory?.id }),
   extraActions: (comp, lookup) => [assetStatusBtn(comp, lookup)],
   extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'Asset', record?.id),
     lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
       assetUid: record?.id,
     }),
@@ -393,6 +395,8 @@ export const VALUATION = defineLookup({
     { field: 'valuedAt', header: 'Valued' },
   ],
   toModel: (data) => ({ valuerUid: data?.valuer?.id }),
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Valuation', record?.id),
 });
 
 /**
@@ -422,6 +426,8 @@ export const LAND_USE = defineLookup({
     },
   ],
   extraColumns: [{ field: 'landUses', header: 'Land Use Value' }],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'LandUse', record?.id),
 });
 
 export const ASSET_VERIFICATION = defineLookup({

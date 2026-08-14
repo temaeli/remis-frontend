@@ -2,15 +2,11 @@ import { gql } from '@apollo/client/core';
 
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import {
-  defineLookup,
-  entityLinkPanels,
-  lookupRefGqlFields,
-  LookupModule,
-} from '@shared/lookup';
+import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 // Safe in this direction only: the settings registry imports nothing back from
 // here, so there is no cycle.
 import { SECTION } from '@routes/settings/agreement-setting-lookups';
+import { recordLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
  * The agreement register — `modules.agreement` on the backend.
@@ -84,9 +80,7 @@ export const AGREEMENT_SUBCATEGORY = defineLookup({
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [
-    parentSelect('agreementCategoryUid', 'Category', AGREEMENT_CATEGORY.gql.all),
-  ],
+  extraFields: [parentSelect('agreementCategoryUid', 'Category', AGREEMENT_CATEGORY.gql.all)],
   extraColumns: ['agreementCategory.name as Category'],
   toModel: (data) => ({ agreementCategoryUid: data?.agreementCategory?.id }),
 });
@@ -140,8 +134,10 @@ export const AGREEMENT = defineLookup({
     { field: 'agreementTo', header: 'To' },
   ],
   toModel: (data) => ({ agreementSubcategoryUid: data?.agreementSubcategory?.id }),
-  extraContents: (comp, record) =>
-    entityLinkPanels(
+  extraContents: (comp, record) => [
+    // The join read from this side — which units this agreement covers.
+    ...recordLinkPanels(comp, 'Agreement', record?.id),
+    ...entityLinkPanels(
       comp,
       [
         {
@@ -194,6 +190,7 @@ export const AGREEMENT = defineLookup({
       ],
       record?.id,
     ),
+  ],
 });
 
 /** The operational screen, which leads the menu. */

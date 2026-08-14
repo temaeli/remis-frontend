@@ -15,6 +15,7 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
+import { recordLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
  * Every lookup table in the settings module: the general configuration, the GePG
@@ -191,7 +192,10 @@ export const PERSON = defineLookup({
     { field: 'mobileNumber', header: 'Mobile' },
   ],
   toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
-  extraContents: (comp, record) => [personOrganisationsPanel(comp, record?.id)],
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'BioData', record?.id),
+    personOrganisationsPanel(comp, record?.id),
+  ],
 });
 
 export const BUSINESS_NAME = defineLookup({
@@ -241,6 +245,7 @@ export const BUSINESS_NAME = defineLookup({
   ],
   toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
   extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'BusinessName', record?.id),
     lookupChildPanel(comp, () => BANK_ACCOUNT, BANK_ACCOUNTS_BY_ISSUER, {
       issuerUid: record?.id,
     }),
@@ -432,6 +437,8 @@ export const BANK_ACCOUNT = defineLookup({
   ],
   extraColumns: [{ field: 'issuer', valueFn: (row) => row?.issuer?.name }],
   toModel: (data) => ({ issuerUid: data?.issuer?.id }),
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'BankAccount', record?.id),
 });
 
 /**
@@ -496,6 +503,8 @@ export const BILL_PAY_OPTION = defineLookup({
   pluralLabel: 'Bill Pay Options',
   subtitle: 'How a bill may be paid',
   icon: 'payment',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'BillPayOption', record?.id),
 });
 
 export const BILL_PAYMENT_PLAN = defineLookup({
@@ -518,6 +527,8 @@ export const COLLECTION_CENTER = defineLookup({
   pluralLabel: 'Collection Centers',
   subtitle: 'Where payments are collected',
   icon: 'location',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'CollectionCenter', record?.id),
 });
 
 export const DISCOUNT = defineLookup({
@@ -546,6 +557,8 @@ export const DISCOUNT = defineLookup({
     { field: 'startedAt', header: 'Start Date' },
     { field: 'endedAt', header: 'End Date' },
   ],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Discount', record?.id),
 });
 
 export const GEPG_BILL_TYPE = defineLookup({
@@ -652,6 +665,8 @@ export const GFS_CODE = defineLookup({
   pluralLabel: 'GFS Codes',
   subtitle: 'Government Finance Statistics codes',
   icon: 'numbers',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'GfsCode', record?.id),
 });
 
 export const PAY_LIM_AMOUNT = defineLookup({
@@ -973,6 +988,8 @@ export const METER = defineLookup({
   pluralLabel: 'Meters',
   subtitle: 'Meters on the register',
   icon: 'table',
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Meter', record?.id),
 });
 
 /**
@@ -1118,6 +1135,8 @@ export const FEE = defineLookup({
     minimumPaymentUid: data?.minimumPayment?.id,
     paymentGracePeriodUid: data?.paymentGracePeriod?.id,
   }),
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Fee', record?.id),
 });
 
 //  Location — the administrative hierarchy, under `modules.setting.location`.
@@ -1245,6 +1264,8 @@ export const STREET = defineLookup({
   extraFields: [parentSelect('wardUid', 'Ward', () => WARD), ...coordinateFields()],
   extraColumns: [{ field: 'ward', valueFn: (row) => row?.ward?.name }],
   toModel: (data) => ({ wardUid: data?.ward?.id }),
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Street', record?.id),
 });
 
 //  The parent-filtered reads the drill-downs above are built on. Exported so

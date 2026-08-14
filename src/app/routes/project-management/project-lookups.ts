@@ -260,6 +260,8 @@ export const COST = defineLookup({
   ],
   extraColumns: ['amount', 'costType.name as Type'],
   toModel: (data) => ({ costTypeUid: data?.costType?.id }),
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Cost', record?.id),
 });
 
 export const REGISTRY_MASTER_PLAN = defineLookup({
@@ -277,6 +279,8 @@ export const REGISTRY_MASTER_PLAN = defineLookup({
 `,
   extraFields: [numberField('area', 'Area'), ...coordinateFields()],
   extraColumns: ['area'],
+  // The join read from this side — which units this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'RegistryMasterPlan', record?.id),
 });
 
 //  The parent-filtered reads the drill-downs above are built on. Exported so
