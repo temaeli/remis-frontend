@@ -545,6 +545,12 @@ const UNIT_LINKS: EntityLinkConfig[] = [
     icon: 'person',
     permission: 'UNIT_BIO_DATA',
     optionsQuery: ALL_BIO_DATA,
+    targetGqlFields: `
+    id
+    uid: id
+    name
+  `,
+    columns: ['index', 'bioData.name as Person', 'actions'],
   },
   {
     entity: 'UnitBooking',

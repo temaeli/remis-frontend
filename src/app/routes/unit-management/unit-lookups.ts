@@ -45,13 +45,17 @@ const coordinateGqlFields = `
   longitude
 `;
 
-/** A select over another table, all of which key on `id`. */
-const refSelect = (key: string, label: string, query: unknown): FieldConfig => ({
+/**
+ * A select over another table, all of which key on `id`. `labelKey` is the field
+ * shown in the list — `name` for everything that has one, overridden where the
+ * far side does not, as `units_connections` does not.
+ */
+const refSelect = (key: string, label: string, query: unknown, labelKey = 'name'): FieldConfig => ({
   key,
   label,
   type: FieldType.select,
   optionsVariables: {
-    labelKey: 'name',
+    labelKey,
     valueKey: 'id',
     fetchParameter: { query },
   },
@@ -90,7 +94,7 @@ const ALL_UNIT_CONNECTION = gql`
   query allUnitConnections {
     allUnitConnections {
       id
-      name
+      label
     }
   }
 `;
@@ -108,7 +112,9 @@ export const BOOKING = defineLookup({
   value
   bookedAt
   bookedBy {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
 `,
   extraFields: [
@@ -167,7 +173,9 @@ export const EVICTION = defineLookup({
   maximum
   evictedAt
   evictedBy {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
 `,
   extraFields: [
@@ -232,14 +240,20 @@ export const HANDOVER = defineLookup({
   ${coordinateGqlFields}
   handovers
   actor {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
   handedOverAt
   handoverFrom {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
   handoverTo {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
 `,
   extraFields: [
@@ -521,16 +535,28 @@ export const READING = defineLookup({
   icon: 'speed',
   extraGqlFields: `
   unitConnection {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    label
+    unit {
+      id
+      name
+    }
+    meter {
+      id
+      name
+    }
   }
   readings
   readAt
   readBy {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
 `,
   extraFields: [
-    refSelect('unitConnectionUid', 'Unit connection', ALL_UNIT_CONNECTION),
+    refSelect('unitConnectionUid', 'Unit connection', ALL_UNIT_CONNECTION, 'label'),
     numberField('readings', 'Readings'),
     {
       key: 'readAt',
@@ -541,7 +567,7 @@ export const READING = defineLookup({
     refSelect('readByUid', 'Read by', ALL_BIO_DATA),
   ],
   extraColumns: [
-    'unitConnection.name as Unit connection',
+    'unitConnection.label as Unit connection',
     'readings',
     { field: 'readAt', header: 'Read at' },
     'readBy.name as Read by',
@@ -561,7 +587,9 @@ export const RESERVATION = defineLookup({
   extraGqlFields: `
   reservationAt
   reservationBy {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    name
   }
 `,
   extraFields: [
