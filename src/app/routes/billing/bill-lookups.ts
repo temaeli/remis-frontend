@@ -92,4 +92,84 @@ export const BILL_HEADER = defineLookup({
   }),
 });
 
-export const BILL_CONFIGURATION_LOOKUPS: LookupModule[] = [BILL_HEADER];
+/**
+ * The one billing table that spends the descriptive slots on something else: no
+ * `name` and no `description`, but a control number and the reason it was used
+ * again. Both are unique, so a stock phrase like "customer request" can only be
+ * recorded once — the reason has to say something about this bill.
+ *
+ * Records a decision rather than driving one. Saving here does not ask GePG for
+ * anything and does not change the bill named; it is the audit trail for a
+ * number that appears on more than one.
+ */
+export const REUSE = defineLookup({
+  slug: 'reuses',
+  entity: 'Reuse',
+  entityPlural: 'Reuses',
+  permission: 'REUSE',
+  label: 'Control Number Re-use',
+  pluralLabel: 'Control Number Re-uses',
+  subtitle: 'Control numbers used again, and why',
+  icon: 'refresh',
+  nameKey: 'controlNumber',
+  descriptiveGqlFields: `
+  assignedCode
+  controlNumber
+  reason
+`,
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'controlNumber',
+      label: 'Control Number',
+      hint: 'The GePG number being used again',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'assignedCode',
+      label: 'Assigned Code',
+      type: FieldType.input,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+    {
+      key: 'reason',
+      label: 'Reason',
+      hint: 'Must be unique — describe this bill, not the general case',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'controlNumber', header: 'Control Number' },
+    { field: 'assignedCode', header: 'Assigned Code' },
+    'reason',
+  ],
+  extraGqlFields: `
+  billHeader { ${lookupRefGqlFields} }
+`,
+  extraFields: [
+    {
+      key: 'billHeaderUid',
+      label: 'Bill Header',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: BILL_HEADER.gql.all },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: ['billHeader.name as Bill Header'],
+  /** The record comes back with the header nested; the form edits its id. */
+  toModel: (data) => ({ billHeaderUid: data?.billHeader?.id }),
+});
+
+export const BILL_CONFIGURATION_LOOKUPS: LookupModule[] = [BILL_HEADER, REUSE];
