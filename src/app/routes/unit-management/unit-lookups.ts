@@ -566,7 +566,16 @@ export const READING = defineLookup({
 `,
   extraFields: [
     refSelect('connectionUid', 'Connection', ALL_SERVICE_CONNECTION),
-    numberField('readings', 'Readings'),
+    // `numeric(15,2)` in the database. A plain number control steps in whole
+    // units and rejects a fractional entry, which loses the part of a meter
+    // reading that moves between visits.
+    {
+      key: 'readings',
+      label: 'Readings',
+      type: FieldType.decimal,
+      decimals: 2,
+      validations: [VALIDATOR_REQUIRED],
+    },
     {
       key: 'readAt',
       label: 'Read at',
