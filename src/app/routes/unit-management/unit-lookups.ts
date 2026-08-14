@@ -48,7 +48,7 @@ const coordinateGqlFields = `
 /**
  * A select over another table, all of which key on `id`. `labelKey` is the field
  * shown in the list — `name` for everything that has one, overridden where the
- * far side does not, as `units_connections` does not.
+ * far side does not.
  */
 const refSelect = (key: string, label: string, query: unknown, labelKey = 'name'): FieldConfig => ({
   key,
@@ -90,11 +90,20 @@ const ALL_UNIT = gql`
   }
 `;
 
-const ALL_UNIT_CONNECTION = gql`
-  query allUnitConnections {
-    allUnitConnections {
+const ALL_METER = gql`
+  query allMeters {
+    allMeters {
       id
-      label
+      name
+    }
+  }
+`;
+
+const ALL_SERVICE_CONNECTION = gql`
+  query allServiceConnections {
+    allServiceConnections {
+      id
+      name
     }
   }
 `;
@@ -531,13 +540,13 @@ export const READING = defineLookup({
   permission: 'READING',
   label: 'Reading',
   pluralLabel: 'Readings',
-  subtitle: "Meter readings taken on a unit's connection",
+  subtitle: 'Meter readings taken on a connection',
   icon: 'shutter_speed',
   extraGqlFields: `
-  unitConnection {
+  connection {
     id
     uid: id
-    label
+    name
     unit {
       id
       name
@@ -556,7 +565,7 @@ export const READING = defineLookup({
   }
 `,
   extraFields: [
-    refSelect('unitConnectionUid', 'Unit connection', ALL_UNIT_CONNECTION, 'label'),
+    refSelect('connectionUid', 'Connection', ALL_SERVICE_CONNECTION),
     numberField('readings', 'Readings'),
     {
       key: 'readAt',
@@ -567,12 +576,12 @@ export const READING = defineLookup({
     refSelect('readByUid', 'Read by', ALL_BIO_DATA),
   ],
   extraColumns: [
-    'unitConnection.label as Unit connection',
+    'connection.name as Connection',
     'readings',
     { field: 'readAt', header: 'Read at' },
     'readBy.name as Read by',
   ],
-  toModel: (data) => ({ unitConnectionUid: data?.unitConnection?.id, readByUid: data?.readBy?.id }),
+  toModel: (data) => ({ connectionUid: data?.connection?.id, readByUid: data?.readBy?.id }),
 });
 
 export const RESERVATION = defineLookup({
@@ -667,6 +676,12 @@ export const SERVICE_CONNECTION = defineLookup({
   service {
     ${lookupRefGqlFields}
   }
+  meter {
+    ${lookupRefGqlFields}
+  }
+  unit {
+    ${lookupRefGqlFields}
+  }
 `,
   extraFields: [
     {
@@ -676,9 +691,22 @@ export const SERVICE_CONNECTION = defineLookup({
       validations: [VALIDATOR_REQUIRED],
     },
     refSelect('serviceUid', 'Service', ALL_SERVICE_OFFERING),
+    // Service, meter and unit are unique together on the table, so a repeated
+    // triple is rejected on save.
+    refSelect('meterUid', 'Meter', ALL_METER),
+    refSelect('unitUid', 'Unit', ALL_UNIT),
   ],
-  extraColumns: [{ field: 'connectedAt', header: 'Connected at' }, 'service.name as Service'],
-  toModel: (data) => ({ serviceUid: data?.service?.id }),
+  extraColumns: [
+    { field: 'connectedAt', header: 'Connected at' },
+    'service.name as Service',
+    'meter.name as Meter',
+    'unit.name as Unit',
+  ],
+  toModel: (data) => ({
+    serviceUid: data?.service?.id,
+    meterUid: data?.meter?.id,
+    unitUid: data?.unit?.id,
+  }),
   // The join read from this side — which units this record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'ServiceConnection', record?.id),
 });
@@ -694,8 +722,11 @@ export const SERVICE_DISCONNECTION = defineLookup({
   icon: 'power_off',
   extraGqlFields: `
   disconnectedAt
-  service {
+  connection {
     ${lookupRefGqlFields}
+    service {
+      ${lookupRefGqlFields}
+    }
   }
 `,
   extraFields: [
@@ -705,10 +736,15 @@ export const SERVICE_DISCONNECTION = defineLookup({
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
-    refSelect('serviceUid', 'Service', ALL_SERVICE_OFFERING),
+    // The disconnection names the connection it ends; the service is read
+    // through that rather than chosen again.
+    refSelect('connectionUid', 'Connection', ALL_SERVICE_CONNECTION),
   ],
-  extraColumns: [{ field: 'disconnectedAt', header: 'Disconnected at' }, 'service.name as Service'],
-  toModel: (data) => ({ serviceUid: data?.service?.id }),
+  extraColumns: [
+    { field: 'disconnectedAt', header: 'Disconnected at' },
+    'connection.name as Connection',
+  ],
+  toModel: (data) => ({ connectionUid: data?.connection?.id }),
   // The join read from this side — which units this record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'ServiceDisconnection', record?.id),
 });
