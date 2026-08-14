@@ -427,10 +427,7 @@ export const taskLinkPanels = (comp: BaseComponent, taskUid?: string): ContentPa
       name: config.pluralLabel,
       label: config.pluralLabel,
       icon: config.icon,
-      permissions: [
-        `ROLE_VIEW_ALL_${config.permission}`,
-        `ROLE_VIEW_${config.permission}`,
-      ],
+      permissions: [`ROLE_VIEW_ALL_${config.permission}`, `ROLE_VIEW_${config.permission}`],
       keyColumns: linkColumns(config.field),
       headerButtons: [linkBtn(comp, config, documents, taskUid)],
       actionButtons: [{ ...MORE_BTN, buttons: [unlinkBtn(comp, config, documents)] }],

@@ -10,6 +10,7 @@ import {
 } from './settings-lookups';
 import { PROJECT_SETTING_LOOKUPS } from './project-setting-lookups';
 import { AGREEMENT_SETTING_LOOKUPS } from './agreement-setting-lookups';
+import { UNIT_SETTING_LOOKUPS } from './unit-setting-lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),
@@ -166,6 +167,22 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'tasks', pathMatch: 'full' },
       ...lookupRoutes(PROJECT_SETTING_LOOKUPS),
+    ],
+  },
+
+  // Unit — the setting.unit package: the unit itself and the rates and
+  // catalogues it is charged and judged against. What happens to a unit is
+  // operational and lives in the unit management module.
+  {
+    path: 'unit',
+    data: {
+      isMenu: true,
+      name: 'Unit',
+      icon: 'domain',
+    },
+    children: [
+      { path: '', redirectTo: 'units', pathMatch: 'full' },
+      ...lookupRoutes(UNIT_SETTING_LOOKUPS),
     ],
   },
 

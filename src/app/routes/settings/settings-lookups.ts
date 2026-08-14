@@ -140,10 +140,25 @@ export const PERSON = defineLookup({
 `,
   nameKey: 'firstName',
   baseFields: [
-    { key: 'firstName', label: 'First Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'firstName',
+      label: 'First Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+    },
     // bio_data.second_name is NOT NULL, so a middle name is not optional.
-    { key: 'secondName', label: 'Middle Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
-    { key: 'thirdName', label: 'Last Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
+    {
+      key: 'secondName',
+      label: 'Middle Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'thirdName',
+      label: 'Last Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+    },
     {
       key: 'identityTypeUid',
       label: 'Identity Type',
@@ -1012,7 +1027,7 @@ export const USE_ITEM_REF_ON_PAY = defineLookup({
   permission: 'USE_ITEM_REF_ON_PAY',
   label: 'Use Item Ref On Pay',
   pluralLabel: 'Use Item Ref On Pay',
-  subtitle: 'Whether a bill item\'s own reference is used when paying',
+  subtitle: "Whether a bill item's own reference is used when paying",
   icon: 'price_tag',
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
