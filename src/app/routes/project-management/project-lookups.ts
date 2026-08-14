@@ -5,6 +5,8 @@ import { gql } from '@apollo/client/core';
 import { projectAssetsPanel } from './project-asset';
 import {
   defineLookup,
+  entityLinkPanels,
+  EntityLinkConfig,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
@@ -174,8 +176,40 @@ export const REGISTRY_PROJECT = defineLookup({
       parentUid: record?.id,
     }),
     projectAssetsPanel(comp, record?.id),
+    ...entityLinkPanels(comp, PROJECT_STREET_LINK, record?.id),
   ],
 });
+
+const ALL_STREETS = gql`
+  query allStreets {
+    allStreets {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * Which streets a project sits on. Its own two-column join table with its own
+ * link/unlink pair, so it is a panel on the project rather than a column.
+ *
+ * Unique on the pair, unlike the older `projects_assets`, so the database rejects
+ * a duplicate outright rather than the service checking first.
+ */
+const PROJECT_STREET_LINK: EntityLinkConfig[] = [
+  {
+    entity: 'ProjectStreet',
+    byOwnerQuery: 'projectStreetsByProject',
+    ownerArg: 'projectUid',
+    targetArg: 'streetUid',
+    field: 'street',
+    label: 'Street',
+    pluralLabel: 'Streets',
+    icon: 'signpost',
+    permission: 'PROJECT_STREET',
+    optionsQuery: ALL_STREETS,
+  },
+];
 
 export const PROJECT_CONNECTION = defineLookup({
   slug: 'project-connections',

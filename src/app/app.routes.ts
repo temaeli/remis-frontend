@@ -8,6 +8,7 @@ import { ResetComponent } from '@routes/auth/register/reset/reset.component';
 import { ProjectManagement } from './routes/project-management/project-management';
 import { AgreementManagement } from './routes/agreement-management/agreement-management';
 import { AssetManagement } from './routes/asset-management/asset-management';
+import { UnitManagement } from './routes/unit-management/unit-management';
 import { Billing } from './routes/billing/billing';
 
 export const APP_ROUTES: TypedRoutes = [
@@ -79,6 +80,20 @@ export const APP_ROUTES: TypedRoutes = [
       //     'Classify projects by category and subcategory, keep the register, link projects to one another, and record costs and master plans.',
     },
     loadChildren: () => import('./routes/project-management/project-management.routes'),
+  },
+
+  {
+    path: 'unit-management',
+    title: 'Unit Management',
+    component: UnitManagement,
+    canActivate: [externalUserGuard, permissionGuard],
+    data: {
+      isMenu: true,
+      icon: 'domain',
+      visibleFor: ['internal'],
+      permissions: ['ROLE_VIEW_UNIT_MODULE'],
+    },
+    loadChildren: () => import('./routes/unit-management/unit-management.routes'),
   },
 
   {

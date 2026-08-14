@@ -155,6 +155,24 @@ const allTimelines = gql`
   }
 `;
 
+const allStreets = gql`
+  query allStreets {
+    allStreets {
+      id
+      name
+    }
+  }
+`;
+
+const allUnits = gql`
+  query allUnits {
+    allUnits {
+      id
+      name
+    }
+  }
+`;
+
 /** In the order they read on the task's page: what it produces, then where it sits. */
 const TASK_LINKS: TaskLinkConfig[] = [
   {
@@ -255,6 +273,24 @@ const TASK_LINKS: TaskLinkConfig[] = [
     icon: 'warning',
     permission: 'TASK_RISK',
     optionsQuery: allRisks,
+  },
+  {
+    entity: 'TaskStreet',
+    field: 'street',
+    label: 'Street',
+    pluralLabel: 'Streets',
+    icon: 'signpost',
+    permission: 'TASK_STREET',
+    optionsQuery: allStreets,
+  },
+  {
+    entity: 'TaskUnit',
+    field: 'unit',
+    label: 'Unit',
+    pluralLabel: 'Units',
+    icon: 'domain',
+    permission: 'TASK_UNIT',
+    optionsQuery: allUnits,
   },
 ];
 

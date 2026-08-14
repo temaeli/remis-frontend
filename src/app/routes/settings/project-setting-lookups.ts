@@ -5,6 +5,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
+import { unitLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
  * The project delivery configuration — `modules.setting.project` on the backend,
@@ -515,6 +516,10 @@ export const UNIT = defineLookup({
   ],
   extraColumns: ['area', 'netArea as Net', 'grossArea as Gross', 'floor.name as Floor', 'status'],
   toModel: (data) => ({ floorUid: data?.floor?.id }),
+  // Everything a unit relates to hangs off its own join table with its own
+  // link/unlink pair. One panel each, declared in the unit module so this file
+  // does not have to know them.
+  extraContents: (comp, record) => unitLinkPanels(comp, record?.id),
 });
 
 export const NET_ASSET_VALUE = defineLookup({
@@ -628,6 +633,185 @@ export const TASK_CONNECTION = defineLookup({
   }),
 });
 
+/*
+ * What a unit is charged and judged against. Rates and catalogues, not records:
+ * none of them says anything happened, so they are configuration and belong here
+ * rather than among the unit module's own screens.
+ *
+ * The rate tables all carry a `minimum` / `maximum` pair whose CHECK bounds in
+ * the database are a latitude and a longitude copied from the coordinate
+ * template, so neither can exceed 90 and 180 respectively. The forms mirror the
+ * database rather than what the columns ought to hold — see the backend entities.
+ */
+export const RENT = defineLookup({
+  slug: 'rents',
+  entity: 'Rent',
+  entityPlural: 'Rents',
+  permission: 'RENT',
+  label: 'Rent',
+  pluralLabel: 'Rents',
+  subtitle: 'The rent set on a unit',
+  icon: 'real_estate_agent',
+  extraGqlFields: `
+  rentAmount
+  minimum
+  maximum
+  rentStartedAt
+`,
+  extraFields: [
+    numberField('rentAmount', 'Rent amount'),
+    numberField('minimum', 'Minimum'),
+    numberField('maximum', 'Maximum'),
+    { key: 'rentStartedAt', label: 'Rent started at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: ['rentAmount', 'minimum', 'maximum', { field: 'rentStartedAt', header: 'Rent started at' }],
+});
+
+export const COMMISSION = defineLookup({
+  slug: 'commissions',
+  entity: 'Commission',
+  entityPlural: 'Commissions',
+  permission: 'COMMISSION',
+  label: 'Commission',
+  pluralLabel: 'Commissions',
+  subtitle: 'What is charged for placing a unit',
+  icon: 'percent',
+  extraGqlFields: `
+  commission
+  maximum
+  minimum
+`,
+  extraFields: [
+    numberField('commission', 'Commission'),
+    numberField('maximum', 'Maximum'),
+    numberField('minimum', 'Minimum'),
+  ],
+  extraColumns: ['commission', 'maximum', 'minimum'],
+});
+
+export const PENALTY = defineLookup({
+  slug: 'penalties',
+  entity: 'Penalty',
+  entityPlural: 'Penalties',
+  permission: 'PENALTY',
+  label: 'Penalty',
+  pluralLabel: 'Penalties',
+  subtitle: 'Penalties charged on a unit',
+  icon: 'warning',
+  extraGqlFields: `
+  penalties
+  minimum
+  maximum
+`,
+  extraFields: [
+    numberField('penalties', 'Penalties'),
+    numberField('minimum', 'Minimum'),
+    numberField('maximum', 'Maximum'),
+  ],
+  extraColumns: ['penalties', 'minimum', 'maximum'],
+});
+
+export const SECURITY_DEPOSIT = defineLookup({
+  slug: 'security-deposits',
+  entity: 'SecurityDeposit',
+  entityPlural: 'SecurityDeposits',
+  permission: 'SECURITY_DEPOSIT',
+  label: 'Security Deposit',
+  pluralLabel: 'Security Deposits',
+  subtitle: 'Deposits held against a unit',
+  icon: 'savings',
+  extraGqlFields: `
+  securityDeposits
+  minimum
+  maximum
+`,
+  extraFields: [
+    numberField('securityDeposits', 'Security deposits'),
+    numberField('minimum', 'Minimum'),
+    numberField('maximum', 'Maximum'),
+  ],
+  extraColumns: ['securityDeposits', 'minimum', 'maximum'],
+});
+
+export const SOLUTION = defineLookup({
+  slug: 'solutions',
+  entity: 'Solution',
+  entityPlural: 'Solutions',
+  permission: 'SOLUTION',
+  label: 'Solution',
+  pluralLabel: 'Solutions',
+  subtitle: 'Remedies that can be applied to a problem',
+  icon: 'lightbulb',
+  extraGqlFields: `
+
+`,
+});
+
+export const NOTICE_DAY = defineLookup({
+  slug: 'notice-days',
+  entity: 'NoticeDay',
+  entityPlural: 'NoticeDays',
+  permission: 'NOTICE_DAY',
+  label: 'Notice Period',
+  pluralLabel: 'Notice Periods',
+  subtitle: "How many days' notice a unit requires",
+  icon: 'event',
+  // Stored as numeric(15,2), so it admits fractional days.
+  extraGqlFields: `
+  noticeDays
+  ${coordinateGqlFields}
+`,
+  extraFields: [numberField('noticeDays', 'Notice Days'), ...coordinateFields()],
+  extraColumns: ['noticeDays'],
+});
+
+export const RENT_BILLING_CYCLE = defineLookup({
+  slug: 'rent-billing-cycles',
+  entity: 'RentBillingCycle',
+  entityPlural: 'RentBillingCycles',
+  permission: 'RENT_BILLING_CYCLE',
+  label: 'Rent Billing Cycle',
+  pluralLabel: 'Rent Billing Cycles',
+  subtitle: 'The days of the month rent is raised on',
+  icon: 'calendar_month',
+  // The database constrains neither day. 1..31 is enforced by the application
+  // only, and days 29-31 do not exist in every month — the billing job decides
+  // whether to clamp to the month end or skip.
+  extraGqlFields: `
+  firstStartDay
+  secondStartDay
+`,
+  extraFields: [
+    numberField('firstStartDay', 'First Start Day'),
+    numberField('secondStartDay', 'Second Start Day'),
+  ],
+  extraColumns: ['firstStartDay as First', 'secondStartDay as Second'],
+});
+
+export const RESERVATION_MINUTE = defineLookup({
+  slug: 'reservation-minutes',
+  entity: 'ReservationMinute',
+  entityPlural: 'ReservationMinutes',
+  permission: 'RESERVATION_MINUTE',
+  label: 'Reservation Minute',
+  pluralLabel: 'Reservation Minutes',
+  subtitle: 'How long a reservation is held for',
+  icon: 'timer',
+  // minimum and maximum carry latitude/longitude CHECK bounds in the database,
+  // so neither can exceed 90 and 180 respectively — see the backend entity.
+  extraGqlFields: `
+  reservationMinutes
+  minimum
+  maximum
+`,
+  extraFields: [
+    numberField('reservationMinutes', 'Reservation Minutes'),
+    numberField('minimum', 'Minimum'),
+    numberField('maximum', 'Maximum'),
+  ],
+  extraColumns: ['reservationMinutes as Minutes', 'minimum', 'maximum'],
+});
+
 /**
  * Ordered as the work is planned — what it is made of, when it runs, how it is
  * judged, what it is built in, and what depends on what.
@@ -657,4 +841,12 @@ export const PROJECT_SETTING_LOOKUPS: LookupModule[] = [
   NET_ASSET_VALUE,
   ACTIVITY_CONNECTION,
   TASK_CONNECTION,
+  NOTICE_DAY,
+  RENT_BILLING_CYCLE,
+  RESERVATION_MINUTE,
+  RENT,
+  COMMISSION,
+  PENALTY,
+  SECURITY_DEPOSIT,
+  SOLUTION,
 ];

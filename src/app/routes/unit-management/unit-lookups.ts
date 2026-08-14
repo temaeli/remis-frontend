@@ -1,0 +1,636 @@
+import { gql } from '@apollo/client/core';
+
+import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
+import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
+import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+
+/**
+ * The unit module — `modules.unit` on the backend. Everything that happens to a
+ * lettable unit over its life: how it was taken and given up, what is charged
+ * against it, what was done to it, and what it is connected to.
+ *
+ * The unit itself is not here. It is a `CoreNamedEntity` on the project settings
+ * catalogue and stays there; these are the records that hang off it, each on its
+ * own table with the same five-operation API, so they are declared as configs and
+ * rendered by the shared lookup screens.
+ *
+ * The link tables that join these to a unit are panels on the unit's own detail
+ * page — see `unit-links.ts`.
+ *
+ * Every field below is `@NotBlank` or `@NotNull` on its DTO, which SPQR publishes
+ * as a non-null input field, so a form that omits one is rejected at variable
+ * coercion before any message the DTO carries can be returned. The forms mirror
+ * the DTOs exactly.
+ */
+
+/** A required number. Left to the grid's own columns rather than spanning a row. */
+const numberField = (key: string, label: string): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.input,
+  inputType: 'number',
+  validations: [VALIDATOR_REQUIRED],
+});
+
+/** The survey point the located tables all carry. */
+const coordinateFields = (): FieldConfig[] => [
+  numberField('latitude', 'Latitude'),
+  numberField('longitude', 'Longitude'),
+];
+
+const coordinateGqlFields = `
+  latitude
+  longitude
+`;
+
+/** A select over another table, all of which key on `id`. */
+const refSelect = (key: string, label: string, query: unknown): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.select,
+  optionsVariables: {
+    labelKey: 'name',
+    valueKey: 'id',
+    fetchParameter: { query },
+  },
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
+
+const ALL_BIO_DATA = gql`
+  query allBioData {
+    allBioData {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_SERVICE_OFFERING = gql`
+  query allServiceOfferings {
+    allServiceOfferings {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_UNIT = gql`
+  query allUnits {
+    allUnits {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_UNIT_CONNECTION = gql`
+  query allUnitConnections {
+    allUnitConnections {
+      id
+      name
+    }
+  }
+`;
+
+export const BOOKING = defineLookup({
+  slug: 'bookings',
+  entity: 'Booking',
+  entityPlural: 'Bookings',
+  permission: 'BOOKING',
+  label: 'Booking',
+  pluralLabel: 'Bookings',
+  subtitle: 'Holds placed on a unit before it is taken',
+  icon: 'book_online',
+  extraGqlFields: `
+  value
+  bookedAt
+  bookedBy {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    numberField('value', 'Value'),
+    { key: 'bookedAt', label: 'Booked at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('bookedByUid', 'Booked by', ALL_BIO_DATA),
+  ],
+  extraColumns: ['value', { field: 'bookedAt', header: 'Booked at' }, 'bookedBy.name as Booked by'],
+  toModel: (data) => ({ bookedByUid: data?.bookedBy?.id }),
+});
+
+export const ENTRY = defineLookup({
+  slug: 'entries',
+  entity: 'Entry',
+  entityPlural: 'Entries',
+  permission: 'ENTRY',
+  label: 'Entry',
+  pluralLabel: 'Entries',
+  subtitle: 'Move-ins recorded against a unit',
+  icon: 'login',
+  extraGqlFields: `
+  enteredAt
+`,
+  extraFields: [
+    { key: 'enteredAt', label: 'Entered at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'enteredAt', header: 'Entered at' }],
+});
+
+export const EVICTION = defineLookup({
+  slug: 'evictions',
+  entity: 'Eviction',
+  entityPlural: 'Evictions',
+  permission: 'EVICTION',
+  label: 'Eviction',
+  pluralLabel: 'Evictions',
+  subtitle: 'Evictions carried out, and what was owed',
+  icon: 'gavel',
+  extraGqlFields: `
+  owed
+  minimum
+  maximum
+  evictedAt
+  evictedBy {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    numberField('owed', 'Owed'),
+    numberField('minimum', 'Minimum'),
+    numberField('maximum', 'Maximum'),
+    { key: 'evictedAt', label: 'Evicted at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('evictedByUid', 'Evicted by', ALL_BIO_DATA),
+  ],
+  extraColumns: ['owed', 'minimum', 'maximum', { field: 'evictedAt', header: 'Evicted at' }, 'evictedBy.name as Evicted by'],
+  toModel: (data) => ({ evictedByUid: data?.evictedBy?.id }),
+});
+
+export const EXIT = defineLookup({
+  slug: 'exits',
+  entity: 'Exit',
+  entityPlural: 'Exits',
+  permission: 'EXIT',
+  label: 'Exit',
+  pluralLabel: 'Exits',
+  subtitle: 'Move-outs recorded against a unit',
+  icon: 'logout',
+  extraGqlFields: `
+  exitedAt
+`,
+  extraFields: [
+    { key: 'exitedAt', label: 'Exited at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'exitedAt', header: 'Exited at' }],
+});
+
+export const HANDOVER = defineLookup({
+  slug: 'handovers',
+  entity: 'Handover',
+  entityPlural: 'Handovers',
+  permission: 'HANDOVER',
+  label: 'Handover',
+  pluralLabel: 'Handovers',
+  subtitle: 'Who handed a unit over, to whom, and where',
+  icon: 'swap_horiz',
+  extraGqlFields: `
+  ${coordinateGqlFields}
+  handovers
+  actor {
+    ${lookupRefGqlFields}
+  }
+  handedOverAt
+  handoverFrom {
+    ${lookupRefGqlFields}
+  }
+  handoverTo {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    ...coordinateFields(),
+    numberField('handovers', 'Handovers'),
+    refSelect('actorUid', 'Actor', ALL_BIO_DATA),
+    { key: 'handedOverAt', label: 'Handed over at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('handoverFromUid', 'Handover from', ALL_BIO_DATA),
+    refSelect('handoverToUid', 'Handover to', ALL_BIO_DATA),
+  ],
+  extraColumns: ['handovers', 'actor.name as Actor', { field: 'handedOverAt', header: 'Handed over at' }, 'handoverFrom.name as Handover from', 'handoverTo.name as Handover to'],
+  toModel: (data) => ({ actorUid: data?.actor?.id, handoverFromUid: data?.handoverFrom?.id, handoverToUid: data?.handoverTo?.id }),
+});
+
+export const INSPECTION = defineLookup({
+  slug: 'inspections',
+  entity: 'Inspection',
+  entityPlural: 'Inspections',
+  permission: 'INSPECTION',
+  label: 'Inspection',
+  pluralLabel: 'Inspections',
+  subtitle: 'Inspections carried out on a unit',
+  icon: 'fact_check',
+  extraGqlFields: `
+  inspectionDate
+`,
+  extraFields: [
+    { key: 'inspectionDate', label: 'Inspection date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'inspectionDate', header: 'Inspection date' }],
+});
+
+export const LEASE = defineLookup({
+  slug: 'leases',
+  entity: 'Lease',
+  entityPlural: 'Leases',
+  permission: 'LEASE',
+  label: 'Lease',
+  pluralLabel: 'Leases',
+  subtitle: 'Leases granted over a unit',
+  icon: 'description',
+  extraGqlFields: `
+  leasedAt
+`,
+  extraFields: [
+    { key: 'leasedAt', label: 'Leased at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'leasedAt', header: 'Leased at' }],
+});
+
+export const LIABILITY = defineLookup({
+  slug: 'liabilities',
+  entity: 'Liability',
+  entityPlural: 'Liabilities',
+  permission: 'LIABILITY',
+  label: 'Liability',
+  pluralLabel: 'Liabilities',
+  subtitle: 'What is owed against a unit',
+  icon: 'account_balance',
+  extraGqlFields: `
+  value
+  liabilityDate
+`,
+  extraFields: [
+    numberField('value', 'Value'),
+    { key: 'liabilityDate', label: 'Liability date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: ['value', { field: 'liabilityDate', header: 'Liability date' }],
+});
+
+export const LOAN = defineLookup({
+  slug: 'loans',
+  entity: 'Loan',
+  entityPlural: 'Loans',
+  permission: 'LOAN',
+  label: 'Loan',
+  pluralLabel: 'Loans',
+  subtitle: 'Borrowing recorded against a unit',
+  icon: 'payments',
+  extraGqlFields: `
+  balance
+  loanStartedAt
+  loanEndedAt
+  interest
+  borrowAmount
+  returnAmount
+`,
+  extraFields: [
+    numberField('balance', 'Balance'),
+    { key: 'loanStartedAt', label: 'Loan started at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    { key: 'loanEndedAt', label: 'Loan ended at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    numberField('interest', 'Interest'),
+    numberField('borrowAmount', 'Borrow amount'),
+    numberField('returnAmount', 'Return amount'),
+  ],
+  extraColumns: ['balance', { field: 'loanStartedAt', header: 'Loan started at' }, { field: 'loanEndedAt', header: 'Loan ended at' }, 'interest', 'borrowAmount', 'returnAmount'],
+});
+
+export const MAINTENANCE = defineLookup({
+  slug: 'maintenances',
+  entity: 'Maintenance',
+  entityPlural: 'Maintenances',
+  permission: 'MAINTENANCE',
+  label: 'Maintenance',
+  pluralLabel: 'Maintenance',
+  subtitle: 'Work done on a unit, and what it cost',
+  icon: 'build',
+  extraGqlFields: `
+  cost
+  minimum
+  maximum
+  maintenanceFrom
+  maintenanceTo
+`,
+  extraFields: [
+    numberField('cost', 'Cost'),
+    numberField('minimum', 'Minimum'),
+    numberField('maximum', 'Maximum'),
+    { key: 'maintenanceFrom', label: 'Maintenance from', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    { key: 'maintenanceTo', label: 'Maintenance to', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: ['cost', 'minimum', 'maximum', { field: 'maintenanceFrom', header: 'Maintenance from' }, { field: 'maintenanceTo', header: 'Maintenance to' }],
+});
+
+export const NOTICE = defineLookup({
+  slug: 'notices',
+  entity: 'Notice',
+  entityPlural: 'Notices',
+  permission: 'NOTICE',
+  label: 'Notice',
+  pluralLabel: 'Notices',
+  subtitle: 'Notices served in relation to a unit',
+  icon: 'campaign',
+  extraGqlFields: `
+  ${coordinateGqlFields}
+  notices
+`,
+  extraFields: [
+    ...coordinateFields(),
+    numberField('notices', 'Notices'),
+  ],
+  extraColumns: ['notices'],
+});
+
+export const PROBLEM = defineLookup({
+  slug: 'problems',
+  entity: 'Problem',
+  entityPlural: 'Problems',
+  permission: 'PROBLEM',
+  label: 'Problem',
+  pluralLabel: 'Problems',
+  subtitle: 'Faults raised against a unit',
+  icon: 'report_problem',
+  extraGqlFields: `
+  problemDate
+`,
+  extraFields: [
+    { key: 'problemDate', label: 'Problem date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'problemDate', header: 'Problem date' }],
+});
+
+export const PURCHASE = defineLookup({
+  slug: 'purchases',
+  entity: 'Purchase',
+  entityPlural: 'Purchases',
+  permission: 'PURCHASE',
+  label: 'Purchase',
+  pluralLabel: 'Purchases',
+  subtitle: 'Units bought, and for how much',
+  icon: 'shopping_cart',
+  extraGqlFields: `
+  purchasedAt
+  purchasedAmount
+`,
+  extraFields: [
+    { key: 'purchasedAt', label: 'Purchased at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    numberField('purchasedAmount', 'Purchased amount'),
+  ],
+  extraColumns: [{ field: 'purchasedAt', header: 'Purchased at' }, 'purchasedAmount'],
+});
+
+export const READING = defineLookup({
+  slug: 'readings',
+  entity: 'Reading',
+  entityPlural: 'Readings',
+  permission: 'READING',
+  label: 'Reading',
+  pluralLabel: 'Readings',
+  subtitle: 'Meter readings taken on a unit\'s connection',
+  icon: 'speed',
+  extraGqlFields: `
+  unitConnection {
+    ${lookupRefGqlFields}
+  }
+  readings
+  readAt
+  readBy {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    refSelect('unitConnectionUid', 'Unit connection', ALL_UNIT_CONNECTION),
+    numberField('readings', 'Readings'),
+    { key: 'readAt', label: 'Read at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('readByUid', 'Read by', ALL_BIO_DATA),
+  ],
+  extraColumns: ['unitConnection.name as Unit connection', 'readings', { field: 'readAt', header: 'Read at' }, 'readBy.name as Read by'],
+  toModel: (data) => ({ unitConnectionUid: data?.unitConnection?.id, readByUid: data?.readBy?.id }),
+});
+
+export const RESERVATION = defineLookup({
+  slug: 'reservations',
+  entity: 'Reservation',
+  entityPlural: 'Reservations',
+  permission: 'RESERVATION',
+  label: 'Reservation',
+  pluralLabel: 'Reservations',
+  subtitle: 'Reservations held over a unit',
+  icon: 'event_available',
+  extraGqlFields: `
+  reservationAt
+  reservationBy {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    { key: 'reservationAt', label: 'Reservation at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('reservationByUid', 'Reservation by', ALL_BIO_DATA),
+  ],
+  extraColumns: [{ field: 'reservationAt', header: 'Reservation at' }, 'reservationBy.name as Reservation by'],
+  toModel: (data) => ({ reservationByUid: data?.reservationBy?.id }),
+});
+
+export const RETURN = defineLookup({
+  slug: 'returns',
+  entity: 'Return',
+  entityPlural: 'Returns',
+  permission: 'RETURN',
+  label: 'Return',
+  pluralLabel: 'Returns',
+  subtitle: 'Units handed back',
+  icon: 'undo',
+  extraGqlFields: `
+  returnedDate
+`,
+  extraFields: [
+    { key: 'returnedDate', label: 'Returned date', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'returnedDate', header: 'Returned date' }],
+});
+
+export const SELL = defineLookup({
+  slug: 'sells',
+  entity: 'Sell',
+  entityPlural: 'Sells',
+  permission: 'SELL',
+  label: 'Sell',
+  pluralLabel: 'Sales',
+  subtitle: 'Units sold, and for how much',
+  icon: 'sell',
+  extraGqlFields: `
+  sellAmount
+`,
+  extraFields: [
+    numberField('sellAmount', 'Sell amount'),
+  ],
+  extraColumns: ['sellAmount'],
+});
+
+export const SERVICE_CONNECTION = defineLookup({
+  slug: 'service-connections',
+  entity: 'ServiceConnection',
+  entityPlural: 'ServiceConnections',
+  permission: 'SERVICE_CONNECTION',
+  label: 'Service Connection',
+  pluralLabel: 'Connections',
+  subtitle: 'Utility services connected to a unit',
+  icon: 'power',
+  extraGqlFields: `
+  connectedAt
+  service {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    { key: 'connectedAt', label: 'Connected at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('serviceUid', 'Service', ALL_SERVICE_OFFERING),
+  ],
+  extraColumns: [{ field: 'connectedAt', header: 'Connected at' }, 'service.name as Service'],
+  toModel: (data) => ({ serviceUid: data?.service?.id }),
+});
+
+export const SERVICE_DISCONNECTION = defineLookup({
+  slug: 'service-disconnections',
+  entity: 'ServiceDisconnection',
+  entityPlural: 'ServiceDisconnections',
+  permission: 'SERVICE_DISCONNECTION',
+  label: 'Service Disconnection',
+  pluralLabel: 'Disconnections',
+  subtitle: 'Utility services disconnected from a unit',
+  icon: 'power_off',
+  extraGqlFields: `
+  disconnectedAt
+  service {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    { key: 'disconnectedAt', label: 'Disconnected at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+    refSelect('serviceUid', 'Service', ALL_SERVICE_OFFERING),
+  ],
+  extraColumns: [{ field: 'disconnectedAt', header: 'Disconnected at' }, 'service.name as Service'],
+  toModel: (data) => ({ serviceUid: data?.service?.id }),
+});
+
+export const TERMINATION = defineLookup({
+  slug: 'terminations',
+  entity: 'Termination',
+  entityPlural: 'Terminations',
+  permission: 'TERMINATION',
+  label: 'Termination',
+  pluralLabel: 'Terminations',
+  subtitle: 'Occupancies brought to an end',
+  icon: 'cancel',
+  extraGqlFields: `
+  terminatedAt
+`,
+  extraFields: [
+    { key: 'terminatedAt', label: 'Terminated at', type: FieldType.dateTime, validations: [VALIDATOR_REQUIRED] },
+  ],
+  extraColumns: [{ field: 'terminatedAt', header: 'Terminated at' }],
+});
+
+export const TITLE_DEED = defineLookup({
+  slug: 'title-deeds',
+  entity: 'TitleDeed',
+  entityPlural: 'TitleDeeds',
+  permission: 'TITLE_DEED',
+  label: 'Title Deed',
+  pluralLabel: 'Title Deeds',
+  subtitle: 'Title deeds held over a unit',
+  icon: 'verified',
+  extraGqlFields: `
+  ${coordinateGqlFields}
+  titleDeeds
+`,
+  extraFields: [
+    ...coordinateFields(),
+    numberField('titleDeeds', 'Title deeds'),
+  ],
+  extraColumns: ['titleDeeds'],
+});
+
+export const UNIT_STATUS_RECORD = defineLookup({
+  slug: 'unit-status-records',
+  entity: 'UnitStatusRecord',
+  entityPlural: 'UnitStatusRecords',
+  permission: 'UNIT_STATUS_RECORD',
+  label: 'Unit Status Record',
+  pluralLabel: 'Unit Status Records',
+  subtitle: 'How a unit\'s status has changed over time',
+  icon: 'history',
+  extraGqlFields: `
+  unit {
+    ${lookupRefGqlFields}
+  }
+  status
+`,
+  extraFields: [
+    refSelect('unitUid', 'Unit', ALL_UNIT),
+    {
+      key: 'status',
+      label: 'Status',
+      type: FieldType.select,
+      options: [{ value: 'AVAILABLE', label: 'Available' }, { value: 'RESERVED', label: 'Reserved' }, { value: 'SOLD', label: 'Sold' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'UNDER_MAINTENANCE', label: 'Under Maintenance' }],
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: ['unit.name as Unit', 'status'],
+  toModel: (data) => ({ unitUid: data?.unit?.id }),
+});
+
+export const VISIT = defineLookup({
+  slug: 'visits',
+  entity: 'Visit',
+  entityPlural: 'Visits',
+  permission: 'VISIT',
+  label: 'Visit',
+  pluralLabel: 'Visits',
+  subtitle: 'Visits made to a unit',
+  icon: 'place',
+  extraGqlFields: `
+  ${coordinateGqlFields}
+  visits
+`,
+  extraFields: [
+    ...coordinateFields(),
+    numberField('visits', 'Visits'),
+  ],
+  extraColumns: ['visits'],
+});
+
+/** Ordered as a unit's life runs: taken, occupied, charged, maintained, given up. */
+export const UNIT_LOOKUPS: LookupModule[] = [
+  RESERVATION,
+  BOOKING,
+  PURCHASE,
+  SELL,
+  LEASE,
+  ENTRY,
+  EXIT,
+  HANDOVER,
+  RETURN,
+  TERMINATION,
+  EVICTION,
+  INSPECTION,
+  MAINTENANCE,
+  PROBLEM,
+  VISIT,
+  SERVICE_CONNECTION,
+  SERVICE_DISCONNECTION,
+  READING,
+  LIABILITY,
+  LOAN,
+  NOTICE,
+  TITLE_DEED,
+  UNIT_STATUS_RECORD,
+];
