@@ -65,6 +65,17 @@ export enum StepType {
   TBD = 'TBD',
 }
 
+/**
+ * `remis_core_schema.application_types` — which kind of application travels a
+ * route, and what makes the route reachable at all.
+ */
+export enum ApplicationType {
+  SALES = 'SALES',
+  PURCHASES = 'PURCHASES',
+  RENT = 'RENT',
+  RENT_PURCHASES = 'RENT_PURCHASES',
+}
+
 const toOptions = (values: Record<string, string>): Option[] =>
   Object.values(values).map((value) => ({ value, label: getDisplayName(value) as string }));
 
@@ -72,14 +83,7 @@ export const WORKFLOW_STATUS_OPTIONS = toOptions(WorkflowStatus);
 export const ACTION_TYPE_OPTIONS = toOptions(ActionType);
 export const RETURN_TYPE_OPTIONS = toOptions(ReturnType);
 export const STEP_TYPE_OPTIONS = toOptions(StepType);
-
-/**
- * A workflow definition is not editable once approved, so `SUBMITTED` is as far
- * as this control goes — approving is its own mutation behind its own permission.
- */
-const DRAFT_STATUS_OPTIONS = WORKFLOW_STATUS_OPTIONS.filter(
-  (option) => option.value !== WorkflowStatus.APPROVED,
-);
+export const APPLICATION_TYPE_OPTIONS = toOptions(ApplicationType);
 
 //  Shared field and column shapes.
 
@@ -243,7 +247,7 @@ export const WORKFLOW_DEFINITION = defineLookup({
   label: 'Workflow Definition',
   pluralLabel: 'Workflow Definitions',
   subtitle: 'The named approval routes, and whether each has been signed off',
-  icon: 'rule',
+  icon: 'process',
   // No isDeleted column on this table, unlike every other one in the schema.
   // Selecting it would fail the whole query.
   auditGqlFields: `
@@ -288,16 +292,29 @@ export const WORKFLOW_DEFINITION = defineLookup({
   extraGqlFields: `
   isApproved
   status
+  applicationType
 `,
+  /**
+   * The one control beyond the descriptive block. Required here even though the
+   * column defaults to PURCHASES: it decides which applications travel this route,
+   * and a route filed under the wrong type is not something anyone would notice.
+   *
+   * No status control — the backend defaults a new route to DRAFT and ignores an
+   * APPROVED sent through the save, since approving is its own mutation behind its
+   * own permission. The column is still read and shown on the list.
+   */
   extraFields: [
     {
-      ...enumSelect('status', 'Status', DRAFT_STATUS_OPTIONS),
-      hint: 'Approving is a separate action and cannot be set from here',
-      validations: [],
+      ...enumSelect('applicationType', 'Application Type', APPLICATION_TYPE_OPTIONS),
+      hint: 'Which kind of application travels this route',
       class: 'col-span-full',
     },
   ],
-  extraColumns: [enumColumn('status', 'Status'), flagColumn('isApproved', 'Approved')],
+  extraColumns: [
+    enumColumn('applicationType', 'Application Type'),
+    enumColumn('status', 'Status'),
+    flagColumn('isApproved', 'Approved'),
+  ],
   extraActions: (comp, lookup) => [approveWorkflowBtn(comp, lookup)],
 });
 
@@ -320,7 +337,7 @@ export const WORKFLOW_STEP = defineLookup({
   label: 'Workflow Step',
   pluralLabel: 'Workflow Steps',
   subtitle: 'Who holds a record at each stage, and where it goes next',
-  icon: 'linear_scale',
+  icon: 'sub_task',
   baseFields: codedFields('At most 20 characters — the column is narrower here than elsewhere'),
   baseColumns: codedColumns,
   extraGqlFields: `
@@ -440,7 +457,7 @@ export const WORKFLOW_STEP_ACTION = defineLookup({
   label: 'Workflow Step Action',
   pluralLabel: 'Workflow Step Actions',
   subtitle: 'The ways out of a step, and who may take each',
-  icon: 'swap_horiz',
+  icon: 'take_action',
   baseFields: codedFields(),
   baseColumns: codedColumns,
   extraGqlFields: `
@@ -510,7 +527,7 @@ export const STEP_ACTION_ASSIGNEE = defineLookup({
   label: 'Step Action Assignee',
   pluralLabel: 'Step Action Assignees',
   subtitle: 'The people an action is narrowed to, where it is not open to the whole role',
-  icon: 'assignment_ind',
+  icon: 'user_check',
   baseFields: codedFields(),
   baseColumns: codedColumns,
   extraGqlFields: `
@@ -651,7 +668,7 @@ export const STEP_ACTION_EXECUTION = defineLookup({
  */
 function approveWorkflowBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
   return {
-    icon: 'assignment_turned_in',
+    icon: 'approve',
     label: 'Approve',
     permissions: ['ROLE_APPROVE_WORKFLOW_DEFINITION'],
     click: async (data: Lookup) => {

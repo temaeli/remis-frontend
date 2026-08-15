@@ -132,7 +132,10 @@ export const APP_ROUTES: TypedRoutes = [
     canActivate: [externalUserGuard, permissionGuard],
     data: {
       isMenu: true,
-      icon: 'timeline',
+      // Must be a name from the SVG set: the module tiles on the staff landing
+      // bind [svgIcon] with no Material fallback, so a material-only name
+      // renders an empty tile.
+      icon: 'workflow',
       visibleFor: ['internal'],
       permissions: ['ROLE_VIEW_WORKFLOW_MODULE'],
     },
