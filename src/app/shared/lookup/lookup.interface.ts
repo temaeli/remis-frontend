@@ -88,6 +88,16 @@ export interface LookupConfig {
   schema?: LookupSchema;
 
   /**
+   * The audit block this table carries, selected on every query. Defaults to the
+   * one its schema implies.
+   *
+   * Only worth setting where a table does not carry the block its schema is
+   * supposed to: `workflow_definitions` has no `isDeleted` column at all, and
+   * asking for it fails the whole query rather than omitting one field.
+   */
+  auditGqlFields?: string;
+
+  /**
    * The name SPQR gave the save mutation's argument, which is the DTO parameter's
    * own name. The billing and reference controllers annotate it `input`; the uaa
    * ones leave it as `dto`. Defaults to `input`.

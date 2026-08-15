@@ -10,6 +10,7 @@ import { AgreementManagement } from './routes/agreement-management/agreement-man
 import { AssetManagement } from './routes/asset-management/asset-management';
 import { UnitManagement } from './routes/unit-management/unit-management';
 import { Billing } from './routes/billing/billing';
+import { WorkflowManagement } from './routes/workflow-management/workflow-management';
 
 export const APP_ROUTES: TypedRoutes = [
   {
@@ -122,6 +123,20 @@ export const APP_ROUTES: TypedRoutes = [
       permissions: ['ROLE_VIEW_BILLING_MODULE'],
     },
     loadChildren: () => import('./routes/billing/billing.routes'),
+  },
+
+  {
+    path: 'workflow-management',
+    title: 'Workflow Management',
+    component: WorkflowManagement,
+    canActivate: [externalUserGuard, permissionGuard],
+    data: {
+      isMenu: true,
+      icon: 'timeline',
+      visibleFor: ['internal'],
+      permissions: ['ROLE_VIEW_WORKFLOW_MODULE'],
+    },
+    loadChildren: () => import('./routes/workflow-management/workflow-management.routes'),
   },
 
   {

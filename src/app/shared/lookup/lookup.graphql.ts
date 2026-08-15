@@ -46,6 +46,7 @@ export const lookupRefGqlFields = `
 export interface LookupGqlOptions {
   schema?: LookupSchema;
   saveArg?: 'input' | 'dto';
+  auditGqlFields?: string;
   descriptiveGqlFields?: string;
   extraGqlFields?: string;
 }
@@ -68,8 +69,9 @@ export const buildLookupGql = (
   options: LookupGqlOptions = {},
 ): LookupOperations => {
   const { schema = 'core', saveArg = 'input' } = options;
+  const audit = options.auditGqlFields ?? auditGqlFields[schema];
   const descriptive = options.descriptiveGqlFields ?? namedGqlFields;
-  const fields = `${auditGqlFields[schema]}${descriptive}${options.extraGqlFields ?? ''}`;
+  const fields = `${audit}${descriptive}${options.extraGqlFields ?? ''}`;
 
   return {
     all: gql`

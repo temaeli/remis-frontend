@@ -1,6 +1,8 @@
+import { gql } from '@apollo/client/core';
+
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import {
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -25,6 +27,20 @@ const codeField = (key: string, label: string, lookup: LookupModule): FieldConfi
   },
   validations: [VALIDATOR_REQUIRED],
 });
+
+/**
+ * The organisation register, which has no lookup screen here — it is a party
+ * record, not billing configuration — but is what a header's counterparty links
+ * point at.
+ */
+const ALL_BUSINESS_NAMES = gql`
+  query allBusinessNames {
+    allBusinessNames {
+      id
+      name
+    }
+  }
+`;
 
 /**
  * The bill header is the one operational billing table shaped like a lookup —
@@ -90,6 +106,33 @@ export const BILL_HEADER = defineLookup({
     billPaymentPlanUid: data?.billPaymentPlan?.id,
     financialYearUid: data?.financialYear?.id,
   }),
+  /**
+   * Who the bill is raised against. A join table rather than a column on the
+   * header, so a header may name several organisations, one, or none — nothing
+   * in the schema requires a counterparty.
+   *
+   * The pair is UNIQUE on this one, unlike its agreement twin, so linking the
+   * same organisation twice returns the existing row rather than failing.
+   */
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'BillHeaderBusinessName',
+          byOwnerQuery: 'billHeaderBusinessNamesByBillHeader',
+          ownerArg: 'billHeaderUid',
+          targetArg: 'businessNameUid',
+          field: 'businessName',
+          label: 'Organisation',
+          pluralLabel: 'Organisations',
+          icon: 'institution',
+          permission: 'BILL_HEADER_BUSINESS_NAME',
+          optionsQuery: ALL_BUSINESS_NAMES,
+        },
+      ],
+      record?.id,
+    ),
 });
 
 /**

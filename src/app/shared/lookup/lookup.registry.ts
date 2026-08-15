@@ -24,6 +24,7 @@ export const defineLookup = (config: LookupConfig): LookupModule => {
     gql: buildLookupGql(config.entity, config.entityPlural, {
       schema: config.schema,
       saveArg: config.saveArg,
+      auditGqlFields: config.auditGqlFields,
       descriptiveGqlFields: config.descriptiveGqlFields,
       extraGqlFields: config.extraGqlFields,
     }),
