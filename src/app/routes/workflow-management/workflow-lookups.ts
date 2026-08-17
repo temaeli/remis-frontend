@@ -10,7 +10,16 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { LIST_ALL_ROLES } from '@routes/users-managment/roles/role.graphql';
-import { defineLookup, Lookup, LookupModule } from '@shared/lookup';
+import {
+  defineLookup,
+  entityLinkPanels,
+  EntityLinkConfig,
+  Lookup,
+  lookupChildGqlFields,
+  lookupChildPanel,
+  LookupModule,
+} from '@shared/lookup';
+import { ATTACHMENT_TYPE_OPTIONS, coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 
 /**
  * The workflow module — `modules.workflow` on the backend.
@@ -29,9 +38,10 @@ import { defineLookup, Lookup, LookupModule } from '@shared/lookup';
  *    the `assignedNumber` triple; everything else here spells the first one
  *    `assignedCode` on the DTO while the record still returns it as
  *    `assignedNumber`, which is what the `toModel` renames below are for.
- * 3. A step has no foreign key to its definition. Nothing on these screens can
- *    show "the steps of workflow X" — the chain is followed through parent and
- *    child instead, which is what the initial/parent columns are for.
+ * 3. A step still has no foreign key to its definition. What a route is made of
+ *    lives in the connections screen instead, where an edge names its workflow
+ *    and its two ends. The `parentStep`/`childStep` pair on a step is the older
+ *    way of saying the same thing and is on its way out — read the connections.
  */
 
 //  The five PostgreSQL enum types the module is built on. Labels must match the
@@ -92,13 +102,17 @@ const refSelect = (
   key: string,
   label: string,
   query: unknown,
-  options: { required?: boolean; hint?: string } = {},
+  options: { required?: boolean; hint?: string; labelKey?: string } = {},
 ): FieldConfig => ({
   key,
   label,
   hint: options.hint,
   type: FieldType.select,
-  optionsVariables: { labelKey: 'name', valueKey: 'id', fetchParameter: { query } },
+  optionsVariables: {
+    labelKey: options.labelKey ?? 'name',
+    valueKey: 'id',
+    fetchParameter: { query },
+  },
   validations: options.required === false ? [] : [VALIDATOR_REQUIRED],
   class: 'col-span-full',
 });
@@ -214,6 +228,15 @@ const ALL_WORKFLOW_STEP_ACTIONS = gql`
   }
 `;
 
+const ALL_WORKFLOW_DEFINITIONS = gql`
+  query allWorkflowDefinitions {
+    allWorkflowDefinitions {
+      id
+      workflowKey
+    }
+  }
+`;
+
 const ALL_BIO_DATA = gql`
   query allBioData {
     allBioData {
@@ -222,6 +245,86 @@ const ALL_BIO_DATA = gql`
     }
   }
 `;
+
+//  The drill-downs. Each lists what belongs to the record on screen, and pairs
+//  with a lookupChildPanel below.
+
+const WORKFLOW_STEP_ROLES_BY_STEP = gql`
+  query workflowStepRolesByStep($stepUid: String) {
+    workflowStepRolesByStep(stepUid: $stepUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+const WORKFLOW_STEP_ATTACHMENT_TYPES_BY_STEP = gql`
+  query workflowStepAttachmentTypesByStep($stepUid: String) {
+    workflowStepAttachmentTypesByStep(stepUid: $stepUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+const PROCESSES_BY_WORKFLOW_DEFINITION = gql`
+  query processesByWorkflowDefinition($workflowDefinitionUid: String) {
+    processesByWorkflowDefinition(workflowDefinitionUid: $workflowDefinitionUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+const WORKFLOW_STEP_EXECUTIONS_BY_PROCESS = gql`
+  query workflowStepExecutionsByProcess($processUid: String) {
+    workflowStepExecutionsByProcess(processUid: $processUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+/** Reads the cases a route is carrying, so an execution can be filed against one. */
+const ALL_PROCESSES = gql`
+  query allProcesses {
+    allProcesses {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * The documents one action filed. A link table rather than a lookup: the row
+ * carries three foreign keys and nothing to search on, so it is linked and
+ * unlinked rather than created and edited.
+ *
+ * The step is not asked for — the backend reads it off the execution, which
+ * already names it, so the two cannot disagree.
+ */
+const WORKFLOW_STEP_ATTACHMENT_LINK: EntityLinkConfig = {
+  entity: 'WorkflowStepAttachment',
+  byOwnerQuery: 'workflowStepAttachmentsByExecution',
+  ownerArg: 'executionUid',
+  targetArg: 'attachmentUid',
+  field: 'attachment',
+  label: 'Document',
+  pluralLabel: 'Filed Documents',
+  icon: 'file',
+  permission: 'WORKFLOW_STEP_ATTACHMENT',
+  optionsQuery: gql`
+    query allCoreAttachments {
+      allCoreAttachments {
+        id
+        name
+      }
+    }
+  `,
+  // A document carries no description, so the panel's default selection would
+  // ask for one and fail the whole query.
+  targetGqlFields: `
+    id
+    assignedNumber
+    name
+  `,
+};
 
 /** Signs a route off, which is what makes it usable. Its own mutation, its own permission. */
 const APPROVE_WORKFLOW_DEFINITION = gql`
@@ -258,64 +361,67 @@ export const WORKFLOW_DEFINITION = defineLookup({
 `,
   // workflowKey rather than assignedNumber, and the DTO spells it the same way,
   // so no rename is needed here.
+  // name and description were dropped from this table — the key is all that
+  // identifies a route now.
   descriptiveGqlFields: `
   workflowKey
-  name
-  description
 `,
+  nameKey: 'workflowKey',
+  /**
+   * Declared here rather than through `extraFields`, which the shared form always
+   * appends after this block — Application Type has to lead, so it lives in it.
+   *
+   * It leads because it is the decision the rest of the form hangs off: which
+   * applications travel this route. Required even though the column defaults to
+   * PURCHASES, since a route filed under the wrong type is not something anyone
+   * would notice.
+   *
+   * There is no status control. The backend defaults a new route to DRAFT and
+   * ignores an APPROVED sent through the save — approving is its own mutation
+   * behind its own permission. The column is still read and shown on the list.
+   */
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
-    {
-      key: 'name',
-      label: 'Name',
-      type: FieldType.input,
-      validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
-    },
-    {
-      key: 'workflowKey',
-      label: 'Workflow Key',
-      type: FieldType.input,
-      hint: 'The stable handle other records refer to this route by. Leave blank to generate — it is never changed afterwards',
-      class: 'col-span-full',
-    },
-    {
-      key: 'description',
-      label: 'Description',
-      type: FieldType.textarea,
-      rows: 3,
-      validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
-    },
-  ],
-  baseColumns: ['index', 'workflowKey as Key', 'name', 'description'],
-  extraGqlFields: `
-  isApproved
-  status
-  applicationType
-`,
-  /**
-   * The one control beyond the descriptive block. Required here even though the
-   * column defaults to PURCHASES: it decides which applications travel this route,
-   * and a route filed under the wrong type is not something anyone would notice.
-   *
-   * No status control — the backend defaults a new route to DRAFT and ignores an
-   * APPROVED sent through the save, since approving is its own mutation behind its
-   * own permission. The column is still read and shown on the list.
-   */
-  extraFields: [
     {
       ...enumSelect('applicationType', 'Application Type', APPLICATION_TYPE_OPTIONS),
       hint: 'Which kind of application travels this route',
       class: 'col-span-full',
     },
+    {
+      key: 'workflowKey',
+      label: 'Workflow Key',
+      hint: 'The only thing naming this route — name and description were dropped from the table. Leave blank to generate',
+      type: FieldType.input,
+      class: 'col-span-full',
+    },
   ],
+  baseColumns: ['index', 'workflowKey as Key'],
+  extraGqlFields: `
+  isApproved
+  status
+  applicationType
+`,
   extraColumns: [
     enumColumn('applicationType', 'Application Type'),
     enumColumn('status', 'Status'),
     flagColumn('isApproved', 'Approved'),
   ],
-  extraActions: (comp, lookup) => [approveWorkflowBtn(comp, lookup)],
+  // An approved route is what applications are matched against, so it is frozen:
+  // neither its shape nor its existence is the author's to change any more. The
+  // backend refuses both.
+  lockedWhen: (record) => !!record?.isApproved,
+  lockedReason: 'This workflow has been approved and can no longer be edited or deleted',
+  // Row menu only. Approving acts on the one route the reader picked out of the
+  // list; on a header it would sit beside Create with nothing saying which.
+  rowActions: (comp, lookup) => [approveWorkflowBtn(comp, lookup)],
+  // What is actually travelling this route. Reading it beside the definition is
+  // how someone judges whether a route may still be changed — the approval flag
+  // says it is frozen, this says who would be disturbed.
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => PROCESS, PROCESSES_BY_WORKFLOW_DEFINITION, {
+      workflowDefinitionUid: record?.id,
+    }),
+  ],
 });
 
 //  The steps a route is made of.
@@ -445,6 +551,214 @@ export const WORKFLOW_STEP = defineLookup({
     parentUid: data?.parentStep?.id,
     childUid: data?.childStep?.id,
   }),
+  // The two tables that each replaced a single column on this one: who holds the
+  // step, and what it demands before it can be completed. Both read as properties
+  // of the step, so they belong on its page rather than in the menu beside it.
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => WORKFLOW_STEP_ROLE, WORKFLOW_STEP_ROLES_BY_STEP, {
+      stepUid: record?.id,
+    }),
+    lookupChildPanel(
+      comp,
+      () => WORKFLOW_STEP_ATTACHMENT_TYPE,
+      WORKFLOW_STEP_ATTACHMENT_TYPES_BY_STEP,
+      { stepUid: record?.id },
+    ),
+  ],
+});
+
+//  Who holds a step.
+
+/**
+ * A step may sit with more than one office at once.
+ *
+ * Supersedes the single `roleId` on the step itself, which allowed exactly one
+ * holder and is still there. Where both are set the step's own column is the older
+ * answer — read these rows.
+ *
+ * The pair is not unique in the database, so the same role could be added twice;
+ * the backend checks before inserting and answers with a message.
+ */
+export const WORKFLOW_STEP_ROLE = defineLookup({
+  slug: 'workflow-step-roles',
+  entity: 'WorkflowStepRole',
+  entityPlural: 'WorkflowStepRoles',
+  permission: 'WORKFLOW_STEP_ROLE',
+  label: 'Step Holder',
+  pluralLabel: 'Step Holders',
+  subtitle: 'The offices a step sits with, where more than one holds it',
+  icon: 'user_check',
+  baseFields: codedFields(),
+  baseColumns: codedColumns,
+  extraGqlFields: `
+  workflowStep {
+    ${refFields}
+  }
+  role {
+    id
+    name
+  }
+`,
+  extraFields: [refSelect('workflowStepUid', 'Workflow Step', ALL_WORKFLOW_STEPS), roleSelect('Held By Role')],
+  extraColumns: ['workflowStep.name as Step', 'role.name as Role'],
+  toModel: (data) => ({
+    ...codeToModel(data),
+    workflowStepUid: data?.workflowStep?.id,
+    roleId: data?.role?.id,
+  }),
+});
+
+//  What a step demands before it can be completed.
+
+/**
+ * One row per document type a step requires — a title deed and a national id are
+ * two rows, not one.
+ *
+ * Nothing enforces the demand yet. The backend has the documents a case holds
+ * (`attachments_processes`) and the types a step wants, but no code compares them;
+ * this screen declares the rule an engine will later read. There is also no
+ * mandatory/optional flag, so every row here reads as required.
+ */
+export const WORKFLOW_STEP_ATTACHMENT_TYPE = defineLookup({
+  slug: 'workflow-step-attachment-types',
+  entity: 'WorkflowStepAttachmentType',
+  entityPlural: 'WorkflowStepAttachmentTypes',
+  permission: 'WORKFLOW_STEP_ATTACHMENT_TYPE',
+  label: 'Required Document',
+  pluralLabel: 'Required Documents',
+  subtitle: 'The papers a step demands before it can be completed',
+  icon: 'file',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      hint: 'Leave blank to name it after the step and the document type',
+      class: 'col-span-full',
+    },
+    {
+      key: 'assignedCode',
+      label: 'Assigned Code',
+      type: FieldType.input,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 2,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: codedColumns,
+  extraGqlFields: `
+  attachmentType
+  workflowStep {
+    ${refFields}
+  }
+`,
+  extraFields: [
+    refSelect('workflowStepUid', 'Workflow Step', ALL_WORKFLOW_STEPS),
+    {
+      ...enumSelect('attachmentType', 'Document Type', ATTACHMENT_TYPE_OPTIONS),
+      hint: 'The step cannot be completed until a document of this type is present',
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: ['workflowStep.name as Step', enumColumn('attachmentType', 'Document Type')],
+  toModel: (data) => ({
+    ...codeToModel(data),
+    workflowStepUid: data?.workflowStep?.id,
+  }),
+});
+
+//  The edges that make the steps a route.
+
+/**
+ * One arrow of a workflow's graph: this step leads to that one, on this route.
+ *
+ * The table that ties the module together. A step carries no workflow of its own,
+ * so this is where a route's shape lives — and because an edge names its
+ * workflow, the same step can appear on two routes with different neighbours in
+ * each.
+ *
+ * The three descriptive columns are UNIQUE on a table of arrows, which no caller
+ * can satisfy by hand, so all three are optional and the backend generates them
+ * from the two steps. Only the workflow and the two ends are asked for.
+ */
+export const WORKFLOW_STEP_CONNECTION = defineLookup({
+  slug: 'workflow-step-connections',
+  entity: 'WorkflowStepConnection',
+  entityPlural: 'WorkflowStepConnections',
+  permission: 'WORKFLOW_STEP_CONNECTION',
+  label: 'Workflow Connection',
+  pluralLabel: 'Workflow Connections',
+  subtitle: 'Which step leads to which, on each route',
+  icon: 'connection',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    refSelect('workflowDefinitionUid', 'Workflow', ALL_WORKFLOW_DEFINITIONS, {
+      labelKey: 'workflowKey',
+      hint: 'An approved workflow can no longer be redrawn',
+    }),
+    refSelect('parentUid', 'From Step', ALL_WORKFLOW_STEPS),
+    refSelect('childUid', 'To Step', ALL_WORKFLOW_STEPS, {
+      hint: 'Must differ from the step above — a step cannot connect to itself',
+    }),
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      hint: 'Leave blank to name it after the two steps',
+      class: 'col-span-full',
+    },
+    {
+      key: 'assignedCode',
+      label: 'Assigned Code',
+      type: FieldType.input,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 2,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: ['index', 'assignedNumber as Code'],
+  extraGqlFields: `
+  workflowDefinition {
+    id
+    uid: id
+    workflowKey
+    isApproved
+  }
+  parent {
+    ${refFields}
+    sequence
+  }
+  child {
+    ${refFields}
+    sequence
+  }
+`,
+  extraColumns: ['workflowDefinition.workflowKey as Workflow', 'parent.name as From', 'child.name as To'],
+  toModel: (data) => ({
+    ...codeToModel(data),
+    workflowDefinitionUid: data?.workflowDefinition?.id,
+    parentUid: data?.parent?.id,
+    childUid: data?.child?.id,
+  }),
+  // Frozen with its workflow: the graph is what records in flight are travelling,
+  // so redrawing it would move them to steps they never passed through.
+  lockedWhen: (record) => !!record?.workflowDefinition?.isApproved,
+  lockedReason: 'This workflow has been approved, so its connections can no longer be changed',
 });
 
 //  What a step offers the person holding it.
@@ -605,7 +919,6 @@ export const STEP_ACTION_EXECUTION = defineLookup({
     id
     uid: id
     workflowKey
-    name
   }
   currentStep {
     ${refFields}
@@ -625,7 +938,7 @@ export const STEP_ACTION_EXECUTION = defineLookup({
   }
 `,
   extraFields: [
-    refSelect('workflowDefinitionUid', 'Workflow', WORKFLOW_DEFINITION.gql.all),
+    refSelect('workflowDefinitionUid', 'Workflow', ALL_WORKFLOW_DEFINITIONS, { labelKey: 'workflowKey' }),
     refSelect('currentStepUid', 'Step Acted On', ALL_WORKFLOW_STEPS, {
       hint: 'Where the record stood when the action was taken',
     }),
@@ -643,7 +956,7 @@ export const STEP_ACTION_EXECUTION = defineLookup({
     roleSelect('Acted Under Role'),
   ],
   extraColumns: [
-    'workflowDefinition.name as Workflow',
+    'workflowDefinition.workflowKey as Workflow',
     'currentStep.name as From',
     'workflowStep.name as To',
     'workflowStepAction.name as Action',
@@ -661,6 +974,185 @@ export const STEP_ACTION_EXECUTION = defineLookup({
   }),
 });
 
+//  A case actually travelling a route.
+
+/**
+ * One run of a workflow — the first screen in this module that stands for a case
+ * rather than a rule.
+ *
+ * **It still has no subject.** A case names its workflow and nothing else: no
+ * column says which application, asset or agreement is being taken through it. So
+ * a case is identified by its own name and code and by what has been done to it,
+ * which is what the two panels below show. A `subjectType`/`subjectId` pair on the
+ * table would close this, and is worth settling before an engine is written.
+ *
+ * A case can only be opened on an approved route: a draft is still being drawn,
+ * and its steps could be rearranged underneath a case already travelling it.
+ */
+export const PROCESS = defineLookup({
+  slug: 'processes',
+  entity: 'Process',
+  entityPlural: 'Processes',
+  permission: 'PROCESS',
+  label: 'Case',
+  pluralLabel: 'Cases',
+  subtitle: 'What is travelling each route, and how far it has got',
+  icon: 'process',
+  baseFields: codedFields(),
+  baseColumns: codedColumns,
+  extraGqlFields: `
+  workflowDefinition {
+    id
+    uid: id
+    workflowKey
+    isApproved
+    applicationType
+  }
+`,
+  extraFields: [
+    refSelect('workflowDefinitionUid', 'Workflow', ALL_WORKFLOW_DEFINITIONS, {
+      labelKey: 'workflowKey',
+      hint: 'Only an approved route can carry a case',
+    }),
+  ],
+  extraColumns: [
+    'workflowDefinition.workflowKey as Workflow',
+    // Not enumColumn: that reads a flat key off the row, and this one is nested.
+    {
+      field: 'workflowDefinition.applicationType',
+      header: 'Application Type',
+      valueFn: (row) => getDisplayName(row?.workflowDefinition?.applicationType),
+    },
+  ],
+  toModel: (data) => ({
+    ...codeToModel(data),
+    workflowDefinitionUid: data?.workflowDefinition?.id,
+  }),
+  // Where the case has been, and what it is carrying. Together these are the only
+  // account of a case there is, since the table names no subject of its own.
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => WORKFLOW_STEP_EXECUTION, WORKFLOW_STEP_EXECUTIONS_BY_PROCESS, {
+      processUid: record?.id,
+    }),
+    ...coreAttachmentPanels(comp, 'process', record?.id),
+  ],
+});
+
+//  What was actually done, and by whom.
+
+/**
+ * One row per action taken on a case.
+ *
+ * **Read this one, not the executions above it.** `STEP_ACTION_EXECUTION` maps the
+ * older `step_action_executions`; both tables exist on the backend and neither is
+ * derived from the other. This one carries the three things that one lacks — the
+ * case it belongs to, the person who decided and when they decided — which is what
+ * makes "where is my application" answerable at all.
+ *
+ * What it gives up in exchange: there is no action here, only a direction. A row
+ * says a case went FORWARD, JUMPed or came BACK, but not which of the step's
+ * actions produced it; the older table can say that and this cannot. Until the two
+ * are reconciled with the DBA, an engine should write to one of them.
+ *
+ * The actor defaults to whoever is signed in, which is what an approval taken on
+ * screen means. Naming someone else is for recording a decision taken off the
+ * system, and the same goes for the date.
+ */
+export const WORKFLOW_STEP_EXECUTION = defineLookup({
+  slug: 'workflow-step-executions',
+  entity: 'WorkflowStepExecution',
+  entityPlural: 'WorkflowStepExecutions',
+  permission: 'WORKFLOW_STEP_EXECUTION',
+  label: 'Recorded Action',
+  pluralLabel: 'Recorded Actions',
+  subtitle: 'What was done to each case, by whom, and when',
+  icon: 'history',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      hint: 'Leave blank to generate — every action needs one the database has not seen',
+      class: 'col-span-full',
+    },
+    {
+      key: 'assignedCode',
+      label: 'Assigned Code',
+      type: FieldType.input,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 2,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: ['index', 'assignedNumber as Code', 'name'],
+  // The column is `statuses` and the property is `status`; GraphQL reads the
+  // property, so this is the name to ask for.
+  extraGqlFields: `
+  status
+  actionType
+  actedAt
+  process {
+    ${refFields}
+  }
+  workflowStep {
+    ${refFields}
+  }
+  actor {
+    id
+    name
+  }
+`,
+  extraFields: [
+    refSelect('processUid', 'Case', ALL_PROCESSES, {
+      hint: 'The case this action was taken on',
+    }),
+    refSelect('workflowStepUid', 'Step', ALL_WORKFLOW_STEPS, {
+      hint: 'Where the case stood when the action was taken',
+    }),
+    enumSelect('status', 'Resulting Status', WORKFLOW_STATUS_OPTIONS),
+    {
+      ...enumSelect('actionType', 'Direction', ACTION_TYPE_OPTIONS),
+      hint: 'Which way the case moved. The table records no action, only this',
+    },
+    refSelect('actorUid', 'Acted By', ALL_BIO_DATA, {
+      required: false,
+      hint: 'Leave blank to record it against yourself',
+    }),
+    {
+      key: 'actedAt',
+      label: 'Acted At',
+      hint: 'Leave blank for now. Set it only when recording something decided off the system',
+      type: FieldType.date,
+    },
+  ],
+  extraColumns: [
+    'process.name as Case',
+    'workflowStep.name as Step',
+    enumColumn('actionType', 'Direction'),
+    enumColumn('status', 'Status'),
+    'actor.name as Acted By',
+    { field: 'actedAt', header: 'Acted At' },
+  ],
+  toModel: (data) => ({
+    ...codeToModel(data),
+    processUid: data?.process?.id,
+    workflowStepUid: data?.workflowStep?.id,
+    actorUid: data?.actor?.id,
+  }),
+  // The papers this action filed. A link panel rather than a child list: the row
+  // is three foreign keys with nothing to edit.
+  extraContents: (comp, record) =>
+    record?.id ? entityLinkPanels(comp, [WORKFLOW_STEP_ATTACHMENT_LINK], record.id) : [],
+});
+
 /**
  * Signing a route off. Kept out of the edit form deliberately — an approved
  * definition is what everything else binds to, so the backend refuses further
@@ -671,6 +1163,11 @@ function approveWorkflowBtn(comp: BaseComponent, lookup: LookupModule): ActionBu
     icon: 'approve',
     label: 'Approve',
     permissions: ['ROLE_APPROVE_WORKFLOW_DEFINITION'],
+    // Gone once the route is signed off. Approving is not a state anything can
+    // return from, so an approved route has nothing left to offer here — the
+    // backend answers "already approved" and the list already says so in its own
+    // column.
+    hideFunction: (data?: Lookup) => !!data?.isApproved,
     click: async (data: Lookup) => {
       await comp.fs.fetch({
         notify: true,
@@ -683,15 +1180,32 @@ function approveWorkflowBtn(comp: BaseComponent, lookup: LookupModule): ActionBu
   };
 }
 
-/** The route itself, which leads the menu. */
-export const WORKFLOW_LOOKUPS: LookupModule[] = [WORKFLOW_DEFINITION];
+/** The route itself, and the cases travelling it — what the module leads with. */
+export const WORKFLOW_LOOKUPS: LookupModule[] = [WORKFLOW_DEFINITION, PROCESS];
 
 /** What a route is built from, grouped behind one menu. */
 export const WORKFLOW_CONFIGURATION_LOOKUPS: LookupModule[] = [
   WORKFLOW_STEP,
+  // Straight after the steps: the connections are what turn a set of steps into
+  // a route, so they read in that order.
+  WORKFLOW_STEP_CONNECTION,
+  // Then what each step carries — who holds it and what it demands. Both read as
+  // properties of a step, so they follow it rather than leading.
+  WORKFLOW_STEP_ROLE,
+  WORKFLOW_STEP_ATTACHMENT_TYPE,
   WORKFLOW_STEP_ACTION,
   STEP_ACTION_ASSIGNEE,
 ];
 
-/** The runtime trail, kept apart from the configuration above. */
-export const WORKFLOW_EXECUTION_LOOKUPS: LookupModule[] = [STEP_ACTION_EXECUTION];
+/**
+ * The runtime trail, kept apart from the configuration above.
+ *
+ * Both tables are here because both exist on the backend and neither is derived
+ * from the other. The recorded actions lead: they are the ones that name a case
+ * and an actor, so they are what a reader wants. See {@link WORKFLOW_STEP_EXECUTION}
+ * for what the older screen below can still answer that this one cannot.
+ */
+export const WORKFLOW_EXECUTION_LOOKUPS: LookupModule[] = [
+  WORKFLOW_STEP_EXECUTION,
+  STEP_ACTION_EXECUTION,
+];

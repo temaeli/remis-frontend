@@ -15,6 +15,7 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
+import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
@@ -195,6 +196,7 @@ export const PERSON = defineLookup({
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
     personOrganisationsPanel(comp, record?.id),
+    ...coreAttachmentPanels(comp, 'bioData', record?.id),
   ],
 });
 
@@ -250,6 +252,7 @@ export const BUSINESS_NAME = defineLookup({
       issuerUid: record?.id,
     }),
     businessNamePeoplePanel(comp, record?.id),
+    ...coreAttachmentPanels(comp, 'businessName', record?.id),
   ],
 });
 
@@ -1331,6 +1334,9 @@ export const STREETS_BY_WARD = gql`
 export const GENERAL_LOOKUPS: LookupModule[] = [
   PERSON,
   BUSINESS_NAME,
+  // remis_core_schema.attachments, not the uaa.attachments the upload screen
+  // serves. See attachment-lookups.ts on why both exist.
+  CORE_ATTACHMENT,
   IDENTITY_TYPE,
   TIN_DATA,
   DEPARTMENT,

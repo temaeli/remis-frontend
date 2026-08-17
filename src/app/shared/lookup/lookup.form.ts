@@ -116,7 +116,26 @@ export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): Acti
     },
     permissions: lookup.upsertPermissions,
     ...getUpsertBtnProps(lookup.label, lookup.idKey),
+    // Only ever true for a record that exists: a create has nothing to judge, so
+    // the header's Add stays enabled whatever the predicate says.
+    disabledFunction: (data?: Lookup) => isLocked(lookup, data),
+    toolTipMapper: (data?: Lookup) => lockedTooltip(lookup, data),
   };
+}
+
+/**
+ * Whether {@link LookupConfig.lockedWhen} closes this record to change.
+ *
+ * Guarded on the identifier so it can only ever be true for a record that
+ * exists — a create has nothing to judge.
+ */
+function isLocked(lookup: LookupModule, data?: Lookup): boolean {
+  return !!data?.[lookup.idKey] && !!lookup.lockedWhen?.(data);
+}
+
+function lockedTooltip(lookup: LookupModule, data?: Lookup): string {
+  if (!isLocked(lookup, data)) return '';
+  return lookup.lockedReason ?? `This ${lookup.label.toLowerCase()} can no longer be changed`;
 }
 
 export function lookupViewBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
@@ -141,9 +160,17 @@ export function lookupDeleteBtn(comp: BaseComponent, lookup: LookupModule): Acti
     },
     ...getDeleteBtnProps(lookup.label, lookup.nameKey ?? 'name'),
     permissions: lookup.deletePermissions,
+    // A frozen record cannot be deleted either — whatever depends on it standing
+    // still depends on it existing.
+    disabledFunction: (data?: Lookup) => isLocked(lookup, data),
+    toolTipMapper: (data?: Lookup) => lockedTooltip(lookup, data),
   };
 }
 
+/**
+ * The row menu. Carries both kinds of extra action: the ones the header shows
+ * too, and the ones confined to a row.
+ */
 export function lookupTableBtns(comp: BaseComponent, lookup: LookupModule): ActionButton[] {
   return [
     {
@@ -152,6 +179,7 @@ export function lookupTableBtns(comp: BaseComponent, lookup: LookupModule): Acti
         lookupViewBtn(comp, lookup),
         lookupUpsertBtn(comp, lookup),
         ...(lookup.extraActions?.(comp, lookup) ?? []),
+        ...(lookup.rowActions?.(comp, lookup) ?? []),
         lookupDeleteBtn(comp, lookup),
       ],
     },
@@ -161,6 +189,9 @@ export function lookupTableBtns(comp: BaseComponent, lookup: LookupModule): Acti
 /**
  * The buttons on a page header — the list's and the detail's alike. Create or
  * edit, then whatever else the table can do.
+ *
+ * Deliberately without {@link LookupConfig.rowActions}: those act on a record
+ * the reader picked out of a list, and a header has no record to act on.
  */
 export function lookupHeaderBtns(comp: BaseComponent, lookup: LookupModule): ActionButton[] {
   return [lookupUpsertBtn(comp, lookup), ...(lookup.extraActions?.(comp, lookup) ?? [])];

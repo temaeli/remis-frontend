@@ -5,6 +5,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
+import { coreAttachmentPanels } from './attachment-lookups';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
@@ -102,7 +103,10 @@ export const TASK = defineLookup({
   icon: 'assignment',
   // A task is a bare catalogue row on its own table; everything it relates to
   // hangs off a join table with its own link/unlink pair. One panel each.
-  extraContents: (comp, record) => taskLinkPanels(comp, record?.id),
+  extraContents: (comp, record) => [
+    ...taskLinkPanels(comp, record?.id),
+    ...coreAttachmentPanels(comp, 'task', record?.id),
+  ],
 });
 
 export const DELIVERABLE = defineLookup({

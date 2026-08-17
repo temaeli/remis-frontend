@@ -145,6 +145,34 @@ export interface LookupConfig {
    * page's header, which is where a reader looking at one record expects them.
    */
   extraActions?: (comp: BaseComponent, lookup: LookupModule) => ActionButton[];
+
+  /**
+   * Whether a record has reached a state that freezes it — an approved workflow,
+   * a signed-off valuation. Something else in the system now depends on it
+   * standing still.
+   *
+   * Disables both **Edit** and **Delete** for that record rather than hiding
+   * them, so the reader can see the actions exist and are closed to them; the
+   * tooltip says why. Nothing is disabled when the predicate is absent, and a
+   * create is never disabled, since there is no record to judge.
+   *
+   * Mirrors a rule the backend already enforces — it does not replace it. The
+   * point is to say so before the round trip rather than after.
+   */
+  lockedWhen?: (record: Lookup) => boolean;
+
+  /** Tooltip shown on the disabled Edit and Delete. Defaults to a generic sentence. */
+  lockedReason?: string;
+
+  /**
+   * The same, but confined to the row menu.
+   *
+   * Use where an action reads as a decision taken on one record picked out of a
+   * list rather than a thing the screen itself does — approving a workflow, say.
+   * On a header it sits beside Create with nothing saying which record it would
+   * act on.
+   */
+  rowActions?: (comp: BaseComponent, lookup: LookupModule) => ActionButton[];
 }
 
 /** A config with everything derived from it — what the screens actually consume. */

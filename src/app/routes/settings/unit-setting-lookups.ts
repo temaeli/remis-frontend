@@ -4,6 +4,7 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
+import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
 
 /**
@@ -107,7 +108,10 @@ export const UNIT = defineLookup({
   // Everything a unit relates to hangs off its own join table with its own
   // link/unlink pair. One panel each, declared in the unit module so this file
   // does not have to know them.
-  extraContents: (comp, record) => unitLinkPanels(comp, record?.id),
+  extraContents: (comp, record) => [
+    ...unitLinkPanels(comp, record?.id),
+    ...coreAttachmentPanels(comp, 'unit', record?.id),
+  ],
 });
 
 /*

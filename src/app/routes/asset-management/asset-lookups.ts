@@ -11,6 +11,7 @@ import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import {
   defineLookup,
   entityLinkPanels,
@@ -223,6 +224,7 @@ export const ASSET = defineLookup({
     }),
     assetProjectsPanel(comp, record?.id),
     ...assetLinkPanels(comp, record?.id),
+    ...coreAttachmentPanels(comp, 'asset', record?.id),
   ],
 });
 
