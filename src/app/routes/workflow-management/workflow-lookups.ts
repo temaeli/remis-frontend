@@ -265,6 +265,14 @@ const WORKFLOW_STEP_ATTACHMENT_TYPES_BY_STEP = gql`
   }
 `;
 
+const WORKFLOW_STEP_ACTION_TYPES_BY_STEP = gql`
+  query workflowStepActionTypesByStep($stepUid: String) {
+    workflowStepActionTypesByStep(stepUid: $stepUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 const PROCESSES_BY_WORKFLOW_DEFINITION = gql`
   query processesByWorkflowDefinition($workflowDefinitionUid: String) {
     processesByWorkflowDefinition(workflowDefinitionUid: $workflowDefinitionUid) {
@@ -564,6 +572,9 @@ export const WORKFLOW_STEP = defineLookup({
       WORKFLOW_STEP_ATTACHMENT_TYPES_BY_STEP,
       { stepUid: record?.id },
     ),
+    lookupChildPanel(comp, () => WORKFLOW_STEP_ACTION_TYPE, WORKFLOW_STEP_ACTION_TYPES_BY_STEP, {
+      stepUid: record?.id,
+    }),
   ],
 });
 
@@ -669,6 +680,82 @@ export const WORKFLOW_STEP_ATTACHMENT_TYPE = defineLookup({
     },
   ],
   extraColumns: ['workflowStep.name as Step', enumColumn('attachmentType', 'Document Type')],
+  toModel: (data) => ({
+    ...codeToModel(data),
+    workflowStepUid: data?.workflowStep?.id,
+  }),
+});
+
+//  What a step offers.
+
+/**
+ * One action a step offers — one of the directions a record can travel from it.
+ *
+ * A step a record can be both approved onward from and returned from has two rows
+ * here, `FORWARD` and `BACK`. This is the list a screen reads to decide which
+ * buttons to show at a step, and the list the backend judges an execution's
+ * direction against.
+ *
+ * Supersedes the single `actionType` on the step itself, which allowed one
+ * direction only — the same way the holders and the required documents above
+ * replaced single columns. That column is still there; where both are set, read
+ * these rows.
+ *
+ * What a direction then means is read off the connections, not from here:
+ * `FORWARD` goes to the step's child on the case's route, `BACK` to its parent.
+ * A step with no child on a route cannot offer a usable `FORWARD` there, and the
+ * backend says so when an execution tries.
+ */
+export const WORKFLOW_STEP_ACTION_TYPE = defineLookup({
+  slug: 'workflow-step-action-types',
+  entity: 'WorkflowStepActionType',
+  entityPlural: 'WorkflowStepActionTypes',
+  permission: 'WORKFLOW_STEP_ACTION_TYPE',
+  label: 'Offered Action',
+  pluralLabel: 'Offered Actions',
+  subtitle: 'The directions a record can travel from a step',
+  icon: 'arrow_forward',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      hint: 'Leave blank to name it after the step and the action',
+      class: 'col-span-full',
+    },
+    {
+      key: 'assignedCode',
+      label: 'Assigned Code',
+      type: FieldType.input,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 2,
+      hint: 'Leave blank to generate automatically',
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: codedColumns,
+  extraGqlFields: `
+  actionType
+  workflowStep {
+    ${refFields}
+  }
+`,
+  extraFields: [
+    refSelect('workflowStepUid', 'Workflow Step', ALL_WORKFLOW_STEPS),
+    {
+      ...enumSelect('actionType', 'Action', ACTION_TYPE_OPTIONS),
+      hint: 'An execution may only record a direction the step offers',
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: ['workflowStep.name as Step', enumColumn('actionType', 'Action')],
   toModel: (data) => ({
     ...codeToModel(data),
     workflowStepUid: data?.workflowStep?.id,
@@ -1117,7 +1204,13 @@ export const WORKFLOW_STEP_EXECUTION = defineLookup({
     refSelect('workflowStepUid', 'Step', ALL_WORKFLOW_STEPS, {
       hint: 'Where the case stood when the action was taken',
     }),
-    enumSelect('status', 'Resulting Status', WORKFLOW_STATUS_OPTIONS),
+    {
+      ...enumSelect('status', 'Resulting Status', WORKFLOW_STATUS_OPTIONS),
+      // A step confers one status and the database refuses any other, so this is
+      // read off the step when left blank rather than chosen.
+      validations: [],
+      hint: 'Leave blank — the step confers its own status',
+    },
     {
       ...enumSelect('actionType', 'Direction', ACTION_TYPE_OPTIONS),
       hint: 'Which way the case moved. The table records no action, only this',
@@ -1193,6 +1286,9 @@ export const WORKFLOW_CONFIGURATION_LOOKUPS: LookupModule[] = [
   // properties of a step, so they follow it rather than leading.
   WORKFLOW_STEP_ROLE,
   WORKFLOW_STEP_ATTACHMENT_TYPE,
+  // And what it offers: the directions a record can travel from a step, which is
+  // what the backend checks an execution's direction against.
+  WORKFLOW_STEP_ACTION_TYPE,
   WORKFLOW_STEP_ACTION,
   STEP_ACTION_ASSIGNEE,
 ];
