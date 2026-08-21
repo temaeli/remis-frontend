@@ -471,6 +471,11 @@ export const WORKFLOW_STEP = defineLookup({
     id
     name
   }
+  workflowDefinition {
+    id
+    uid: id
+    workflowKey
+  }
   parentStep {
     ${refFields}
   }
@@ -479,6 +484,13 @@ export const WORKFLOW_STEP = defineLookup({
   }
 `,
   extraFields: [
+    // The column the DBA added after the module was first built. Required rather
+    // than optional: the database default is a hardcoded workflow id, so a step
+    // saved without one quietly joins whichever route that names.
+    refSelect('workflowDefinitionUid', 'Workflow', ALL_WORKFLOW_DEFINITIONS, {
+      labelKey: 'workflowKey',
+      hint: 'The route this step stands on. Its connections must be drawn on the same one',
+    }),
     {
       key: 'sequence',
       label: 'Sequence',
@@ -544,6 +556,7 @@ export const WORKFLOW_STEP = defineLookup({
   extraColumns: [
     { field: 'sequence', header: 'Seq' },
     'role.name as Role',
+    'workflowDefinition.workflowKey as Workflow',
     enumColumn('actionType', 'Action'),
     enumColumn('newStatus', 'Resulting Status'),
     'parentStep.name as Parent',
@@ -554,6 +567,7 @@ export const WORKFLOW_STEP = defineLookup({
   toModel: (data) => ({
     ...codeToModel(data),
     roleId: data?.role?.id,
+    workflowDefinitionUid: data?.workflowDefinition?.id,
     // parentStep and childStep are null where the record points at itself, which
     // is how the backend spells "none" on a NOT NULL column.
     parentUid: data?.parentStep?.id,
@@ -1205,26 +1219,20 @@ export const WORKFLOW_STEP_EXECUTION = defineLookup({
       hint: 'Where the case stood when the action was taken',
     }),
     {
-      ...enumSelect('status', 'Resulting Status', WORKFLOW_STATUS_OPTIONS),
-      // A step confers one status and the database refuses any other, so this is
-      // read off the step when left blank rather than chosen.
-      validations: [],
-      hint: 'Leave blank — the step confers its own status',
-    },
-    {
       ...enumSelect('actionType', 'Direction', ACTION_TYPE_OPTIONS),
-      hint: 'Which way the case moved. The table records no action, only this',
+      hint: 'Which way the case moved. FORWARD goes to the step\'s child on this case\'s route, BACK to its parent',
     },
-    refSelect('actorUid', 'Acted By', ALL_BIO_DATA, {
-      required: false,
-      hint: 'Leave blank to record it against yourself',
-    }),
-    {
-      key: 'actedAt',
-      label: 'Acted At',
-      hint: 'Leave blank for now. Set it only when recording something decided off the system',
-      type: FieldType.date,
-    },
+    // Three columns this form deliberately does not ask for, all of them filled
+    // by the backend because none of them is really the caller's to choose:
+    //
+    //   status   — the step confers one, and the database refuses any other.
+    //   actor    — the logged-in user's person record. Sending somebody else's is
+    //              still possible from an engine; a screen should not offer it.
+    //   actedAt  — now. It was a date control here, which sent a date with no time
+    //              and could not be read as a timestamp at all.
+    //
+    // All three are still shown in the grid and on the record, read off what was
+    // saved rather than what was typed.
   ],
   extraColumns: [
     'process.name as Case',
