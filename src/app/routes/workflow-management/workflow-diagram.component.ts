@@ -129,7 +129,7 @@ export class WorkflowDiagramComponent {
       this.edgeCount.set(edgeList.length);
 
       if (stepList.length) {
-        await this.render(buildMermaid(stepList, edgeList));
+        await this.render(buildMermaid(stepList, edgeList, systemPalette()));
       }
     } catch {
       this.error.set('The route could not be read. Reopen the workflow to try again.');
@@ -207,18 +207,74 @@ const CONNECTIONS = gql`
   }
 `;
 
+/** The theme tokens the diagram paints with, and what each one covers. */
+interface Palette {
+  /** Fill of an ordinary step. */
+  container: string;
+  /** Text on an ordinary step. */
+  onContainer: string;
+  /** Node borders and every arrow. */
+  primary: string;
+  /** Fill and text of the initial step. */
+  onPrimary: string;
+  /** Fill and text of the final step — approval reads as tertiary. */
+  tertiary: string;
+  onTertiary: string;
+}
+
+/**
+ * The application's own colours, read live rather than written down here.
+ *
+ * Angular Material publishes the theme as `--mat-sys-*` custom properties on the
+ * document, generated from the three seeds in `src/styles/_theme-colors.scss`.
+ * Reading them means the diagram follows the system: retheme the application and
+ * it retints, and because `styles.scss` sets `color-scheme: light dark` the same
+ * tokens already answer differently in dark mode. Hardcoding hexes here would
+ * have made this the one screen that ignores all of that — which is how the
+ * green from another application survived in the first place.
+ *
+ * The fallbacks are the seeds themselves, for the case where the tokens are not
+ * resolvable yet.
+ */
+function systemPalette(): Palette {
+  const styles = getComputedStyle(document.documentElement);
+  const token = (name: string, fallback: string): string =>
+    styles.getPropertyValue(name).trim() || fallback;
+
+  return {
+    container: token('--mat-sys-primary-container', '#d3e4ff'),
+    onContainer: token('--mat-sys-on-primary-container', '#00315b'),
+    primary: token('--mat-sys-primary', '#14487a'),
+    onPrimary: token('--mat-sys-on-primary', '#ffffff'),
+    tertiary: token('--mat-sys-tertiary', '#1c7a4d'),
+    onTertiary: token('--mat-sys-on-tertiary', '#ffffff'),
+  };
+}
+
 /**
  * Turns the route into mermaid source.
  *
  * Node ids are positional (`n0`, `n1`) rather than the steps' uuids: mermaid ids
  * may not contain hyphens, and a uuid is nothing but. The map from uuid to node
  * id is what the edges are drawn against.
+ *
+ * The palette rides in on an `init` directive rather than through
+ * `mermaid.initialize`, so the colours are decided per render against the theme
+ * as it stands, not once at bootstrap.
  */
-function buildMermaid(steps: DiagramStep[], edges: DiagramEdge[]): string {
+function buildMermaid(steps: DiagramStep[], edges: DiagramEdge[], palette: Palette): string {
   const nodeIds = new Map<string, string>();
   steps.forEach((step, index) => nodeIds.set(step.id, `n${index}`));
 
-  const lines = ['graph TD'];
+  const lines = [
+    `%%{init: {'theme':'base','themeVariables':{` +
+      `'primaryColor':'${palette.container}',` +
+      `'primaryTextColor':'${palette.onContainer}',` +
+      `'primaryBorderColor':'${palette.primary}',` +
+      `'lineColor':'${palette.primary}'` +
+      `}}}%%`,
+    'graph TD',
+  ];
 
   steps.forEach((step) => {
     const id = nodeIds.get(step.id);
@@ -240,8 +296,17 @@ function buildMermaid(steps: DiagramStep[], edges: DiagramEdge[]): string {
   const initial = steps.filter((step) => step.isInitial).map((step) => nodeIds.get(step.id));
   const final = steps.filter((step) => step.isFinal).map((step) => nodeIds.get(step.id));
 
-  lines.push('classDef initial fill:#136148,stroke:#0e4a35,color:#ffffff,stroke-width:2px');
-  lines.push('classDef final fill:#fbba17,stroke:#b98708,color:#3b2f00,stroke-width:2px');
+  // The two ends of the route, in the system's own colours: it starts on primary
+  // and finishes on tertiary, which is what approval reads as. Every other node
+  // takes the container tint from the directive above.
+  lines.push(
+    `classDef initial fill:${palette.primary},stroke:${palette.primary},` +
+      `color:${palette.onPrimary},stroke-width:2px`,
+  );
+  lines.push(
+    `classDef final fill:${palette.tertiary},stroke:${palette.tertiary},` +
+      `color:${palette.onTertiary},stroke-width:2px`,
+  );
   if (initial.length) {
     lines.push(`class ${initial.join(',')} initial`);
   }

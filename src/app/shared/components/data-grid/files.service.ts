@@ -51,9 +51,15 @@ interface ExportGridExcelOptions {
   title?: string;
 }
 
-/** System primary color (--color-primary: #136148), used for export headers/titles instead of the old ad-hoc blue. */
-const PRIMARY_ARGB = '136148';
-const PRIMARY_RGB: [number, number, number] = [19, 97, 72];
+/**
+ * System primary colour, used for export headers and titles.
+ *
+ * `#14487a` — the primary that `src/styles/_theme-colors.scss` generates the
+ * whole theme from. It was `#136148` here, a green carried over from another
+ * application, so every spreadsheet and PDF left REMIS in the wrong brand.
+ */
+const PRIMARY_ARGB = '14487a';
+const PRIMARY_RGB: [number, number, number] = [20, 72, 122];
 
 export interface ExcelColumn {
   key?: string;
