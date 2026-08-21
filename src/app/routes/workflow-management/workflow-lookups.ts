@@ -20,6 +20,7 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { ATTACHMENT_TYPE_OPTIONS, coreAttachmentPanels } from '@routes/settings/attachment-lookups';
+import { WorkflowDiagramComponent } from './workflow-diagram.component';
 
 /**
  * The workflow module — `modules.workflow` on the backend.
@@ -273,6 +274,25 @@ const WORKFLOW_STEP_ACTION_TYPES_BY_STEP = gql`
   }
 `;
 
+/**
+ * The steps a route is made of, in travel order.
+ *
+ * Selects more than {@link lookupChildGqlFields} because a step's code and
+ * description say nothing about where it sits: the panel reads by sequence, the
+ * status each step confers and the two ends of the route.
+ */
+const WORKFLOW_STEPS_BY_WORKFLOW_DEFINITION = gql`
+  query workflowStepsByWorkflowDefinition($workflowDefinitionUid: String) {
+    workflowStepsByWorkflowDefinition(workflowDefinitionUid: $workflowDefinitionUid) {
+      ${lookupChildGqlFields}
+      sequence
+      newStatus
+      isInitial
+      isFinal
+    }
+  }
+`;
+
 const PROCESSES_BY_WORKFLOW_DEFINITION = gql`
   query processesByWorkflowDefinition($workflowDefinitionUid: String) {
     processesByWorkflowDefinition(workflowDefinitionUid: $workflowDefinitionUid) {
@@ -425,7 +445,36 @@ export const WORKFLOW_DEFINITION = defineLookup({
   // What is actually travelling this route. Reading it beside the definition is
   // how someone judges whether a route may still be changed — the approval flag
   // says it is frozen, this says who would be disturbed.
+  // The shape of the route, then what it is made of, then what is travelling it.
+  // The diagram leads because it answers in one look what the two grids below it
+  // answer by reading.
   extraContents: (comp, record) => [
+    {
+      type: 'component',
+      name: 'Route Diagram',
+      label: 'Route Diagram',
+      icon: 'workflow',
+      componentType: WorkflowDiagramComponent,
+      componentInputs: { workflowDefinitionUid: record?.id },
+    },
+    lookupChildPanel(
+      comp,
+      () => WORKFLOW_STEP,
+      WORKFLOW_STEPS_BY_WORKFLOW_DEFINITION,
+      { workflowDefinitionUid: record?.id },
+      {
+        keyColumns: [
+          'index',
+          'sequence',
+          'assignedNumber',
+          'name',
+          enumColumn('newStatus', 'Resulting Status'),
+          flagColumn('isInitial', 'Initial'),
+          flagColumn('isFinal', 'Final'),
+          'actions',
+        ],
+      },
+    ),
     lookupChildPanel(comp, () => PROCESS, PROCESSES_BY_WORKFLOW_DEFINITION, {
       workflowDefinitionUid: record?.id,
     }),

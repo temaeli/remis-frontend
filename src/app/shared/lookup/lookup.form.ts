@@ -226,18 +226,24 @@ export const lookupChildColumns: GridKeyColumn[] = [
  * `child` is a thunk because the query it pairs with is usually declared below
  * the parent's config; reading it at render time lets a parent point at a child
  * defined after it.
+ *
+ * `keyColumns` overrides {@link lookupChildColumns} for the panels where the
+ * generic code/name/description says too little — a workflow's steps read by
+ * their order and the status each confers, not by their descriptions. Pass the
+ * matching fields in the query too: a column selects from what was fetched.
  */
 export const lookupChildPanel = (
   comp: BaseComponent,
   child: () => LookupModule,
   query: unknown,
   variables: Record<string, unknown>,
+  options: { keyColumns?: GridKeyColumn[] } = {},
 ): ContentParameter => ({
   type: 'table',
   name: child().pluralLabel,
   label: child().pluralLabel,
   icon: child().icon,
-  keyColumns: lookupChildColumns,
+  keyColumns: options.keyColumns ?? lookupChildColumns,
   actionButtons: lookupTableBtns(comp, child()),
   reloadActions$: [child().changed$],
   fetchParameter: { query, variables },
