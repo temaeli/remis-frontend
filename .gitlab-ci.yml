@@ -7,9 +7,7 @@ stages:
   - docker
   - deploy
 
-# ============================================
 # BUILD
-# ============================================
 build:
   stage: build
   image: node:20-alpine
@@ -36,11 +34,8 @@ build:
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "prod"
 
-# ============================================
 # DOCKER
-# ============================================
 docker:
   stage: docker
   image: docker:cli
@@ -55,26 +50,23 @@ docker:
     - echo "Docker image built successfully!"
   
   rules:
-    - if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == "staging"
-    - if: $CI_COMMIT_BRANCH == "prod"
 
-# ============================================
-# DEPLOY - DEV (Auto)
+# DEPLOY 
 # ============================================
 deploy-dev:
   stage: deploy
   image: docker:cli
   
   script:
-    - echo "Deploying frontend to DEVELOPMENT..."
-    - docker stop remis-frontend-dev || true
-    - docker rm remis-frontend-dev || true
-    - docker run -d --name remis-frontend-dev --network remis-network -p 81:80 remis-frontend:dev-latest
-    - echo "Dev frontend deployment successful!"
-    - docker ps | grep remis-frontend-dev
+    - echo "Deploying frontend to STAGING..."
+    - docker stop remis-frontend-staging || true
+    - docker rm remis-frontend-staging || true
+    - docker run -d --name remis-frontend-staging --network remis-network -p 81:80 remis-frontend:staging-latest
+    - echo "Staging frontend deployment successful!"
+    - docker ps | grep remis-frontend-staging
   
   rules:
-    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == "staging"
       when: on_success
 
