@@ -123,12 +123,20 @@ const cascadeSelect = (
   query: unknown,
   variables: Record<string, unknown>,
   dependsOn: string,
+  /**
+   * Whether the value is sent. Only the street is: the four levels above it
+   * exist to narrow the list, and LandRegistrationDtoInput has no field for
+   * them — submitting one is rejected outright by GraphQL, which is what
+   * "field name 'regionUid' is not defined for input object type" means.
+   */
+  submitted = false,
 ): FieldConfig => ({
   key,
   label,
   type: FieldType.select,
   optionsVariables: { labelKey: 'name', valueKey: 'id', fetchParameter: { query, variables } },
   validations: [VALIDATOR_REQUIRED],
+  ignoreOnSubmit: !submitted,
   // Hidden until its parent is chosen: an empty select with no explanation reads
   // as a broken form.
   showWhen: [{ key: dependsOn, checker: (v: any) => !!v }],
@@ -150,6 +158,8 @@ export const locationCascadeFields = (): FieldConfig[] => [
     type: FieldType.select,
     optionsVariables: { labelKey: 'name', valueKey: 'id', fetchParameter: { query: REGION.gql.all } },
     validations: [VALIDATOR_REQUIRED],
+    // Narrows the list below it and goes no further. See cascadeSelect.
+    ignoreOnSubmit: true,
     onChange: (value: any, form?: any) => {
       regionUid$.next(value ?? null);
       clearBelow('region', form);
@@ -177,7 +187,8 @@ export const locationCascadeFields = (): FieldConfig[] => [
       clearBelow('ward', form);
     },
   },
-  cascadeSelect('streetUid', 'Street', STREETS_BY_WARD, { wardUid: wardUid$ }, 'wardUid'),
+  // The only level of the cascade the DTO has a field for.
+  cascadeSelect('streetUid', 'Street', STREETS_BY_WARD, { wardUid: wardUid$ }, 'wardUid', true),
 ];
 
 /**
@@ -263,11 +274,14 @@ export const encumbranceFields = (): FieldConfig => ({
       type: FieldType.input,
       hint: 'Leave blank to generate automatically',
     },
-    { key: 'registeredDate', label: 'Registered On', type: FieldType.date },
+    // dateTime, not date: land_encumbrances.registered_date and resolved_date are
+    // timestamp columns and the DTO takes LocalDateTime, so a date-only value
+    // fails to coerce. Same pairing Acquisition and Dispose already use.
+    { key: 'registeredDate', label: 'Registered On', type: FieldType.dateTime },
     {
       key: 'resolvedDate',
       label: 'Resolved On',
-      type: FieldType.date,
+      type: FieldType.dateTime,
       hint: 'Leave blank while the encumbrance is still outstanding',
     },
     {
