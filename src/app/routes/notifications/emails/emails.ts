@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import { BaseComponent } from '@shared/components/base-componet/base-component';
@@ -11,7 +11,12 @@ import { GridKeyColumn, GridParameter } from '@shared/components/data-grid/data-
 import { FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_EMAIL, VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 
-import { ALL_NOTIFICATIONS_PAGEABLE, SEND_TEST_EMAIL } from './emails.graphql';
+import {
+  ALL_NOTIFICATIONS_PAGEABLE,
+  FAILED_NOTIFICATION_COUNT,
+  FAILED_NOTIFICATIONS_PAGEABLE,
+  SEND_TEST_EMAIL,
+} from './emails.graphql';
 
 /**
  * Every email the system has attempted, and whether it left.
@@ -35,14 +40,26 @@ import { ALL_NOTIFICATIONS_PAGEABLE, SEND_TEST_EMAIL } from './emails.graphql';
     </div>
   `,
 })
-export class Emails extends BaseComponent {
+export class Emails extends BaseComponent implements OnInit {
   override title = 'Emails';
   override subtitle = 'Every email the system has attempted, and whether it left';
 
   /** Reload signal, so a test send refreshes the grid it was launched from. */
   private sent$ = new Subject<unknown>();
 
-  override actionButtons: ActionButton[] = [this.sendTestBtn()];
+  /**
+   * Whether the grid is showing only what failed.
+   *
+   * A filter rather than a second screen: the two lists differ by one predicate
+   * and the columns are identical, so a tab would be two of everything to save
+   * one click.
+   */
+  failedOnly = false;
+
+  /** How many have not left. Shown in the subtitle so the number is visible without filtering. */
+  failedCount = 0;
+
+  override actionButtons: ActionButton[] = [this.filterBtn(), this.sendTestBtn()];
 
   keyColumns: GridKeyColumn[] = [
     'index',
@@ -70,6 +87,55 @@ export class Emails extends BaseComponent {
     reloadActions$: [this.sent$],
     fetchParameter: { query: ALL_NOTIFICATIONS_PAGEABLE },
   };
+
+  async ngOnInit(): Promise<void> {
+    await this.refreshFailedCount();
+  }
+
+  /**
+   * Reads the failed count and folds it into the subtitle.
+   *
+   * Its own query rather than counting the grid: the grid is paged, so its rows
+   * are one page of the answer and not the answer.
+   */
+  private async refreshFailedCount(): Promise<void> {
+    const res = await this.fs.fetch({
+      query: FAILED_NOTIFICATION_COUNT,
+      showLoading: false,
+      mapData: false,
+    });
+    this.failedCount = res?.data?.failedNotificationCount ?? res?.failedNotificationCount ?? 0;
+    this.subtitle = this.failedCount
+      ? `Every email the system has attempted — ${this.failedCount} did not leave`
+      : 'Every email the system has attempted, and whether it left';
+    this.cdr.detectChanges();
+  }
+
+  /** Swaps the grid between everything and only what failed. */
+  filterBtn(): ActionButton {
+    return {
+      icon: this.failedOnly ? 'list' : 'exclamation',
+      label: this.failedOnly ? 'Show All' : 'Show Failed Only',
+      toolTip: this.failedOnly
+        ? 'Show every email, sent or not'
+        : 'Show only the emails that did not leave',
+      permissions: ['ROLE_VIEW_ALL_NOTIFICATION', 'ROLE_VIEW_NOTIFICATION'],
+      click: () => {
+        this.failedOnly = !this.failedOnly;
+        // Both the grid config and the button array are replaced rather than
+        // mutated: the header and the grid are OnPush, and a new reference is
+        // what tells them the input changed.
+        this.gridParameter = {
+          ...this.gridParameter,
+          fetchParameter: {
+            query: this.failedOnly ? FAILED_NOTIFICATIONS_PAGEABLE : ALL_NOTIFICATIONS_PAGEABLE,
+          },
+        };
+        this.actionButtons = [this.filterBtn(), this.sendTestBtn()];
+        this.cdr.detectChanges();
+      },
+    };
+  }
 
   /**
    * Sends a message and waits for the mail server.
@@ -141,6 +207,9 @@ export class Emails extends BaseComponent {
 
             const result = res?.data?.sendTestEmail ?? res?.sendTestEmail ?? res;
             this.sent$.next(result);
+            // A test that failed adds a row to the backlog, so the subtitle is
+            // stale the moment this returns either way.
+            await this.refreshFailedCount();
 
             if (result?.status) {
               this.notify.success(result?.message ?? `Test email sent to ${value?.email}`);
