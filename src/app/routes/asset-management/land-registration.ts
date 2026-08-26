@@ -191,109 +191,6 @@ export const locationCascadeFields = (): FieldConfig[] => [
   cascadeSelect('streetUid', 'Street', STREETS_BY_WARD, { wardUid: wardUid$ }, 'wardUid', true),
 ];
 
-/**
- * Who holds the registration, and for what share.
- *
- * The owner is an existing person on the register, chosen by uid — there is no
- * owner table of its own, so there is nothing to type a name into. The backend
- * rejects any set whose shares do not total exactly 100, which is why the hint
- * says so before the submit does.
- */
-export const ownerFields = (): FieldConfig => ({
-  key: 'owners',
-  label: 'Owners',
-  icon: 'users',
-  type: FieldType.formGroupArray,
-  itemLabelTemplate: '{{ownerType}}',
-  class: 'col-span-full',
-  hint: 'Shares must add up to exactly 100%. Leave blank when editing to keep the current owners.',
-  // No required validators on these three. The section always renders one row, so
-  // an edit that does not touch ownership would otherwise be unsubmittable until
-  // every owner was typed in again. A row left blank is dropped by the backend;
-  // a row half-filled is rejected there with a message naming the person.
-  fields: [
-    {
-      key: 'bioDataUid',
-      label: 'Owner',
-      type: FieldType.select,
-      optionsVariables: {
-        labelKey: 'name',
-        valueKey: 'id',
-        fetchParameter: { query: PERSON.gql.all },
-      },
-    },
-    {
-      key: 'ownerType',
-      label: 'Held As',
-      type: FieldType.select,
-      options: OWNER_TYPE_OPTIONS,
-    },
-    {
-      key: 'ownershipSharePercent',
-      label: 'Share (%)',
-      type: FieldType.decimal,
-      decimals: 2,
-      min: 0,
-      max: 100,
-    },
-  ],
-});
-
-/**
- * What is registered against the parcel.
- *
- * Optional — a clean title has none. Note `resolvedDate`: the column is NOT NULL,
- * so there is no way to store "still outstanding". Left blank, the backend stores
- * the registered date, and that is what an open encumbrance looks like until the
- * column is made nullable.
- */
-export const encumbranceFields = (): FieldConfig => ({
-  key: 'encumbrances',
-  label: 'Encumbrances',
-  icon: 'gavel',
-  type: FieldType.formGroupArray,
-  itemLabelTemplate: '{{encumbranceType}} {{referenceNumber}}',
-  expandable: true,
-  expanded: false,
-  class: 'col-span-full',
-  fields: [
-    { key: 'uid', type: FieldType.input, visible: false },
-    {
-      key: 'encumbranceType',
-      label: 'Type',
-      type: FieldType.select,
-      options: ENCUMBRANCE_TYPE_OPTIONS,
-    },
-    // The row is identified by its name: leave it blank and the whole row is
-    // ignored, which is how "no encumbrances" is expressed through a section that
-    // always renders one.
-    { key: 'name', label: 'Name', type: FieldType.input },
-    {
-      key: 'referenceNumber',
-      label: 'Reference Number',
-      type: FieldType.input,
-      hint: 'Leave blank to generate automatically',
-    },
-    // dateTime, not date: land_encumbrances.registered_date and resolved_date are
-    // timestamp columns and the DTO takes LocalDateTime, so a date-only value
-    // fails to coerce. Same pairing Acquisition and Dispose already use.
-    { key: 'registeredDate', label: 'Registered On', type: FieldType.dateTime },
-    {
-      key: 'resolvedDate',
-      label: 'Resolved On',
-      type: FieldType.dateTime,
-      hint: 'Leave blank while the encumbrance is still outstanding',
-    },
-    {
-      key: 'description',
-      label: 'Description',
-      type: FieldType.textarea,
-      rows: 2,
-      class: 'col-span-full',
-    },
-  ],
-});
-
 const HALF = 'col-span-full md:col-span-1';
 
 /** The parcel's identifiers and extent — step three. */
@@ -442,35 +339,27 @@ export const landRegistrationToModel = (data?: Lookup): Record<string, unknown> 
     councilUid: council?.id,
     wardUid: ward?.id,
     streetUid: data?.['street']?.id,
-    // Deliberately not seeded. Owners and encumbrances are read through
-    // landRegistrationOwners / landRegistrationEncumbrances rather than nested on
-    // the record, so there is nothing to prefill them from here. Both sections
-    // open blank, and a blank section leaves what is already saved untouched.
-    owners: [],
-    encumbrances: [],
   };
 };
 
 /**
- * The six steps the form is broken into.
+ * The four steps the form is broken into.
  *
  * A land registration is twenty-odd required fields. Flat, it is a wall that
  * gives no indication of what belongs with what, and the location cascade in the
  * middle of it reveals four more controls as you go — which reads as the form
  * growing while you fill it in. Grouped, each step is one question: which asset,
- * where is it, what is the parcel, how is it held, who owns it, what is against
- * it.
+ * where is it, what is the parcel, how is it held.
+ *
+ * Owners and encumbrances used to be a fifth and sixth step. They are tabs on
+ * the saved registration now — see land-registration-panels — because both are
+ * things added to a registration that already exists rather than facts known
+ * while it is being typed.
  *
  * Steps address fields by key, so the field configs above are untouched. Every
  * key that exists must appear in exactly one step: a field in none of them still
  * submits — the form group holds every control regardless — but it renders
  * nowhere, so the user could never fill it in.
- *
- * The last two are marked optional so the stepper does not block on them. Owners
- * are genuinely required by the backend on create, but their rows carry no
- * required validators (see ownerFields), so the stepper cannot tell a blank
- * section from a finished one. The rule is enforced where it can be judged
- * properly — server-side, against the whole set at once.
  */
 export const landRegistrationSteps = (): FormStepper[] => [
   {
@@ -500,19 +389,5 @@ export const landRegistrationSteps = (): FormStepper[] => [
     name: 'Tenure',
     icon: 'gavel',
     keys: ['tenureType', 'permittedUse', 'leaseStartDate', 'leaseEndDate', 'leaseTermYears'],
-  },
-  {
-    name: 'Owners',
-    icon: 'users',
-    keys: ['owners'],
-    optional: true,
-    submitLabel: 'Save Registration',
-  },
-  {
-    name: 'Encumbrances',
-    icon: 'assignment',
-    keys: ['encumbrances'],
-    optional: true,
-    submitLabel: 'Save Registration',
   },
 ];
