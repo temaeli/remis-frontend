@@ -13,6 +13,14 @@ import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import {
+  encumbranceFields,
+  landRegistrationGqlFields,
+  landRegistrationToModel,
+  locationCascadeFields,
+  ownerFields,
+  parcelFields,
+} from './land-registration';
+import {
   defineLookup,
   entityLinkPanels,
   lookupChildGqlFields,
@@ -235,21 +243,27 @@ export const LAND_REGISTRATION = defineLookup({
   permission: 'LAND_REGISTRATION',
   label: 'Land Registration',
   pluralLabel: 'Land Registrations',
-  subtitle: 'Registrations held against land assets',
+  subtitle: 'Registered parcels — their title, tenure, owners and encumbrances',
   icon: 'land_administration',
-  extraGqlFields: `
-  asset {
-    ${lookupRefGqlFields}
-    status
-  }
-`,
+  extraGqlFields: landRegistrationGqlFields,
   extraFields: [
     // Every asset is listed, but the backend rejects any whose type is not
     // flagged forLand — the error comes back on submit.
     parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    ...locationCascadeFields(),
+    ...coordinateFields(),
+    ...parcelFields(),
+    ownerFields(),
+    encumbranceFields(),
   ],
-  extraColumns: ['asset.name as Asset'],
-  toModel: (data) => ({ assetUid: data?.asset?.id }),
+  extraColumns: [
+    'asset.name as Asset',
+    'parcelNumber as Parcel',
+    'titleNumber as Title',
+    'street.name as Street',
+    { field: 'tenureType', header: 'Tenure', valueFn: (row) => getDisplayName(row?.tenureType) },
+  ],
+  toModel: landRegistrationToModel,
 });
 
 /**
