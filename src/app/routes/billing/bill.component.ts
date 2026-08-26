@@ -8,6 +8,8 @@ import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
 import { BILL_AMOUNT_OF_BILL, BILL_ITEMS_OF_BILL, FIND_BILL } from './bill.graphql';
+import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
+import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
 
 /**
  * One bill: its own fields, the lines it is made of, and what it comes to.
@@ -41,6 +43,24 @@ export class BillComponent extends BaseComponent implements OnInit {
     successFn: (res) => (this.title = res?.data?.name),
     variables: { uid: this.billUid },
   };
+
+  /**
+   * What has been paid against this bill.
+   *
+   * Keyed on the bill's header rather than the bill itself: GePG reports a
+   * payment against payment_headers.bill_headers_id, and a header can carry more
+   * than one bill, so this is every payment raised under the same header. Close
+   * enough to be the answer someone looking at a bill wants, and the only link
+   * the schema actually provides.
+   */
+  paymentColumns: GridKeyColumn[] = [
+    'index',
+    'customerControlNumber as Control Number',
+    'grpBillId as Group Bill Id',
+    'entryCount as Transactions',
+    { field: 'createdAt', header: 'Received' },
+    'actions',
+  ];
 
   itemColumns: GridKeyColumn[] = [
     'index',
@@ -85,6 +105,19 @@ export class BillComponent extends BaseComponent implements OnInit {
         fetchParameter: {
           query: BILL_ITEMS_OF_BILL,
           variables: { billDetailUid: this.billUid },
+        },
+      },
+      {
+        type: 'table',
+        name: 'Payments',
+        label: 'Payments',
+        icon: 'coins',
+        permissions: PAYMENT_VIEW_PERMISSIONS,
+        keyColumns: this.paymentColumns,
+        actionButtons: [paymentViewBtnFrom(this)],
+        fetchParameter: {
+          query: PAYMENTS_OF_BILL_HEADER,
+          variables: { billHeaderUid: this.bill?.billHeader?.id },
         },
       },
       {

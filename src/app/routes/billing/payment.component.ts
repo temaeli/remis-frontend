@@ -11,6 +11,7 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 
 import {
   CHECK_PAYMENT_TOTAL,
+  CHECK_PAYMENT_TRANSACTION,
   FIND_PAYMENT,
   PAYMENT_DELIVERY_STATUS,
   PAYMENT_TOTAL_OF_PAYMENT,
@@ -70,7 +71,38 @@ export class PaymentComponent extends BaseComponent implements OnInit {
     { field: 'balance', header: 'Balance' },
     { field: 'paidAmountEquivalentTzs', header: 'Paid (TZS)' },
     { field: 'transactionDateTime', header: 'Paid At' },
+    'actions',
   ];
+
+  /**
+   * The rules against one transaction rather than the whole payment.
+   *
+   * Checking the payment checks everything, which is the right default but a
+   * blunt answer when a payment carries a dozen transactions and one of them
+   * disagrees with its bill. This says which.
+   */
+  checkTransactionBtn(): ActionButton {
+    return {
+      icon: 'shield',
+      label: 'Check',
+      toolTip: 'Check this transaction against the bill item it pays for',
+      permissions: PAYMENT_VIEW_PERMISSIONS,
+      click: async (row: { id?: string; transactionId?: string }) => {
+        const problems: string[] = await this.fs.fetch({
+          query: CHECK_PAYMENT_TRANSACTION,
+          variables: { uid: row?.id },
+        });
+
+        if (!problems?.length) {
+          this.notify.success(`Transaction ${row?.transactionId ?? ''} agrees with its bill item`);
+          return;
+        }
+        this.notify.error(
+          `${problems.length} problem${problems.length > 1 ? 's' : ''}:<br>• ${problems.join('<br>• ')}`,
+        );
+      },
+    };
+  }
 
   /**
    * Re-runs the integrity rules against what is stored.
@@ -151,6 +183,7 @@ export class PaymentComponent extends BaseComponent implements OnInit {
         label: 'Transactions',
         icon: 'list',
         keyColumns: this.transactionColumns,
+        actionButtons: [this.checkTransactionBtn()],
         fetchParameter: {
           query: PAYMENT_TRANSACTIONS_OF_PAYMENT,
           variables: { paymentHeaderUid: this.paymentUid },
