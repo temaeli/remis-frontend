@@ -161,6 +161,15 @@ export interface LookupConfig {
   /** Width of the upsert modal. Defaults to 60%; a stepper usually wants more. */
   modalWidth?: string;
 
+  /**
+   * Overrides MatDialog's own 80vw ceiling, which otherwise caps `modalWidth`
+   * however large it is set. Only worth passing alongside a width above 80%.
+   */
+  modalMaxWidth?: string;
+
+  /** Caps the modal's height so a long form scrolls inside it rather than off-screen. */
+  modalMaxHeight?: string;
+
   /** Panels appended to the detail page, below the details block. */
   extraContents?: (comp: BaseComponent, record?: Lookup) => ContentParameter[];
 

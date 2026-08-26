@@ -264,7 +264,12 @@ export const LAND_REGISTRATION = defineLookup({
   // ward and street as you go reads as progress rather than the form growing.
   formSteppers: landRegistrationSteps(),
   stepperAppearance: 'fill',
-  modalWidth: '75%',
+  // Six steps, and the widest of them puts four identifiers and two areas on one
+  // page. MatDialog caps dialogs at 80vw, so the ceiling has to be lifted too or
+  // the width below is ignored.
+  modalWidth: '92%',
+  modalMaxWidth: '800px',
+  modalMaxHeight: '90vh',
   extraColumns: [
     'asset.name as Asset',
     'parcelNumber as Parcel',

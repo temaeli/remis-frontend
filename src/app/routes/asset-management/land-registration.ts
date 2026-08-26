@@ -12,7 +12,6 @@ import { lookupRefGqlFields } from '@shared/lookup';
 import { Lookup } from '@shared/lookup/lookup.interface';
 
 import {
-  COUNCIL,
   COUNCILS_BY_DISTRICT,
   DISTRICTS_BY_REGION,
   PERSON,
@@ -281,7 +280,6 @@ export const encumbranceFields = (): FieldConfig => ({
   ],
 });
 
-/** The parcel's own identifiers, extent and lease terms. */
 const HALF = 'col-span-full md:col-span-1';
 
 /** The parcel's identifiers and extent — step three. */
@@ -438,7 +436,6 @@ export const landRegistrationToModel = (data?: Lookup): Record<string, unknown> 
     encumbrances: [],
   };
 };
-
 
 /**
  * The six steps the form is broken into.

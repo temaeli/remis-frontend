@@ -118,7 +118,10 @@ export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): Acti
         },
       };
 
-      comp.vs?.openModal(FormComponent, formParameter, lookup.modalWidth ?? '60%');
+      // maxWidth is passed explicitly because MatDialog caps every dialog at
+      // 80vw by default, which would silently shrink any modalWidth above it.
+      comp.vs?.openModal(FormComponent, formParameter, lookup.modalWidth ?? '60%',
+          lookup.modalMaxHeight, { maxWidth: lookup.modalMaxWidth });
     },
     permissions: lookup.upsertPermissions,
     ...getUpsertBtnProps(lookup.label, lookup.idKey),

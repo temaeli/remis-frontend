@@ -33,7 +33,73 @@ import { NotificationService } from '@shared/services/notification.service';
     MatTooltip,
     MergeClassesPipe,
   ],
-  styles: [],
+  styles: [
+    `
+      /*
+       * The stepper's Back and Proceed buttons.
+       *
+       * They carried a hardcoded #417f6a green and swapped it on mouseenter
+       * through a TypeScript handler, which put them on a colour the theme does
+       * not contain — the system primary is #14487a. These are the Material 3
+       * system tokens the rest of the app is themed from, so the buttons follow
+       * a palette change instead of having to be found and edited.
+       */
+      .step-nav-btn {
+        background-color: var(--mat-sys-primary);
+        color: var(--mat-sys-on-primary);
+        transition:
+          background-color 150ms ease,
+          box-shadow 150ms ease;
+      }
+
+      .step-nav-btn:hover:not([disabled]) {
+        /* colour-mix rather than a second hardcoded hex: the hover shade is
+           derived from whatever primary currently is. */
+        background-color: color-mix(in srgb, var(--mat-sys-primary) 88%, black);
+      }
+
+      /*
+       * Icons in the step navigation.
+       *
+       * mat-icon is hard-sized to 24px in width, height and font-size, so the
+       * text-base / text-lg / text-xs the buttons carried changed nothing: an
+       * svgIcon fills the 24px box whatever the font size is. That is why the
+       * icon beside Proceed read as oversized next to a py-1 button.
+       *
+       * Sized here rather than per button so every icon in the row matches,
+       * including the ones a future button adds.
+       */
+      .step-nav mat-icon,
+      .step-nav .mat-icon {
+        width: 1rem;
+        height: 1rem;
+        font-size: 1rem;
+        line-height: 1rem;
+      }
+
+      .step-nav mat-icon svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* The invalid-inputs button holds nothing but an icon, so it should be
+         square and tight rather than carrying a text button's padding. */
+      .step-nav-icon-btn {
+        min-width: 0;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .step-nav-btn[disabled] {
+        background-color: var(--mat-sys-surface-variant);
+        color: var(--mat-sys-on-surface-variant);
+        opacity: 0.6;
+        box-shadow: none;
+      }
+    `,
+  ],
   host: { class: 'grow' },
 })
 export class GenericFormComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
@@ -378,12 +444,5 @@ export class GenericFormComponent implements OnInit, OnChanges, OnDestroy, After
     // getInvalidControls(stepForm, []).forEach((inv: InvalidControl) => {
     //   this.ds.highlightFormField(inv.key, this.r2);
     // });
-  }
-
-  changeButtonColor(event: MouseEvent, color: string): void {
-    const target = event.target as HTMLElement;
-    if (target?.style) {
-      target.style.backgroundColor = color;
-    }
   }
 }

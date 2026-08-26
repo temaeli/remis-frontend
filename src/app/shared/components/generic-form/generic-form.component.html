@@ -34,17 +34,14 @@
                 />
 
                 <!-- step navigations -->
-                <div class="w-full flex justify-between items-center gap-4 mt-8">
+                <div class="step-nav w-full flex justify-between items-center gap-4 mt-8">
                   <div class="flex items-center gap-3">
                     @if (index !== 0) {
                       <button
                         type="button"
                         mat-raised-button
                         (click)="stepper.previous()"
-                        class="flex items-center justify-center px-3 py-1 text-white text-sm font-medium rounded shadow"
-                        style="background-color: #417f6a"
-                        (mouseenter)="changeButtonColor($event, '#2f6251')"
-                        (mouseleave)="changeButtonColor($event, '#417f6a')"
+                        class="step-nav-btn flex items-center justify-center px-3 py-1 text-sm font-medium rounded shadow"
                       >
                         <mat-icon svgIcon="arrow_left" class="text-base mr-1" />
                         <span>Back</span>
@@ -71,9 +68,9 @@
                         [matTooltip]="'View Missing Inputs'"
                         (click)="viewInvalid(step.formGroup)"
                         type="button"
-                        class="text-orange-600"
+                        class="step-nav-icon-btn text-orange-600"
                       >
-                        <mat-icon svgIcon="exclamation" class="text-lg" />
+                        <mat-icon svgIcon="exclamation" />
                       </button>
                     }
 
@@ -85,10 +82,7 @@
                         mat-raised-button
                         (click)="onProceed(step, index, stepper)"
                         [disabled]="linearSteppers && !!!step.optional && step?.formGroup?.invalid"
-                        class="flex items-center justify-center px-3 py-1 text-white text-sm font-medium rounded shadow disabled:bg-gray-300 disabled:cursor-not-allowed"
-                        style="background-color: #417f6a"
-                        (mouseenter)="changeButtonColor($event, '#2f6251')"
-                        (mouseleave)="changeButtonColor($event, '#417f6a')"
+                        class="step-nav-btn flex items-center justify-center px-3 py-1 text-sm font-medium rounded shadow disabled:cursor-not-allowed"
                       >
                         <span>Proceed</span>
                         <mat-icon svgIcon="caret_right" class="text-base ml-1" />
