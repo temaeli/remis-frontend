@@ -4,6 +4,7 @@ import { matchRoute } from '@shared/components/view-component/view.helpers';
 
 import { BILL_CONFIGURATION_LOOKUPS } from './bill-lookups';
 import { BILL_RAISE_PERMISSIONS, BILL_VIEW_PERMISSIONS } from './bill.form';
+import { PAYMENT_VIEW_PERMISSIONS } from './payment.form';
 
 export const BILLING_ROUTES: TypedRoutes = [
   {
@@ -27,6 +28,30 @@ export const BILLING_ROUTES: TypedRoutes = [
     matcher: (url) => matchRoute(url, 'bills', 'uid'),
     data: { name: 'Bill' },
     loadComponent: () => import('./bill.component').then((m) => m.BillComponent),
+  },
+
+  /**
+   * What has been paid, as GePG reports it.
+   *
+   * A screen rather than a lookup: payments are written from a callback, not by
+   * a clerk, so there is nothing to add or edit — and the backend exposes
+   * transactions and totals through queries of their own rather than the five a
+   * lookup config expects.
+   */
+  {
+    path: 'payments',
+    data: {
+      isMenu: true,
+      name: 'Payments',
+      icon: 'coins',
+      permissions: PAYMENT_VIEW_PERMISSIONS,
+    },
+    loadComponent: () => import('./payments.component').then((m) => m.PaymentsComponent),
+  },
+  {
+    matcher: (url) => matchRoute(url, 'payments', 'uid'),
+    data: { name: 'Payment' },
+    loadComponent: () => import('./payment.component').then((m) => m.PaymentComponent),
   },
 
   /**
