@@ -13,10 +13,12 @@ import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import {
+  encumbranceFields,
   landRegistrationGqlFields,
   landRegistrationSteps,
   landRegistrationToModel,
   locationCascadeFields,
+  ownerFields,
   parcelFields,
   tenureFields,
 } from './land-registration';
@@ -258,23 +260,25 @@ export const LAND_REGISTRATION = defineLookup({
     ...coordinateFields(),
     ...parcelFields(),
     ...tenureFields(),
+    ownerFields(),
+    encumbranceFields(),
   ],
   // Twenty-odd required fields is a wall as one page. The steps group them into
   // six questions and give the location cascade a page of its own, so revealing
   // ward and street as you go reads as progress rather than the form growing.
   formSteppers: landRegistrationSteps(),
   stepperAppearance: 'fill',
-  // Four steps now that owners and encumbrances have their own tabs, and the
-  // widest of them puts four identifiers and two areas on one page. MatDialog
+  // Six steps, and the widest of them puts four identifiers and two areas on one
+  // page. MatDialog
   // caps dialogs at 80vw, so the ceiling has to be lifted too or the width below
   // is ignored.
   modalWidth: '90%',
   modalMaxWidth: '1200px',
   modalMaxHeight: '90vh',
-  // Owners and encumbrances are not on the form. Both are added to a
-  // registration that already exists — a co-owner joins one that already has
-  // two, a caveat is lodged months after the title — so each gets a tab of its
-  // own where a single row is added, amended or removed.
+  // Owners and encumbrances are on the form as well as here. The form takes what
+  // is known while the title is being entered and replaces the whole set; these
+  // tabs take what arrives afterwards — a co-owner, a caveat lodged months later
+  // — one row at a time.
   extraContents: (comp, record) => [
     landRegistrationOwnerPanel(comp, record?.id),
     landRegistrationEncumbrancePanel(comp, record?.id),
