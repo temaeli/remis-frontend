@@ -1,6 +1,8 @@
 import { Subject } from 'rxjs';
 import { DocumentNode } from '@apollo/client/core';
-import { FieldConfig } from '@shared/components/generic-form/field.interface';
+import { FieldConfig, FormStepper } from '@shared/components/generic-form/field.interface';
+import { StepperOrientation } from '@angular/cdk/stepper';
+import { StepperAppearance } from '@shared/components/generic-form/form.interface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
@@ -135,6 +137,29 @@ export interface LookupConfig {
    * the record holds the whole related row.
    */
   toModel?: (data?: Lookup) => Record<string, unknown>;
+
+  /**
+   * Groups the form's fields into steps, by key.
+   *
+   * A flat form is right for a table of four columns and wrong for one of
+   * twenty: the fields are the same either way, but a wall of them gives no
+   * indication of what belongs with what. Supplying this turns the upsert modal
+   * into a stepper without changing a single field config.
+   *
+   * A field whose key is in no step still submits — the form group holds every
+   * control regardless — but it renders nowhere, so an omission is a field the
+   * user can never fill in.
+   */
+  formSteppers?: FormStepper[];
+
+  /** Defaults to horizontal. */
+  stepperOrientation?: StepperOrientation;
+
+  /** Defaults to 'fill', which replaces the modal's own title bar. */
+  stepperAppearance?: StepperAppearance;
+
+  /** Width of the upsert modal. Defaults to 60%; a stepper usually wants more. */
+  modalWidth?: string;
 
   /** Panels appended to the detail page, below the details block. */
   extraContents?: (comp: BaseComponent, record?: Lookup) => ContentParameter[];

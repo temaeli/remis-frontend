@@ -2,7 +2,12 @@ import { BehaviorSubject } from 'rxjs';
 
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
+import {
+  FieldConfig,
+  FieldType,
+  FormStepper,
+  Option,
+} from '@shared/components/generic-form/field.interface';
 import { lookupRefGqlFields } from '@shared/lookup';
 import { Lookup } from '@shared/lookup/lookup.interface';
 
@@ -277,11 +282,14 @@ export const encumbranceFields = (): FieldConfig => ({
 });
 
 /** The parcel's own identifiers, extent and lease terms. */
+const HALF = 'col-span-full md:col-span-1';
+
+/** The parcel's identifiers and extent — step three. */
 export const parcelFields = (): FieldConfig[] => [
-  { key: 'parcelNumber', label: 'Parcel Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
-  { key: 'titleNumber', label: 'Title Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
-  { key: 'plotNumber', label: 'Plot Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
-  { key: 'blockNumber', label: 'Block Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
+  { key: 'parcelNumber', label: 'Parcel Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED], class: HALF },
+  { key: 'titleNumber', label: 'Title Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED], class: HALF },
+  { key: 'plotNumber', label: 'Plot Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED], class: HALF },
+  { key: 'blockNumber', label: 'Block Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED], class: HALF },
   {
     key: 'surveyPlanNumber',
     label: 'Survey Plan Number',
@@ -290,15 +298,35 @@ export const parcelFields = (): FieldConfig[] => [
     class: 'col-span-full',
   },
   // Both numeric(15,2). Net is the usable part of gross, and the backend rejects
-  // a net that exceeds it.
-  { key: 'grossArea', label: 'Gross Area (sqm)', type: FieldType.decimal, decimals: 2, validations: [VALIDATOR_REQUIRED] },
-  { key: 'netArea', label: 'Net Area (sqm)', type: FieldType.decimal, decimals: 2, validations: [VALIDATOR_REQUIRED] },
+  // a net that exceeds it — hence the hint rather than a surprise on submit.
+  {
+    key: 'grossArea',
+    label: 'Gross Area (sqm)',
+    type: FieldType.decimal,
+    decimals: 2,
+    validations: [VALIDATOR_REQUIRED],
+    class: HALF,
+  },
+  {
+    key: 'netArea',
+    label: 'Net Area (sqm)',
+    hint: 'The usable part of the gross area — cannot exceed it',
+    type: FieldType.decimal,
+    decimals: 2,
+    validations: [VALIDATOR_REQUIRED],
+    class: HALF,
+  },
+];
+
+/** How the land is held and what it may be used for — step four. */
+export const tenureFields = (): FieldConfig[] => [
   {
     key: 'tenureType',
     label: 'Tenure Type',
     type: FieldType.select,
     options: TENURE_TYPE_OPTIONS,
     validations: [VALIDATOR_REQUIRED],
+    class: HALF,
   },
   {
     key: 'permittedUse',
@@ -306,13 +334,29 @@ export const parcelFields = (): FieldConfig[] => [
     type: FieldType.select,
     options: PERMITTED_USE_OPTIONS,
     validations: [VALIDATOR_REQUIRED],
+    class: HALF,
   },
-  { key: 'leaseStartDate', label: 'Lease Start', type: FieldType.date, validations: [VALIDATOR_REQUIRED] },
-  { key: 'leaseEndDate', label: 'Lease End', type: FieldType.date, validations: [VALIDATOR_REQUIRED] },
-  // numeric(9,2), not an integer: the column allows part-years.
+  {
+    key: 'leaseStartDate',
+    label: 'Lease Start',
+    type: FieldType.date,
+    validations: [VALIDATOR_REQUIRED],
+    class: HALF,
+  },
+  {
+    key: 'leaseEndDate',
+    label: 'Lease End',
+    hint: 'Cannot fall before the start date',
+    type: FieldType.date,
+    validations: [VALIDATOR_REQUIRED],
+    class: HALF,
+  },
+  // numeric(9,2), not an integer: the column allows part-years, so a six-month
+  // lease is 0.5 rather than an impossible 0.
   {
     key: 'leaseTermYears',
     label: 'Lease Term (years)',
+    hint: 'Part-years allowed — six months is 0.5',
     type: FieldType.decimal,
     decimals: 2,
     validations: [VALIDATOR_REQUIRED],
@@ -394,3 +438,70 @@ export const landRegistrationToModel = (data?: Lookup): Record<string, unknown> 
     encumbrances: [],
   };
 };
+
+
+/**
+ * The six steps the form is broken into.
+ *
+ * A land registration is twenty-odd required fields. Flat, it is a wall that
+ * gives no indication of what belongs with what, and the location cascade in the
+ * middle of it reveals four more controls as you go — which reads as the form
+ * growing while you fill it in. Grouped, each step is one question: which asset,
+ * where is it, what is the parcel, how is it held, who owns it, what is against
+ * it.
+ *
+ * Steps address fields by key, so the field configs above are untouched. Every
+ * key that exists must appear in exactly one step: a field in none of them still
+ * submits — the form group holds every control regardless — but it renders
+ * nowhere, so the user could never fill it in.
+ *
+ * The last two are marked optional so the stepper does not block on them. Owners
+ * are genuinely required by the backend on create, but their rows carry no
+ * required validators (see ownerFields), so the stepper cannot tell a blank
+ * section from a finished one. The rule is enforced where it can be judged
+ * properly — server-side, against the whole set at once.
+ */
+export const landRegistrationSteps = (): FormStepper[] => [
+  {
+    name: 'Asset',
+    icon: 'home_work',
+    keys: ['id', 'assetUid', 'name', 'assignedNumber', 'description'],
+  },
+  {
+    name: 'Location',
+    icon: 'location_on',
+    keys: ['regionUid', 'districtUid', 'councilUid', 'wardUid', 'streetUid', 'latitude', 'longitude'],
+  },
+  {
+    name: 'Parcel',
+    icon: 'straighten',
+    keys: [
+      'parcelNumber',
+      'titleNumber',
+      'plotNumber',
+      'blockNumber',
+      'surveyPlanNumber',
+      'grossArea',
+      'netArea',
+    ],
+  },
+  {
+    name: 'Tenure',
+    icon: 'gavel',
+    keys: ['tenureType', 'permittedUse', 'leaseStartDate', 'leaseEndDate', 'leaseTermYears'],
+  },
+  {
+    name: 'Owners',
+    icon: 'users',
+    keys: ['owners'],
+    optional: true,
+    submitLabel: 'Save Registration',
+  },
+  {
+    name: 'Encumbrances',
+    icon: 'assignment',
+    keys: ['encumbrances'],
+    optional: true,
+    submitLabel: 'Save Registration',
+  },
+];

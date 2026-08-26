@@ -15,10 +15,12 @@ import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import {
   encumbranceFields,
   landRegistrationGqlFields,
+  landRegistrationSteps,
   landRegistrationToModel,
   locationCascadeFields,
   ownerFields,
   parcelFields,
+  tenureFields,
 } from './land-registration';
 import {
   defineLookup,
@@ -253,9 +255,16 @@ export const LAND_REGISTRATION = defineLookup({
     ...locationCascadeFields(),
     ...coordinateFields(),
     ...parcelFields(),
+    ...tenureFields(),
     ownerFields(),
     encumbranceFields(),
   ],
+  // Twenty-odd required fields is a wall as one page. The steps group them into
+  // six questions and give the location cascade a page of its own, so revealing
+  // ward and street as you go reads as progress rather than the form growing.
+  formSteppers: landRegistrationSteps(),
+  stepperAppearance: 'fill',
+  modalWidth: '75%',
   extraColumns: [
     'asset.name as Asset',
     'parcelNumber as Parcel',

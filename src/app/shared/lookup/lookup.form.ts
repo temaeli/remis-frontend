@@ -101,6 +101,12 @@ export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): Acti
         title: lookup.label,
         fields: lookupFields(lookup),
         closeAction$: lookup.changed$,
+        // Only set when the config asks for steps. Left undefined the form
+        // renders flat, which is what every config that does not declare them
+        // already gets.
+        formSteppers: lookup.formSteppers,
+        stepperOrientation: lookup.stepperOrientation,
+        stepperAppearance: lookup.stepperAppearance,
 
         onSubmit: async (value: any) => {
           await comp.fs.fetch({
@@ -112,7 +118,7 @@ export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): Acti
         },
       };
 
-      comp.vs?.openModal(FormComponent, formParameter, '60%');
+      comp.vs?.openModal(FormComponent, formParameter, lookup.modalWidth ?? '60%');
     },
     permissions: lookup.upsertPermissions,
     ...getUpsertBtnProps(lookup.label, lookup.idKey),
