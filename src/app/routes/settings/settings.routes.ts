@@ -201,13 +201,6 @@ export const SETTINGS_ROUTES: TypedRoutes = [
       ...lookupRoutes(AGREEMENT_SETTING_LOOKUPS),
     ],
   },
-
-  // Notifications
-  {
-    path: 'notifications-dashboard',
-    data: { isMenu: true, name: 'Notifications', icon: 'comment' },
-    loadComponent: () => import('../notifications/dashboard/dashboard').then((m) => m.Dashboard),
-  },
 ];
 
 export default SETTINGS_ROUTES;
