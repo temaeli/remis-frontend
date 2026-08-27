@@ -356,6 +356,7 @@ export const LIABILITY = defineLookup({
   extraGqlFields: `
   value
   liabilityDate
+  liabilityType
 `,
   extraFields: [
     numberField('value', 'Value'),
@@ -365,9 +366,34 @@ export const LIABILITY = defineLookup({
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
+    {
+      key: 'liabilityType',
+      label: 'Liability type',
+      type: FieldType.select,
+      // The labels of the PostgreSQL enum `liability_types`, taken from the
+      // DBA's CREATE TYPE. Two questions in one list: the first four say who
+      // owes, the last two say how much of what they own is exposed — so a
+      // jointly held debt that is also capped can only be recorded as one of
+      // the two.
+      options: [
+        { value: 'PERSONAL', label: 'Personal' },
+        { value: 'JOINT', label: 'Joint' },
+        { value: 'SEVERAL', label: 'Several' },
+        { value: 'JOINT_AND_SEVERAL', label: 'Joint and Several' },
+        { value: 'LIMITED', label: 'Limited' },
+        { value: 'UNLIMITED', label: 'Unlimited' },
+      ],
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
   ],
-  extraColumns: ['value', { field: 'liabilityDate', header: 'Liability date' }],
-  // The join read from this side — which units this record applies to.
+  extraColumns: [
+    'value',
+    { field: 'liabilityDate', header: 'Liability date' },
+    { field: 'liabilityType', header: 'Type' },
+  ],
+  // The joins read from this side — which units this record applies to, who
+  // owes it, and what it is secured on.
   extraContents: (comp, record) => recordLinkPanels(comp, 'Liability', record?.id),
 });
 

@@ -1093,6 +1093,18 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       permission: 'UNIT_ASSET',
       optionsQuery: ALL_UNIT,
     },
+    {
+      entity: 'LiabilityAsset',
+      byOwnerQuery: 'liabilityAssetsByAsset',
+      ownerArg: 'assetUid',
+      targetArg: 'liabilityUid',
+      field: 'liability',
+      label: 'Liability',
+      pluralLabel: 'Liabilities',
+      icon: 'account_balance',
+      permission: 'LIABILITY_ASSET',
+      optionsQuery: ALL_LIABILITY,
+    },
   ],
   BankAccount: [
     {
@@ -1135,6 +1147,18 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       permission: 'UNIT_BIO_DATA',
       optionsQuery: ALL_UNIT,
     },
+    {
+      entity: 'LiabilityBioData',
+      byOwnerQuery: 'liabilityBioDataByBioData',
+      ownerArg: 'bioDataUid',
+      targetArg: 'liabilityUid',
+      field: 'liability',
+      label: 'Liability',
+      pluralLabel: 'Liabilities',
+      icon: 'account_balance',
+      permission: 'LIABILITY_BIO_DATA',
+      optionsQuery: ALL_LIABILITY,
+    },
   ],
   Booking: [
     {
@@ -1162,6 +1186,18 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_BUSINESS_NAME',
       optionsQuery: ALL_UNIT,
+    },
+    {
+      entity: 'LiabilityBusinessName',
+      byOwnerQuery: 'liabilityBusinessNamesByBusinessName',
+      ownerArg: 'businessNameUid',
+      targetArg: 'liabilityUid',
+      field: 'liability',
+      label: 'Liability',
+      pluralLabel: 'Liabilities',
+      icon: 'account_balance',
+      permission: 'LIABILITY_BUSINESS_NAME',
+      optionsQuery: ALL_LIABILITY,
     },
   ],
   CollectionCenter: [
@@ -1372,6 +1408,54 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_LIABILITY',
       optionsQuery: ALL_UNIT,
+    },
+    // The three below are the liability's own join tables, not the unit's. A
+    // liability is the one record here that links to something other than a
+    // unit: who owes it, and what it is secured on.
+    {
+      entity: 'LiabilityBioData',
+      byOwnerQuery: 'liabilityBioDataByLiability',
+      ownerArg: 'liabilityUid',
+      targetArg: 'bioDataUid',
+      field: 'bioData',
+      label: 'Person',
+      pluralLabel: 'Debtors — People',
+      icon: 'person',
+      permission: 'LIABILITY_BIO_DATA',
+      optionsQuery: ALL_BIO_DATA,
+      // bio_data is not a CoreNamedEntity — no assignedNumber to select.
+      targetGqlFields: `
+    id
+    uid: id
+    name
+  `,
+      columns: ['index', 'bioData.name as Person', 'actions'],
+    },
+    {
+      entity: 'LiabilityBusinessName',
+      byOwnerQuery: 'liabilityBusinessNamesByLiability',
+      ownerArg: 'liabilityUid',
+      targetArg: 'businessNameUid',
+      field: 'businessName',
+      label: 'Business',
+      pluralLabel: 'Debtors — Businesses',
+      icon: 'business',
+      permission: 'LIABILITY_BUSINESS_NAME',
+      optionsQuery: ALL_BUSINESS_NAME,
+    },
+    {
+      entity: 'LiabilityAsset',
+      byOwnerQuery: 'liabilityAssetsByLiability',
+      ownerArg: 'liabilityUid',
+      targetArg: 'assetUid',
+      field: 'asset',
+      label: 'Asset',
+      // The join records no share, so this says which assets the debt is
+      // secured on and not how much of it each one covers.
+      pluralLabel: 'Secured On',
+      icon: 'shop',
+      permission: 'LIABILITY_ASSET',
+      optionsQuery: ALL_ASSET,
     },
   ],
   Loan: [
