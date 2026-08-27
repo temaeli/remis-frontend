@@ -11,6 +11,7 @@ import { AssetManagement } from './routes/asset-management/asset-management';
 import { UnitManagement } from './routes/unit-management/unit-management';
 import { Billing } from './routes/billing/billing';
 import { WorkflowManagement } from './routes/workflow-management/workflow-management';
+import { Notifications } from './routes/notifications/notifications';
 
 export const APP_ROUTES: TypedRoutes = [
   {
@@ -140,6 +141,31 @@ export const APP_ROUTES: TypedRoutes = [
       permissions: ['ROLE_VIEW_WORKFLOW_MODULE'],
     },
     loadChildren: () => import('./routes/workflow-management/workflow-management.routes'),
+  },
+
+  {
+    path: 'notifications',
+    title: 'Notifications',
+    component: Notifications,
+    canActivate: [externalUserGuard, permissionGuard],
+    data: {
+      isMenu: true,
+      // Must be a name from the SVG set: the module tiles on the staff landing
+      // bind [svgIcon] with no Material fallback, so a material-only name
+      // renders an empty tile.
+      icon: 'notifications',
+      visibleFor: ['internal'],
+      // ROLE_VIEW_NOTIFICATION_MODULE is the module tile's own permission. The
+      // two record permissions are kept alongside it so the module is reachable
+      // for roles already granted the mail log before that permission existed,
+      // rather than being invisible until an admin goes and grants it.
+      permissions: [
+        'ROLE_VIEW_NOTIFICATION_MODULE',
+        'ROLE_VIEW_ALL_NOTIFICATION',
+        'ROLE_VIEW_NOTIFICATION',
+      ],
+    },
+    loadChildren: () => import('./routes/notifications/notifications.routes'),
   },
 
   {
