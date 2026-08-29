@@ -3,10 +3,7 @@ import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
-import {
-  VALIDATOR_EMAIL,
-  VALIDATOR_REQUIRED,
-} from '@shared/components/generic-form/form-constants';
+import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { Validators } from '@angular/forms';
@@ -44,10 +41,14 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
   // A login is given to someone already on the register. The person's own
   // details — names, national ID, phone, identity type — belong to them and are
   // edited under Settings > General > People, not here.
+  //
+  // That now includes the login address: the backend takes it from the chosen
+  // person's record rather than from this form, so there is no email field. One
+  // address, one place to correct it.
   {
     key: 'bioDataUid',
     label: 'Person',
-    hint: 'Who this login belongs to. Register the person first if they are not listed.',
+    hint: 'Who this login belongs to. Their registered email becomes the login — register the person first if they are not listed.',
     type: FieldType.select,
     optionsVariables: {
       valueKey: 'id',
@@ -59,13 +60,6 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
       }),
     },
     validations: [VALIDATOR_REQUIRED],
-    class: 'col-span-full',
-  },
-  {
-    key: 'email',
-    label: 'Login Email',
-    type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED, VALIDATOR_EMAIL],
     class: 'col-span-full',
   },
   {
