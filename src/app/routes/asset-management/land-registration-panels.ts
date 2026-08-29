@@ -18,8 +18,8 @@ import { PERSON } from '@routes/settings/settings-lookups';
 import { ENCUMBRANCE_TYPE_OPTIONS, OWNER_TYPE_OPTIONS } from './land-registration';
 
 /**
- * The two tabs a land registration carries: who owns it, and what is registered
- * against it.
+ * The three tabs a land registration carries: who owns it, what is registered
+ * against it, and where its corners are.
  *
  * Both were fields on the registration form, submitted with it as a whole set.
  * That is the wrong shape for how either actually happens — a co-owner is added
@@ -32,6 +32,7 @@ import { ENCUMBRANCE_TYPE_OPTIONS, OWNER_TYPE_OPTIONS } from './land-registratio
 
 const ownerReloaded$ = new Subject<unknown>();
 const encumbranceReloaded$ = new Subject<unknown>();
+const pointReloaded$ = new Subject<unknown>();
 
 // ---------------------------------------------------------------- documents
 
@@ -55,6 +56,19 @@ const encumbranceFieldsGql = `
   encumbranceType
   registeredDate
   resolvedDate
+`;
+
+const parcelPointFieldsGql = `
+  id
+  uid: id
+  active
+  isDeleted
+  createdAt
+  assignedNumber
+  name
+  description
+  latitude
+  longitude
 `;
 
 export const OWNERS_OF_REGISTRATION = gql`
@@ -108,6 +122,30 @@ export const DELETE_LAND_ENCUMBRANCE = gql`
   mutation deleteLandEncumbrance($uid: String) {
     deleteLandEncumbrance(uid: $uid) {
       ${responseGqlFields(encumbranceFieldsGql)}
+    }
+  }
+`;
+
+export const POINTS_OF_REGISTRATION = gql`
+  query landParcelPointsByRegistration($landRegistrationUid: String) {
+    landParcelPointsByRegistration(landRegistrationUid: $landRegistrationUid) {
+      ${parcelPointFieldsGql}
+    }
+  }
+`;
+
+export const SAVE_LAND_PARCEL_POINT = gql`
+  mutation saveLandParcelPoint($input: LandParcelPointDtoInput) {
+    saveLandParcelPoint(input: $input) {
+      ${responseGqlFields(parcelPointFieldsGql)}
+    }
+  }
+`;
+
+export const DELETE_LAND_PARCEL_POINT = gql`
+  mutation deleteLandParcelPoint($uid: String) {
+    deleteLandParcelPoint(uid: $uid) {
+      ${responseGqlFields(parcelPointFieldsGql)}
     }
   }
 `;
@@ -413,6 +451,159 @@ export const landRegistrationEncumbrancePanel = (
   reloadActions$: [encumbranceReloaded$],
   fetchParameter: {
     query: ENCUMBRANCES_OF_REGISTRATION,
+    variables: { landRegistrationUid: registrationUid },
+  },
+});
+
+// ------------------------------------------------------------ parcel points
+
+const pointFormFields = (): FieldConfig[] => [
+  { key: 'uid', type: FieldType.input, visible: false },
+  {
+    key: 'name',
+    label: 'Name',
+    hint: 'The corners come back in name order — there is no sequence column',
+    type: FieldType.input,
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'assignedNumber',
+    label: 'Assigned Code',
+    hint: 'Generated when left blank',
+    type: FieldType.input,
+  },
+  {
+    key: 'latitude',
+    label: 'Latitude',
+    type: FieldType.input,
+    inputType: 'number',
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'longitude',
+    label: 'Longitude',
+    type: FieldType.input,
+    inputType: 'number',
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    hint: 'Unique across every parcel in the system, not just this one',
+    type: FieldType.textarea,
+    rows: 2,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+];
+
+function openPointForm(comp: BaseComponent, registrationUid?: string, row?: Lookup) {
+  return () => {
+    const close$ = new Subject<void>();
+    const formParameter: FormParameters = {
+      title: row?.['id'] ? 'Amend Point' : 'Record Point',
+      model: row?.['id']
+        ? {
+            uid: row['id'],
+            name: row['name'],
+            assignedNumber: row['assignedNumber'],
+            latitude: row['latitude'],
+            longitude: row['longitude'],
+            description: row['description'],
+          }
+        : {},
+      fields: pointFormFields(),
+      closeAction$: close$,
+
+      onSubmit: async (value: any) => {
+        await comp.fs.fetch({
+          notify: true,
+          variables: { input: { ...value, landRegistrationUid: registrationUid } },
+          mutation: SAVE_LAND_PARCEL_POINT,
+          successFn: (res) => {
+            pointReloaded$.next(res?.data);
+            close$.next();
+          },
+        });
+      },
+    };
+
+    comp.vs?.openModal(FormComponent, formParameter, '55%');
+  };
+}
+
+const pointColumns: GridKeyColumn[] = [
+  'index',
+  'assignedNumber as Code',
+  'name',
+  'latitude',
+  'longitude',
+  'actions',
+];
+
+/**
+ * The surveyed corners of the parcel.
+ *
+ * These are a set of points, not a boundary. The table carries no sequence,
+ * index or ring number, so nothing says which corner follows which — the rows
+ * are listed by name, which holds only as far as whoever entered them named
+ * them in order. Drawing a polygon from this would be guessing. A
+ * `point_order` column is the fix, and it is with the DBA.
+ */
+export const landRegistrationPointPanel = (
+  comp: BaseComponent,
+  registrationUid?: string,
+): ContentParameter => ({
+  type: 'table',
+  name: 'Parcel Points',
+  label: 'Parcel Points',
+  icon: 'place',
+  permissions: ['ROLE_VIEW_ALL_LAND_PARCEL_POINT', 'ROLE_VIEW_LAND_PARCEL_POINT'],
+  keyColumns: pointColumns,
+  headerButtons: [
+    {
+      icon: 'add',
+      label: 'Record Point',
+      class: 'btn-add-primary',
+      click: openPointForm(comp, registrationUid),
+      permissions: ['ROLE_CREATE_LAND_PARCEL_POINT', 'ROLE_UPDATE_LAND_PARCEL_POINT'],
+    } as ActionButton,
+  ],
+  actionButtons: [
+    {
+      icon: 'edit',
+      label: 'Amend',
+      click: (row: Lookup) => openPointForm(comp, registrationUid, row)(),
+      permissions: ['ROLE_UPDATE_LAND_PARCEL_POINT'],
+    },
+    {
+      ...MORE_BTN,
+      buttons: [
+        {
+          icon: 'delete',
+          label: 'Delete',
+          class: 'text-danger',
+          click: async (row: Lookup) => {
+            const confirmed = await comp.notify.confirm({
+              title: 'Delete Point',
+              message: `Delete ${row?.['name'] ?? 'this point'}?`,
+            });
+            if (!confirmed) return;
+            await comp.fs.fetch({
+              notify: true,
+              variables: { uid: row?.['id'] },
+              mutation: DELETE_LAND_PARCEL_POINT,
+              successFn: (res) => pointReloaded$.next(res?.data),
+            });
+          },
+          permissions: ['ROLE_DELETE_LAND_PARCEL_POINT'],
+        },
+      ],
+    },
+  ],
+  reloadActions$: [pointReloaded$],
+  fetchParameter: {
+    query: POINTS_OF_REGISTRATION,
     variables: { landRegistrationUid: registrationUid },
   },
 });

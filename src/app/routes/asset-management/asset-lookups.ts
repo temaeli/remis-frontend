@@ -25,6 +25,7 @@ import {
 import {
   landRegistrationEncumbrancePanel,
   landRegistrationOwnerPanel,
+  landRegistrationPointPanel,
 } from './land-registration-panels';
 import {
   defineLookup,
@@ -282,6 +283,7 @@ export const LAND_REGISTRATION = defineLookup({
   extraContents: (comp, record) => [
     landRegistrationOwnerPanel(comp, record?.id),
     landRegistrationEncumbrancePanel(comp, record?.id),
+    landRegistrationPointPanel(comp, record?.id),
   ],
   extraColumns: [
     'asset.name as Asset',
