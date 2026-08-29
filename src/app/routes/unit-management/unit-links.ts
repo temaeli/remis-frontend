@@ -301,6 +301,15 @@ const ALL_QUALITATIVE_PARAMETER = gql`
   }
 `;
 
+const ALL_BOOLEAN_PARAMETER = gql`
+  query allBooleanParameters {
+    allBooleanParameters {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_QUANTITATIVE_PARAMETER = gql`
   query allQuantitativeParameters {
     allQuantitativeParameters {
@@ -1160,6 +1169,35 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       optionsQuery: ALL_LIABILITY,
     },
   ],
+  BooleanParameter: [
+    {
+      entity: 'HandoverBooleanParameter',
+      byOwnerQuery: 'handoverBooleanParametersByParameter',
+      ownerArg: 'booleanParameterUid',
+      targetArg: 'handoverUid',
+      field: 'handover',
+      label: 'Handover',
+      pluralLabel: 'Handovers',
+      icon: 'swap_horiz',
+      permission: 'HANDOVER_BOOLEAN_PARAMETER',
+      optionsQuery: ALL_HANDOVER,
+      // A handover's name says little on its own, so the date it took place is
+      // selected alongside the inherited triple and shown as a column.
+      targetGqlFields: `
+    id
+    assignedNumber
+    name
+    handedOverAt
+  `,
+      columns: [
+        'index',
+        'handover.assignedNumber as Assigned Number',
+        'handover.name as Handover',
+        'handover.handedOverAt as Handed Over',
+        'actions',
+      ],
+    },
+  ],
   Booking: [
     {
       entity: 'UnitBooking',
@@ -1352,6 +1390,45 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_HANDOVER',
       optionsQuery: ALL_UNIT,
+    },
+    // What the handover is assessed on. The link says only that the parameter
+    // applies — the reading itself is a *_parameter_values row, which points at
+    // the parameter and not at the handover, so it cannot be shown here.
+    {
+      entity: 'HandoverQualitativeParameter',
+      byOwnerQuery: 'handoverQualitativeParametersByHandover',
+      ownerArg: 'handoverUid',
+      targetArg: 'qualitativeParameterUid',
+      field: 'qualitativeParameter',
+      label: 'Qualitative Parameter',
+      pluralLabel: 'Qualitative Parameters',
+      icon: 'assessment',
+      permission: 'HANDOVER_QUALITATIVE_PARAMETER',
+      optionsQuery: ALL_QUALITATIVE_PARAMETER,
+    },
+    {
+      entity: 'HandoverQuantitativeParameter',
+      byOwnerQuery: 'handoverQuantitativeParametersByHandover',
+      ownerArg: 'handoverUid',
+      targetArg: 'quantitativeParameterUid',
+      field: 'quantitativeParameter',
+      label: 'Quantitative Parameter',
+      pluralLabel: 'Quantitative Parameters',
+      icon: 'straighten',
+      permission: 'HANDOVER_QUANTITATIVE_PARAMETER',
+      optionsQuery: ALL_QUANTITATIVE_PARAMETER,
+    },
+    {
+      entity: 'HandoverBooleanParameter',
+      byOwnerQuery: 'handoverBooleanParametersByHandover',
+      ownerArg: 'handoverUid',
+      targetArg: 'booleanParameterUid',
+      field: 'booleanParameter',
+      label: 'Boolean Parameter',
+      pluralLabel: 'Boolean Parameters',
+      icon: 'rule',
+      permission: 'HANDOVER_BOOLEAN_PARAMETER',
+      optionsQuery: ALL_BOOLEAN_PARAMETER,
     },
   ],
   Inspection: [
@@ -1595,6 +1672,33 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       permission: 'UNIT_QUALITATIVE_PARAMETER',
       optionsQuery: ALL_UNIT,
     },
+    {
+      entity: 'HandoverQualitativeParameter',
+      byOwnerQuery: 'handoverQualitativeParametersByParameter',
+      ownerArg: 'qualitativeParameterUid',
+      targetArg: 'handoverUid',
+      field: 'handover',
+      label: 'Handover',
+      pluralLabel: 'Handovers',
+      icon: 'swap_horiz',
+      permission: 'HANDOVER_QUALITATIVE_PARAMETER',
+      optionsQuery: ALL_HANDOVER,
+      // A handover's name says little on its own, so the date it took place is
+      // selected alongside the inherited triple and shown as a column.
+      targetGqlFields: `
+    id
+    assignedNumber
+    name
+    handedOverAt
+  `,
+      columns: [
+        'index',
+        'handover.assignedNumber as Assigned Number',
+        'handover.name as Handover',
+        'handover.handedOverAt as Handed Over',
+        'actions',
+      ],
+    },
   ],
   QuantitativeParameter: [
     {
@@ -1608,6 +1712,33 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_QUANTITATIVE_PARAMETER',
       optionsQuery: ALL_UNIT,
+    },
+    {
+      entity: 'HandoverQuantitativeParameter',
+      byOwnerQuery: 'handoverQuantitativeParametersByParameter',
+      ownerArg: 'quantitativeParameterUid',
+      targetArg: 'handoverUid',
+      field: 'handover',
+      label: 'Handover',
+      pluralLabel: 'Handovers',
+      icon: 'swap_horiz',
+      permission: 'HANDOVER_QUANTITATIVE_PARAMETER',
+      optionsQuery: ALL_HANDOVER,
+      // A handover's name says little on its own, so the date it took place is
+      // selected alongside the inherited triple and shown as a column.
+      targetGqlFields: `
+    id
+    assignedNumber
+    name
+    handedOverAt
+  `,
+      columns: [
+        'index',
+        'handover.assignedNumber as Assigned Number',
+        'handover.name as Handover',
+        'handover.handedOverAt as Handed Over',
+        'actions',
+      ],
     },
   ],
   RegistryMasterPlan: [

@@ -402,6 +402,60 @@ export const QUALITATIVE_PARAMETER_VALUE = defineLookup({
   }),
 });
 
+export const BOOLEAN_PARAMETER = defineLookup({
+  slug: 'boolean-parameters',
+  entity: 'BooleanParameter',
+  entityPlural: 'BooleanParameters',
+  permission: 'BOOLEAN_PARAMETER',
+  label: 'Boolean Parameter',
+  pluralLabel: 'Boolean Parameters',
+  subtitle: 'What a handover is judged on, as yes or no',
+  icon: 'rule',
+  // The join read from this side — which handovers this applies to.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'BooleanParameter', record?.id),
+});
+
+export const BOOLEAN_PARAMETER_VALUE = defineLookup({
+  slug: 'boolean-parameter-values',
+  entity: 'BooleanParameterValue',
+  entityPlural: 'BooleanParameterValues',
+  permission: 'BOOLEAN_PARAMETER_VALUE',
+  label: 'Boolean Parameter Value',
+  pluralLabel: 'Boolean Parameter Values',
+  subtitle: 'One yes-or-no answer recorded against a parameter',
+  icon: 'rule',
+  // No actor and no date, unlike the qualitative and quantitative readings —
+  // the table has neither column. Who recorded it and when is the audit block.
+  extraGqlFields: `
+  value
+  booleanParameter {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    refSelect('booleanParameterUid', 'Parameter', BOOLEAN_PARAMETER.gql.all),
+    {
+      key: 'value',
+      label: 'Answer',
+      type: FieldType.toggle,
+      // Matches the column default, so an untouched form records the same
+      // answer the database would have defaulted to.
+      value: true,
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    'booleanParameter.name as Parameter',
+    {
+      field: 'value',
+      header: 'Answer',
+      valueFn: (row) => (row?.value ? 'Yes' : 'No'),
+      valueClassMapper: (row) => (row?.value ? 'text-success' : 'text-danger'),
+    },
+  ],
+  toModel: (data) => ({ booleanParameterUid: data?.booleanParameter?.id }),
+});
+
 export const QUANTITATIVE_PARAMETER = defineLookup({
   slug: 'quantitative-parameters',
   entity: 'QuantitativeParameter',
@@ -615,6 +669,8 @@ export const PROJECT_SETTING_LOOKUPS: LookupModule[] = [
   QUALITATIVE_PARAMETER_VALUE,
   QUANTITATIVE_PARAMETER,
   QUANTITATIVE_PARAMETER_VALUE,
+  BOOLEAN_PARAMETER,
+  BOOLEAN_PARAMETER_VALUE,
   FLOOR,
   NET_ASSET_VALUE,
   ACTIVITY_CONNECTION,
