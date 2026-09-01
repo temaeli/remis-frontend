@@ -10,20 +10,31 @@ import { FetchParameter } from '@shared/fetch/fetch.interface';
 import { BILL_AMOUNT_OF_BILL, BILL_ITEMS_OF_BILL, FIND_BILL } from './bill.graphql';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
+import { gepgActionButtons } from './bill-gepg.actions';
 
 /**
  * One bill: its own fields, the lines it is made of, and what it comes to.
  *
- * Read-only. A bill's amounts are derived from its lines, and its lines from
- * their fee and rates, so there is nothing here to edit directly — a correction
- * is a new bill.
+ * The bill itself is read-only. Its amounts are derived from its lines, and its
+ * lines from their fee and rates, so there is nothing here to edit directly — a
+ * correction is a new bill.
+ *
+ * What the header buttons change is not the bill but what GePG knows about it:
+ * asking for a control number, reusing one, extending the expiry date, or
+ * cancelling. They act on `billHeader`, which is what GePG issues a number
+ * against. See `bill-gepg.actions`.
  */
 @Component({
   selector: 'app-bill',
   imports: [CommonModule, PageHeaderComponent, ContentsViewComponent],
   template: `
     <div class="size-full flex-1 flex flex-col gap-2">
-      <page-header [title]="title" [subtitle]="subtitle" [data]="bill" />
+      <page-header
+        [title]="title"
+        [subtitle]="subtitle"
+        [data]="bill"
+        [actionButtons]="gepgActions"
+      />
       <contents-view class="block grow" [contents]="contents" />
     </div>
   `,
@@ -34,6 +45,13 @@ export class BillComponent extends BaseComponent implements OnInit {
 
   bill: any;
   billUid: string | null = this.route.snapshot?.paramMap?.get('uid');
+
+  /**
+   * Built once and kept, rather than recomputed in the template: each button
+   * closes over this component, and the header re-reads the array on every
+   * change detection pass.
+   */
+  gepgActions = gepgActionButtons(this);
 
   override contents: ContentParameter[] = [];
 
@@ -74,6 +92,11 @@ export class BillComponent extends BaseComponent implements OnInit {
     { field: 'finalBillItemAmt', header: 'Final Amount' },
     { field: 'finalBillItemEqvAmt', header: 'Final Equivalent' },
   ];
+
+  /** Re-reads the bill after a GePG action, which changes its status but not its fields. */
+  reload(): void {
+    void this.ngOnInit();
+  }
 
   async ngOnInit(): Promise<void> {
     const response = await this.fs.fetch(this.fetchParameter);
