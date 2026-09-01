@@ -7,6 +7,7 @@ import { GridKeyColumn, GridParameter } from '@shared/components/data-grid/data-
 
 import { ALL_PAYMENTS_PAGEABLE } from './payment.graphql';
 import { payment$, paymentViewBtn } from './payment.form';
+import { requestReconciliationBtn } from './reconciliation.actions';
 
 /**
  * Every payment GePG has reported.
@@ -15,13 +16,17 @@ import { payment$, paymentViewBtn } from './payment.form';
  * their amounts are derived from the bill behind them — a payment that
  * disagrees with its bill is something to investigate, not something to correct
  * here.
+ *
+ * The one action is reconciliation: asking GePG what it says it collected on a
+ * day, which is how this list gets checked. It sits here rather than on a bill
+ * because it names a date, not a bill. See `reconciliation.actions`.
  */
 @Component({
   selector: 'app-payments',
   imports: [DataGridComponent, PageHeaderComponent],
   template: `
     <div class="size-full flex-1 flex flex-col gap-3">
-      <page-header [title]="title" [subtitle]="subtitle" />
+      <page-header [title]="title" [subtitle]="subtitle" [actionButtons]="headerActions" />
       <data-grid class="grow flex flex-col" theme="simple" [gridParameter]="gridParameter" />
     </div>
   `,
@@ -29,6 +34,8 @@ import { payment$, paymentViewBtn } from './payment.form';
 export class PaymentsComponent extends BaseComponent {
   override title = 'Payments';
   override subtitle = 'Payments reported by GePG against bills on the register';
+
+  headerActions = [requestReconciliationBtn(this)];
 
   keyColumns: GridKeyColumn[] = [
     'index',
