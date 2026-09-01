@@ -47,14 +47,17 @@ function headerUidOf(comp: BillComp): string | undefined {
  * on the callback, so the screen is reloaded rather than patched with a number
  * that is not there yet.
  */
-async function runGepgAction(comp: BillComp, query: any, variables: any, loadingOn: string) {
+async function runGepgAction(comp: BillComp, mutation: any, variables: any, loadingOn: string) {
   const billHeaderUid = headerUidOf(comp);
   if (!billHeaderUid) {
     comp.notify.error('This bill has no header, so GePG has nothing to act on.');
     return;
   }
   await comp.fs.fetch({
-    query,
+    // `mutation`, not `query`: FetchService picks the Apollo call from which of
+    // the two is set, and a mutation document sent as a query is refused by
+    // Apollo itself before it reaches the network.
+    mutation,
     notify: true,
     loadingOn,
     variables: { billHeaderUid, ...variables },

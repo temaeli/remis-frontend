@@ -72,7 +72,7 @@ export function requestReconciliationBtn(comp: BaseComponent): ActionButton {
           ],
           onSubmit: async (data?: any) => {
             await comp.fs.fetch({
-              query: REQUEST_RECONCILIATION,
+              mutation: REQUEST_RECONCILIATION,
               notify: true,
               loadingOn: 'gepg-reconciliation',
               variables: {
