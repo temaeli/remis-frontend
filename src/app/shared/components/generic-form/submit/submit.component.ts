@@ -17,7 +17,7 @@ import { AsyncPipe } from '@angular/common';
           !!(field.isSaving$ | async) || formSteppers.length ? !allSteppersValid() : group.invalid
         "
         [loading]="!!(field.isSaving$ | async)"
-        class=" py-2 px-3 {{ field.inputClass }}"
+        class=" py-2 !rounded-lg px-3 {{ field.inputClass }} !bg-primary/80 hover:!bg-primary/10 disabled:!bg-gray-400 disabled:!cursor-not-allowed"
       >
         {{ field.label }}
       </button>
