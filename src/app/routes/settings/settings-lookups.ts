@@ -648,6 +648,113 @@ export const GEPG_END_POINT = defineLookup({
   ],
 });
 
+/**
+ * The three protocol headers every GePG request carries: `Gepg-Com` names the
+ * operation, `Gepg-Code` identifies us as the service provider, and `Gepg-Alg`
+ * names the signing algorithm.
+ *
+ * GePG expects a different set per operation, so the DBA gave each one its own
+ * table — `headers_for_normal_bill`, `headers_for_bill_change` and
+ * `headers_for_cn_reuse` — and they are three screens here for the same reason
+ * they are three permission sets: a wrong value stops that one operation and
+ * leaves the others working.
+ *
+ * The tables are the only source. Whatever is saved here is what the next
+ * request sends, with nothing cached in between and no property behind it, so
+ * an operation whose row is missing or deleted stops with a message naming the
+ * table rather than falling back on a stale default.
+ */
+const gepgHeaderGqlFields = `
+  gepgCom
+  gepgCode
+  gepgAlg
+`;
+
+/** The controls all three screens share, differing only in what the com means. */
+const gepgHeaderFields = (comHint: string): FieldConfig[] => [
+  {
+    key: 'gepgCom',
+    label: 'Gepg-Com',
+    hint: comHint,
+    type: FieldType.input,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+  {
+    key: 'gepgCode',
+    label: 'Gepg-Code',
+    hint: 'The SP code EGA issues at onboarding',
+    type: FieldType.input,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+  {
+    key: 'gepgAlg',
+    label: 'Gepg-Alg',
+    hint: 'The signing algorithm GePG expects, e.g. 00S2',
+    type: FieldType.input,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+];
+
+/** All three columns are UNIQUE per table, so each one is worth showing. */
+const gepgHeaderColumns: GridKeyColumn[] = [
+  'index',
+  { field: 'gepgCom', header: 'Gepg-Com' },
+  { field: 'gepgCode', header: 'Gepg-Code' },
+  { field: 'gepgAlg', header: 'Gepg-Alg' },
+];
+
+/**
+ * Also what cancellation and reconciliation send: the client library reads their
+ * `Gepg-Com` off the same field a normal bill uses, and neither has a table.
+ */
+export const HEADERS_FOR_NORMAL_BILL = defineLookup({
+  slug: 'headers-for-normal-bill',
+  entity: 'HeadersForNormalBill',
+  entityPlural: 'HeadersForNormalBills',
+  permission: 'HEADERS_FOR_NORMAL_BILL',
+  label: 'GePG Bill Submission Headers',
+  pluralLabel: 'GePG Bill Submission Headers',
+  subtitle: 'What a new bill, a cancellation and a reconciliation announce themselves as',
+  icon: 'generic_bill',
+  nameKey: 'gepgCom',
+  descriptiveGqlFields: gepgHeaderGqlFields,
+  baseFields: gepgHeaderFields('The operation a bill submission announces, e.g. default.sp.in'),
+  baseColumns: gepgHeaderColumns,
+});
+
+export const HEADERS_FOR_BILL_CHANGE = defineLookup({
+  slug: 'headers-for-bill-change',
+  entity: 'HeadersForBillChange',
+  entityPlural: 'HeadersForBillChanges',
+  permission: 'HEADERS_FOR_BILL_CHANGE',
+  label: 'GePG Bill Change Headers',
+  pluralLabel: 'GePG Bill Change Headers',
+  subtitle: 'What a change to an already issued bill announces itself as',
+  icon: 'changebill',
+  nameKey: 'gepgCom',
+  descriptiveGqlFields: gepgHeaderGqlFields,
+  baseFields: gepgHeaderFields('The operation a bill change announces, e.g. changebill.sp.in'),
+  baseColumns: gepgHeaderColumns,
+});
+
+export const HEADERS_FOR_CN_REUSE = defineLookup({
+  slug: 'headers-for-cn-reuse',
+  entity: 'HeadersForCnReuse',
+  entityPlural: 'HeadersForCnReuses',
+  permission: 'HEADERS_FOR_CN_REUSE',
+  label: 'GePG Control Number Reuse Headers',
+  pluralLabel: 'GePG Control Number Reuse Headers',
+  subtitle: 'What a bill sent against an already issued control number announces itself as',
+  icon: 'loop_alt',
+  nameKey: 'gepgCom',
+  descriptiveGqlFields: gepgHeaderGqlFields,
+  baseFields: gepgHeaderFields('The operation a control number reuse announces, e.g. reusebill.sp.in'),
+  baseColumns: gepgHeaderColumns,
+});
+
 export const GEPG_PAY_TYPE = defineLookup({
   slug: 'gepg-pay-types',
   entity: 'GepgPayType',
@@ -1354,6 +1461,9 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   GEPG_BILL_TYPE,
   GEPG_END_POINT,
   GEPG_PAY_TYPE,
+  HEADERS_FOR_NORMAL_BILL,
+  HEADERS_FOR_BILL_CHANGE,
+  HEADERS_FOR_CN_REUSE,
   GFS_CODE,
   PAY_LIM_AMOUNT,
   PAY_LIM_TYPE,
