@@ -755,6 +755,120 @@ export const HEADERS_FOR_CN_REUSE = defineLookup({
   baseColumns: gepgHeaderColumns,
 });
 
+/**
+ * The nineteen labels of the PostgreSQL enum `remis_core_schema.statuses`,
+ * mirroring `CoreStatus` on the backend. The two lists have to stay in step.
+ */
+export enum CoreStatus {
+  DRAFT = 'DRAFT',
+  SUBMITTED = 'SUBMITTED',
+  APPROVED = 'APPROVED',
+  CONTROL_NUMBER_REQUESTED = 'CONTROL_NUMBER_REQUESTED',
+  WAITING_FOR_CONTROL_NUMBER = 'WAITING_FOR_CONTROL_NUMBER',
+  WAITING_FOR_PAYMENT = 'WAITING_FOR_PAYMENT',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  FULL_PAID = 'FULL_PAID',
+  OVERPAID = 'OVERPAID',
+  EXACTLY_PAID = 'EXACTLY_PAID',
+  PARTIALLY_SETTLED = 'PARTIALLY_SETTLED',
+  FULL_SETTLED = 'FULL_SETTLED',
+  CANCELLED = 'CANCELLED',
+  EXPIRED = 'EXPIRED',
+  CREATED = 'CREATED',
+  PENDING = 'PENDING',
+  FORWARDED = 'FORWARDED',
+  PASSED = 'PASSED',
+  FAILED = 'FAILED',
+}
+
+export const CORE_STATUS_OPTIONS: Option[] = Object.values(CoreStatus).map((value) => ({
+  value,
+  label: getDisplayName(value) as string,
+}));
+
+/**
+ * What a GePG result code means for the bill it came back about.
+ *
+ * Until this table existed the reading was in Java: a control number response
+ * moved the bill to Waiting For Payment and a cancellation to Cancelled,
+ * whatever code GePG returned. Codes are GePG's to change, so they are rows
+ * here instead — read on every response, so a correction takes effect on the
+ * next callback rather than the next deploy.
+ *
+ * Nothing here is required. A code with no row leaves the status the
+ * integration would have set anyway, so a half-filled table narrows what is
+ * known rather than breaking anything.
+ */
+export const CODE_STATUS = defineLookup({
+  slug: 'code-statuses',
+  entity: 'CodeStatus',
+  entityPlural: 'CodeStatuses',
+  permission: 'CODE_STATUS',
+  label: 'GePG Code Status',
+  pluralLabel: 'GePG Code Statuses',
+  subtitle: 'What each GePG result code means for the bill it answered',
+  icon: 'check_circle',
+  nameKey: 'assignedCode',
+  descriptiveGqlFields: `
+  assignedCode: assignedNumber
+  name
+  description
+  status
+  gepgEndPointType
+`,
+  saveArg: 'input',
+  baseFields: [
+    {
+      key: 'assignedCode',
+      label: 'GePG Code',
+      hint: 'The code GePG returns, e.g. 7101',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'gepgEndPointType',
+      label: 'Operation',
+      hint: 'The same code can mean different things per operation',
+      type: FieldType.select,
+      options: GEPG_END_POINT_TYPE_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'status',
+      label: 'Resulting Status',
+      hint: 'Where the bill goes when GePG answers with this code',
+      type: FieldType.select,
+      options: CORE_STATUS_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      hint: "What GePG means by this code, in the operator's words",
+      type: FieldType.textarea,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedCode', header: 'GePG Code' },
+    { field: 'gepgEndPointType', header: 'Operation' },
+    { field: 'status', header: 'Resulting Status' },
+    'name',
+  ],
+});
+
 export const GEPG_PAY_TYPE = defineLookup({
   slug: 'gepg-pay-types',
   entity: 'GepgPayType',
@@ -1464,6 +1578,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   HEADERS_FOR_NORMAL_BILL,
   HEADERS_FOR_BILL_CHANGE,
   HEADERS_FOR_CN_REUSE,
+  CODE_STATUS,
   GFS_CODE,
   PAY_LIM_AMOUNT,
   PAY_LIM_TYPE,
