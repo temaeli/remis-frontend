@@ -4,6 +4,7 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
 
+import { billHeaderRecordPanels } from './bill-header.panels';
 import { gepgFlowPanels } from './bill-gepg.panels';
 import {
   BILL_PAY_OPTION,
@@ -109,7 +110,9 @@ export const BILL_HEADER = defineLookup({
     financialYearUid: data?.financialYear?.id,
   }),
   /**
-   * Two things, in one list because a lookup takes one `extraContents`.
+   * Every record that names this header, in one list because a lookup takes one
+   * `extraContents`. Eighteen tables carry a `bill_headers_id`; these are all of
+   * them, grouped by what a reader is actually asking.
    *
    * First, who the bill is raised against. A join table rather than a column on
    * the header, so a header may name several organisations, one, or none —
@@ -117,9 +120,15 @@ export const BILL_HEADER = defineLookup({
    * one, unlike its agreement twin, so linking the same organisation twice
    * returns the existing row rather than failing.
    *
+   * Then the four things the header owns outright — the bills raised under it,
+   * what has been paid against it, the statuses it has passed through, and the
+   * control numbers recorded as reused. See `bill-header.panels`.
+   *
    * Then what GePG has been told about this header and what it answered: the
    * same four tabs the bill screen shows, because both are reading the same
-   * header. GePG issues a control number against a header, not a bill.
+   * header. GePG issues a control number against a header, not a bill. Those
+   * four cover fourteen tables between them, which is why they are read as
+   * flows rather than one tab each.
    */
   extraContents: (comp, record) => [
     ...entityLinkPanels(
@@ -140,6 +149,7 @@ export const BILL_HEADER = defineLookup({
       ],
       record?.id,
     ),
+    ...billHeaderRecordPanels(comp, record?.id),
     ...gepgFlowPanels(record?.id),
   ],
 });

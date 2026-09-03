@@ -20,6 +20,23 @@ export function billViewBtn(comp: BaseComponent): ActionButton {
 }
 
 /**
+ * The same, from somewhere that is not under /billing/bills — the bill header
+ * screen, which sits under /billing/configurations.
+ *
+ * navigateRelativeTo appends to the current route, which from a header would
+ * give /billing/configurations/bill-headers/<uid>/bills/<id>. This jumps to the
+ * absolute path instead.
+ */
+export function billViewBtnFrom(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'view',
+    label: 'View Bill',
+    click: (data: { id?: string }) => comp.router.navigate(['/billing/bills', data?.id]),
+    permissions: BILL_VIEW_PERMISSIONS,
+  };
+}
+
+/**
  * Opens the raise form. A bill is never created a piece at a time — the header,
  * the bill, its lines and its total are one transaction — so this is the only
  * way in.
