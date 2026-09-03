@@ -8,7 +8,7 @@ import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
 import { BILL_AMOUNT_OF_BILL, BILL_ITEMS_OF_BILL, FIND_BILL } from './bill.graphql';
-import { GEPG_TRAIL_OF_BILL_HEADER } from './bill-gepg.graphql';
+import { gepgFlowPanels } from './bill-gepg.panels';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
 import { gepgActionButtons, reuseControlNumberBtn } from './bill-gepg.actions';
@@ -144,7 +144,7 @@ export class BillComponent extends BaseComponent implements OnInit {
           variables: { billHeaderUid: this.bill?.billHeader?.id },
         },
       },
-      ...this.gepgFlowTabs(),
+      ...gepgFlowPanels(this.bill?.billHeader?.id, { reuse: [reuseControlNumberBtn(this)] }),
       {
         type: 'details',
         name: 'Billed Amount',
@@ -158,59 +158,5 @@ export class BillComponent extends BaseComponent implements OnInit {
     ];
 
     this.cdr.detectChanges();
-  }
-
-  /**
-   * What the trail rows show. `payload` is deliberately absent: a signed GePG
-   * body is thousands of characters and would make every row unreadable — it is
-   * on the record it came from, for anyone who needs it.
-   */
-  trailColumns: GridKeyColumn[] = [
-    'index',
-    { field: 'occurredAt', header: 'When' },
-    { field: 'step', header: 'Step' },
-    { field: 'reference', header: 'Reference' },
-    { field: 'summary', header: 'What Happened' },
-  ];
-
-  /**
-   * One tab per GePG conversation, each showing that flow's reason, request,
-   * acknowledgement and response in the order they happened.
-   *
-   * Four tabs rather than one per table: the fourteen tables behind these are
-   * the schema's shape, not a reader's. Someone looking at a bill asks what
-   * happened when we cancelled it, not which of three tables holds the answer.
-   *
-   * Reuse carries its own button, since that is where someone stands when they
-   * decide to reuse a number. Requesting, extending and cancelling stay on the
-   * page header.
-   */
-  private gepgFlowTabs(): ContentParameter[] {
-    const headerUid = this.bill?.billHeader?.id;
-    const tab = (
-      name: string,
-      icon: string,
-      flow: string,
-      actionButtons?: any[],
-    ): ContentParameter => ({
-      type: 'table',
-      name,
-      label: name,
-      icon,
-      keyColumns: this.trailColumns,
-      actionButtons,
-      noContentLabel: 'Nothing has passed between this bill and GePG here yet',
-      fetchParameter: {
-        query: GEPG_TRAIL_OF_BILL_HEADER,
-        variables: { billHeaderUid: headerUid, flow },
-      },
-    });
-
-    return [
-      tab('Control Number', 'numbers', 'CONTROL_NUMBER'),
-      tab('Reuse', 'loop_alt', 'CONTROL_NUMBER_REUSE', [reuseControlNumberBtn(this)]),
-      tab('Expiry Change', 'changebill', 'BILL_CHANGE'),
-      tab('Cancellation', 'cancel', 'CANCELLATION'),
-    ];
   }
 }

@@ -3,6 +3,8 @@ import { gql } from '@apollo/client/core';
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+
+import { gepgFlowPanels } from './bill-gepg.panels';
 import {
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -107,15 +109,20 @@ export const BILL_HEADER = defineLookup({
     financialYearUid: data?.financialYear?.id,
   }),
   /**
-   * Who the bill is raised against. A join table rather than a column on the
-   * header, so a header may name several organisations, one, or none — nothing
-   * in the schema requires a counterparty.
+   * Two things, in one list because a lookup takes one `extraContents`.
    *
-   * The pair is UNIQUE on this one, unlike its agreement twin, so linking the
-   * same organisation twice returns the existing row rather than failing.
+   * First, who the bill is raised against. A join table rather than a column on
+   * the header, so a header may name several organisations, one, or none —
+   * nothing in the schema requires a counterparty. The pair is UNIQUE on this
+   * one, unlike its agreement twin, so linking the same organisation twice
+   * returns the existing row rather than failing.
+   *
+   * Then what GePG has been told about this header and what it answered: the
+   * same four tabs the bill screen shows, because both are reading the same
+   * header. GePG issues a control number against a header, not a bill.
    */
-  extraContents: (comp, record) =>
-    entityLinkPanels(
+  extraContents: (comp, record) => [
+    ...entityLinkPanels(
       comp,
       [
         {
@@ -133,6 +140,8 @@ export const BILL_HEADER = defineLookup({
       ],
       record?.id,
     ),
+    ...gepgFlowPanels(record?.id),
+  ],
 });
 
 /**
