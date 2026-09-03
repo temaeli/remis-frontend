@@ -34,3 +34,40 @@ export const REQUEST_RECONCILIATION = gql`
     }
   }
 `;
+
+/** The reconciliations asked for, newest first. */
+export const ALL_RECONCILIATION_REQUESTS = gql`
+  query allReconciliationRequests {
+    allReconciliationRequests {
+      id
+      uid: id
+      assignedNumber
+      name
+      transactionDate
+      requestedAt
+      createdAt
+    }
+  }
+`;
+
+/**
+ * The statements GePG has sent back.
+ *
+ * A request with no statement beside it is one GePG has not answered yet, which
+ * is the thing this screen exists to make visible.
+ */
+export const ALL_RECONCILIATION_STATEMENTS = gql`
+  query allReconciliationStatements {
+    allReconciliationStatements {
+      id
+      uid: id
+      responseId
+      requestId
+      spGrpCode
+      systemCode
+      paymentStatusCode
+      paymentStatusDescription
+      createdAt
+    }
+  }
+`;

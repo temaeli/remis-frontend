@@ -69,3 +69,24 @@ export const CANCEL_CONTROL_NUMBER = gql`
     }
   }
 `;
+
+/**
+ * What passed between this bill and GePG on one flow, oldest first.
+ *
+ * A read model rather than a table: the trail behind an operation is spread
+ * over three or four tables — the reason, the request, the acknowledgement, the
+ * response — and this is what they look like put in order. See
+ * `GepgTrailService` on the backend.
+ */
+export const GEPG_TRAIL_OF_BILL_HEADER = gql`
+  query gepgTrailOfBillHeader($billHeaderUid: String, $flow: GepgFlow) {
+    gepgTrailOfBillHeader(billHeaderUid: $billHeaderUid, flow: $flow) {
+      uid
+      occurredAt
+      step
+      reference
+      summary
+      payload
+    }
+  }
+`;

@@ -7,26 +7,20 @@ import { GridKeyColumn, GridParameter } from '@shared/components/data-grid/data-
 
 import { ALL_PAYMENTS_PAGEABLE } from './payment.graphql';
 import { payment$, paymentViewBtn } from './payment.form';
-import { requestReconciliationBtn } from './reconciliation.actions';
 
 /**
- * Every payment GePG has reported.
+ * What GePG says it has taken, one row per payment notification.
  *
- * No add button. These rows arrive on a callback rather than being typed, and
- * their amounts are derived from the bill behind them — a payment that
- * disagrees with its bill is something to investigate, not something to correct
- * here.
- *
- * The one action is reconciliation: asking GePG what it says it collected on a
- * day, which is how this list gets checked. It sits here rather than on a bill
- * because it names a date, not a bill. See `reconciliation.actions`.
+ * Read-only: these rows are written by the callback GePG posts to, never by a
+ * clerk. Reconciliation — checking this list against what GePG says it took on
+ * a given day — is its own screen, since it names a date rather than a payment.
  */
 @Component({
   selector: 'app-payments',
   imports: [DataGridComponent, PageHeaderComponent],
   template: `
     <div class="size-full flex-1 flex flex-col gap-3">
-      <page-header [title]="title" [subtitle]="subtitle" [actionButtons]="headerActions" />
+      <page-header [title]="title" [subtitle]="subtitle" />
       <data-grid class="grow flex flex-col" theme="simple" [gridParameter]="gridParameter" />
     </div>
   `,
@@ -34,8 +28,6 @@ import { requestReconciliationBtn } from './reconciliation.actions';
 export class PaymentsComponent extends BaseComponent {
   override title = 'Payments';
   override subtitle = 'Payments reported by GePG against bills on the register';
-
-  headerActions = [requestReconciliationBtn(this)];
 
   keyColumns: GridKeyColumn[] = [
     'index',

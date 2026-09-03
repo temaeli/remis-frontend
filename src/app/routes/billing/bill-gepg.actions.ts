@@ -121,7 +121,13 @@ export function requestControlNumberBtn(comp: BillComp): ActionButton {
   };
 }
 
-/** Puts the bill's existing control number back into use. */
+/**
+ * Puts the bill's existing control number back into use.
+ *
+ * Not on the page header with the other three: it lives on the Reuse tab, which
+ * is where someone is standing when they look at what has already been reused
+ * and decide to do it again.
+ */
 export function reuseControlNumberBtn(comp: BillComp): ActionButton {
   return {
     icon: 'refresh',
@@ -216,10 +222,5 @@ export function cancelControlNumberBtn(comp: BillComp): ActionButton {
 
 /** All four, in the order an operator meets them. */
 export function gepgActionButtons(comp: BillComp): ActionButton[] {
-  return [
-    requestControlNumberBtn(comp),
-    reuseControlNumberBtn(comp),
-    changeBillExpiryBtn(comp),
-    cancelControlNumberBtn(comp),
-  ];
+  return [requestControlNumberBtn(comp), changeBillExpiryBtn(comp), cancelControlNumberBtn(comp)];
 }

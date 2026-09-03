@@ -11,12 +11,13 @@ import { REQUEST_RECONCILIATION } from './reconciliation.graphql';
 import { payment$ } from './payment.form';
 
 /**
- * Asking GePG to reconcile a day, from the payments screen.
+ * Asking GePG to reconcile a day, from the reconciliation screen.
  *
- * This belongs here rather than on a bill: reconciliation names a date and a
- * service provider group, and the statement it asks for covers every bill paid
- * that day. Gated on the payment roles for the same reason — reconciliation is
- * how the payments on this screen get checked against what GePG says it took.
+ * This belongs on a screen of its own rather than on a bill: reconciliation
+ * names a date and a service provider group, and the statement it asks for
+ * covers every bill paid that day. Gated on the payment roles because
+ * reconciliation is how the payments get checked against what GePG says it
+ * took.
  */
 export const RECONCILIATION_PERMISSIONS = [
   'ROLE_CREATE_PAYMENT_HEADER',

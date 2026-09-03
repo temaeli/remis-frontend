@@ -55,6 +55,23 @@ export const BILLING_ROUTES: TypedRoutes = [
   },
 
   /**
+   * Reconciliation, which is neither a bill nor a payment: it names a date and
+   * a service provider group, and the statement covers every bill paid that
+   * day. It sat as a button on the payments screen, which made a day's
+   * reconciliation look like something you did to a payment.
+   */
+  {
+    path: 'reconciliation',
+    data: {
+      isMenu: true,
+      name: 'Reconciliation',
+      icon: 'money_exchange',
+      permissions: PAYMENT_VIEW_PERMISSIONS,
+    },
+    loadComponent: () => import('./reconciliation.component').then((m) => m.ReconciliationComponent),
+  },
+
+  /**
    * Raising a bill is its own screen rather than a modal: it carries a header, a
    * bill and any number of items, with the amounts recomputing as they are
    * chosen, which is more than a dialog can hold.
