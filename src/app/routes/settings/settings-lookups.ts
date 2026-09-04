@@ -787,6 +787,59 @@ export const CORE_STATUS_OPTIONS: Option[] = Object.values(CoreStatus).map((valu
 }));
 
 /**
+ * A GePG result code: the number itself, and what it is called.
+ *
+ * The number is maintained here once and read per operation next door in
+ * `CODE_STATUS`, because the same code means different things depending on
+ * which endpoint answered with it. `assignedNumber` is required rather than
+ * generated — it is GePG's number, not one this system hands out.
+ */
+export const CODE = defineLookup({
+  slug: 'codes',
+  entity: 'Code',
+  entityPlural: 'Codes',
+  permission: 'CODE',
+  label: 'GePG Code',
+  pluralLabel: 'GePG Codes',
+  subtitle: 'The result codes GePG answers with',
+  icon: 'tag',
+  nameKey: 'assignedNumber',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'assignedNumber',
+      label: 'GePG Code',
+      hint: 'The code GePG returns, e.g. 7101',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      hint: "What GePG means by this code, in the operator's words",
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedNumber', header: 'GePG Code' },
+    'name',
+    'description',
+  ],
+});
+
+/**
  * What a GePG result code means for the bill it came back about.
  *
  * Until this table existed the reading was in Java: a control number response
@@ -794,6 +847,14 @@ export const CORE_STATUS_OPTIONS: Option[] = Object.values(CoreStatus).map((valu
  * whatever code GePG returned. Codes are GePG's to change, so they are rows
  * here instead — read on every response, so a correction takes effect on the
  * next callback rather than the next deploy.
+ *
+ * One row per operation a code can arrive on: the code is picked from `CODE`
+ * rather than typed, and the same code appears here as many times as it has
+ * meanings. `name` is not a column — the backend derives it from the code and
+ * the status so the detail page and the delete prompt have something to show.
+ *
+ * The relation is selected as `codeRef` because `Lookup` already declares a
+ * scalar `code`, which some uaa tables carry as a column of their own.
  *
  * Nothing here is required. A code with no row leaves the status the
  * integration would have set anyway, so a half-filled table narrows what is
@@ -808,21 +869,28 @@ export const CODE_STATUS = defineLookup({
   pluralLabel: 'GePG Code Statuses',
   subtitle: 'What each GePG result code means for the bill it answered',
   icon: 'check_circle',
-  nameKey: 'assignedCode',
   descriptiveGqlFields: `
-  assignedCode: assignedNumber
   name
-  description
+  codeRef: code {
+    ${lookupRefGqlFields}
+    description
+  }
   status
   gepgEndPointType
 `,
   saveArg: 'input',
   baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
     {
-      key: 'assignedCode',
+      key: 'codeUid',
       label: 'GePG Code',
-      hint: 'The code GePG returns, e.g. 7101',
-      type: FieldType.input,
+      hint: 'Maintained under GePG Codes',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'assignedNumber',
+        valueKey: 'id',
+        fetchParameter: { query: CODE.gql.all },
+      },
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
@@ -844,29 +912,15 @@ export const CODE_STATUS = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
-    {
-      key: 'name',
-      label: 'Name',
-      type: FieldType.input,
-      validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
-    },
-    {
-      key: 'description',
-      label: 'Description',
-      hint: "What GePG means by this code, in the operator's words",
-      type: FieldType.textarea,
-      validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
-    },
   ],
   baseColumns: [
     'index',
-    { field: 'assignedCode', header: 'GePG Code' },
+    { field: 'codeRef', header: 'GePG Code', valueFn: (row) => row?.codeRef?.assignedNumber },
     { field: 'gepgEndPointType', header: 'Operation' },
     { field: 'status', header: 'Resulting Status' },
-    'name',
+    { field: 'codeName', header: 'Meaning', valueFn: (row) => row?.codeRef?.name },
   ],
+  toModel: (data) => ({ codeUid: data?.codeRef?.id }),
 });
 
 export const GEPG_PAY_TYPE = defineLookup({
@@ -1578,6 +1632,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   HEADERS_FOR_NORMAL_BILL,
   HEADERS_FOR_BILL_CHANGE,
   HEADERS_FOR_CN_REUSE,
+  CODE,
   CODE_STATUS,
   GFS_CODE,
   PAY_LIM_AMOUNT,
