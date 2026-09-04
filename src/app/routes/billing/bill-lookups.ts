@@ -6,6 +6,7 @@ import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from
 
 import { billHeaderRecordPanels } from './bill-header.panels';
 import { gepgFlowPanels } from './bill-gepg.panels';
+import { billHeaderGepgRecordPanels } from './bill-header.records.panels';
 import {
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -127,8 +128,14 @@ export const BILL_HEADER = defineLookup({
    * Then what GePG has been told about this header and what it answered: the
    * same four tabs the bill screen shows, because both are reading the same
    * header. GePG issues a control number against a header, not a bill. Those
-   * four cover fourteen tables between them, which is why they are read as
-   * flows rather than one tab each.
+   * four cover thirteen tables between them, read as conversations rather than
+   * as rows.
+   *
+   * Then those same thirteen tables again, one tab each, because a folded
+   * conversation loses what a row says -- a cancellation response has a status,
+   * a code and a description that a trail step flattens into one line. The bill
+   * screen shows only the flows; this is the header's own record, so it shows
+   * both. See `bill-header.records.panels`.
    */
   extraContents: (comp, record) => [
     ...entityLinkPanels(
@@ -151,6 +158,7 @@ export const BILL_HEADER = defineLookup({
     ),
     ...billHeaderRecordPanels(comp, record?.id),
     ...gepgFlowPanels(record?.id),
+    ...billHeaderGepgRecordPanels(record?.id),
   ],
 });
 
