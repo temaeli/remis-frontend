@@ -150,6 +150,54 @@ export function reuseControlNumberBtn(comp: BillComp): ActionButton {
 }
 
 /**
+ * Sends a saved re-use record to GePG, from the re-uses list.
+ *
+ * The record already holds both things the mutation needs -- the header whose
+ * number is being used again, and the reason -- so this asks for nothing and
+ * confirms instead. Saving a re-use has never sent anything: the row is the
+ * decision written down, and until now nothing turned it into a request except
+ * opening the bill and reusing it from there.
+ *
+ * A row action rather than a header one. It acts on the record picked out of
+ * the list, and on a list header there would be nothing saying which re-use it
+ * would send.
+ *
+ * Repeating it is safe in the sense that matters: the backend refuses a bill
+ * with no control number to reuse and says so. It does not refuse a second
+ * reuse of the same number, which is the point of the table.
+ */
+export function sendReuseToGepgBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'send',
+    label: 'Send Re-use to GePG',
+    permissions: GEPG_ACTION_PERMISSIONS,
+    // Hidden rather than disabled where there is no header: bill_headers is NOT
+    // NULL on this table, so a row without one is a read that did not ask for it
+    // rather than a record someone could fix.
+    showFunction: (data: any) => !!data?.billHeader?.id,
+    confirmDataMapper: (data?: any) => ({
+      title: 'Send Re-use to GePG',
+      message:
+        `Ask GePG to put control number ${data?.controlNumber ?? 'this number'} back into use, ` +
+        'with the reason recorded here? GePG acknowledges immediately; its answer ' +
+        "arrives on the bill's own callback.",
+      confirmText: 'Send',
+    }),
+    click: async (data?: any) => {
+      await comp.fs.fetch({
+        mutation: REUSE_CONTROL_NUMBER,
+        notify: true,
+        loadingOn: 'content',
+        variables: {
+          billHeaderUid: data?.billHeader?.id,
+          reason: data?.reason,
+        },
+      });
+    },
+  };
+}
+
+/**
  * Extends the bill: moves its expiry date at GePG.
  *
  * The date is required and the backend rejects one in the past, so the picker

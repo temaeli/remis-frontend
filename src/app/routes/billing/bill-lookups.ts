@@ -7,6 +7,7 @@ import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from
 import { billHeaderRecordPanels } from './bill-header.panels';
 import { gepgFlowPanels } from './bill-gepg.panels';
 import { billHeaderGepgRecordPanels } from './bill-header.records.panels';
+import { sendReuseToGepgBtn } from './bill-gepg.actions';
 import {
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -240,6 +241,12 @@ export const REUSE = defineLookup({
   extraColumns: ['billHeader.name as Bill Header'],
   /** The record comes back with the header nested; the form edits its id. */
   toModel: (data) => ({ billHeaderUid: data?.billHeader?.id }),
+  /**
+   * Saving a re-use records a decision; this is what sends it. Confined to the
+   * row menu because it acts on the record picked out of the list — see
+   * `sendReuseToGepgBtn`.
+   */
+  rowActions: (comp) => [sendReuseToGepgBtn(comp)],
 });
 
 export const BILL_CONFIGURATION_LOOKUPS: LookupModule[] = [BILL_HEADER, REUSE];
