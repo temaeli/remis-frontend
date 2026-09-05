@@ -20,6 +20,7 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { ATTACHMENT_TYPE_OPTIONS, coreAttachmentPanels } from '@routes/settings/attachment-lookups';
+import { BILL_HEADERS_SETTING } from '@routes/settings/settings-lookups';
 import { WorkflowDiagramComponent } from './workflow-diagram.component';
 
 /**
@@ -638,6 +639,27 @@ export const WORKFLOW_STEP = defineLookup({
     lookupChildPanel(comp, () => WORKFLOW_STEP_ACTION_TYPE, WORKFLOW_STEP_ACTION_TYPES_BY_STEP, {
       stepUid: record?.id,
     }),
+    // What reaching this step charges. A link rather than a child: the template
+    // is maintained under Settings and may be raised by more than one step, so
+    // this panel joins an existing one instead of creating another.
+    ...entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'WorkflowStepBillHeadersSetting',
+          byOwnerQuery: 'workflowStepBillHeadersSettingsByStep',
+          ownerArg: 'workflowStepUid',
+          targetArg: 'billHeadersSettingUid',
+          field: 'billHeadersSetting',
+          label: 'Automatic Bill',
+          pluralLabel: 'Automatic Bills',
+          icon: 'bill',
+          permission: 'WORKFLOW_STEP_BILL_HEADERS_SETTING',
+          optionsQuery: BILL_HEADERS_SETTING.gql.all,
+        },
+      ],
+      record?.id,
+    ),
   ],
 });
 

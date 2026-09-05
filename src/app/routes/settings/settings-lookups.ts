@@ -1417,6 +1417,226 @@ export const FEE = defineLookup({
   extraContents: (comp, record) => recordLinkPanels(comp, 'Fee', record?.id),
 });
 
+/**
+ * The select each of a bill template's twenty-two relations uses.
+ *
+ * Declared here rather than beside `parentSelect` because it takes the lookup
+ * itself rather than a thunk: every one of these is declared above this point,
+ * so there is nothing to defer.
+ */
+const templateSelect = (key: string, label: string, lookup: LookupModule): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.select,
+  optionsVariables: {
+    labelKey: 'name',
+    valueKey: 'id',
+    fetchParameter: { query: lookup.gql.all },
+  },
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
+
+/**
+ * The template a bill is raised from without anyone filling a form — an
+ * application fee, say.
+ *
+ * Configuration, not a bill. The twenty-two relations are the union of what the
+ * three operational tables need: the codes a `bill_header` is raised under, the
+ * currency and payer codes of a `bill_detail`, and one `bill_item`'s worth of
+ * fee, quantity and rates. Whatever generates the bill reads one row here and
+ * writes all three.
+ *
+ * Every relation is required, because every foreign key on the table is NOT
+ * NULL — there is no partial template, and a half-filled one could not be saved
+ * at all. That is why the form is a stepper: twenty-six controls in one list
+ * gives no sense of which belong together, and these fall into the three records
+ * they will become.
+ *
+ * The applied/expiry pair is the window this template is in force for, not the
+ * life of the bills it raises — those expire `ttlHours` after they are
+ * generated. Which step raises which template is the join on the workflow step's
+ * own screen.
+ */
+export const BILL_HEADERS_SETTING = defineLookup({
+  slug: 'bill-headers-settings',
+  entity: 'BillHeadersSetting',
+  entityPlural: 'BillHeadersSettings',
+  permission: 'BILL_HEADERS_SETTING',
+  label: 'Automatic Bill Setting',
+  pluralLabel: 'Automatic Bill Settings',
+  subtitle: 'The template an automatically raised bill is built from',
+  icon: 'bill',
+  extraGqlFields: `
+  appliedDate
+  expiredDate
+  ttlHours
+  quantities
+  systemCode { ${lookupRefGqlFields} }
+  spGrpCode { ${lookupRefGqlFields} }
+  billPayOption { ${lookupRefGqlFields} }
+  billPaymentPlan { ${lookupRefGqlFields} }
+  financialYear { ${lookupRefGqlFields} }
+  collectionCenter { ${lookupRefGqlFields} }
+  currency { ${lookupRefGqlFields} }
+  exchangeRate { ${lookupRefGqlFields} }
+  gepgBillType { ${lookupRefGqlFields} }
+  gepgPayType { ${lookupRefGqlFields} }
+  payPlan { ${lookupRefGqlFields} }
+  spCode { ${lookupRefGqlFields} }
+  identityType { ${lookupRefGqlFields} }
+  paymentServiceProvider { ${lookupRefGqlFields} }
+  subSpCode { ${lookupRefGqlFields} }
+  gfsCode { ${lookupRefGqlFields} }
+  fee { ${lookupRefGqlFields} }
+  useItemRefOnPay { ${lookupRefGqlFields} }
+  vat { ${lookupRefGqlFields} }
+  withholdingTax { ${lookupRefGqlFields} }
+  discount { ${lookupRefGqlFields} }
+  collsp { ${lookupRefGqlFields} }
+`,
+  extraFields: [
+    {
+      key: 'appliedDate',
+      label: 'In Force From',
+      hint: 'When this template starts applying',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'expiredDate',
+      label: 'In Force Until',
+      hint: 'After this the template stops applying. Not the life of its bills',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'ttlHours',
+      label: 'Bill Lifetime (hours)',
+      hint: 'How long a bill raised from this template stays payable',
+      type: FieldType.decimal,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'quantities',
+      label: 'Quantity',
+      hint: 'How many units the generated line carries',
+      type: FieldType.decimal,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    templateSelect('systemCodeUid', 'System Code', SYSTEM_CODE),
+    templateSelect('spGrpCodeUid', 'SP Group Code', SP_GRP_CODE),
+    templateSelect('billPayOptionUid', 'Bill Pay Option', BILL_PAY_OPTION),
+    templateSelect('billPaymentPlanUid', 'Bill Payment Plan', BILL_PAYMENT_PLAN),
+    templateSelect('financialYearUid', 'Financial Year', FINANCIAL_YEAR),
+    templateSelect('collectionCenterUid', 'Collection Centre', COLLECTION_CENTER),
+    templateSelect('currencyUid', 'Currency', CURRENCY),
+    templateSelect('exchangeRateUid', 'Exchange Rate', EXCHANGE_RATE),
+    templateSelect('gepgBillTypeUid', 'GePG Bill Type', GEPG_BILL_TYPE),
+    templateSelect('gepgPayTypeUid', 'GePG Pay Type', GEPG_PAY_TYPE),
+    templateSelect('payPlanUid', 'Pay Plan', PAY_PLAN),
+    templateSelect('spCodeUid', 'SP Code', SP_CODE),
+    templateSelect('identityTypeUid', 'Identity Type', IDENTITY_TYPE),
+    templateSelect('paymentServiceProviderUid', 'Payment Service Provider', PAYMENT_SERVICE_PROVIDER),
+    templateSelect('subSpCodeUid', 'Sub SP Code', SUB_SP_CODE),
+    templateSelect('gfsCodeUid', 'GFS Code', GFS_CODE),
+    templateSelect('feeUid', 'Fee', FEE),
+    templateSelect('useItemRefOnPayUid', 'Use Item Reference On Pay', USE_ITEM_REF_ON_PAY),
+    templateSelect('vatUid', 'VAT', VAT),
+    templateSelect('withholdingTaxUid', 'Withholding Tax', WITHHOLDING_TAX),
+    templateSelect('discountUid', 'Discount', DISCOUNT),
+    templateSelect('collspUid', 'Collection Service Provider', COLLSP),
+  ],
+  // Grouped by the record each field becomes, which is the only grouping these
+  // twenty-six have. A field in no step still submits but renders nowhere, so
+  // every key above appears exactly once below.
+  formSteppers: [
+    {
+      name: 'Template',
+      icon: 'settings',
+      keys: ['id', 'name', 'assignedNumber', 'description', 'appliedDate', 'expiredDate'],
+    },
+    {
+      name: 'Bill Header',
+      icon: 'bill',
+      keys: [
+        'systemCodeUid',
+        'spGrpCodeUid',
+        'billPayOptionUid',
+        'billPaymentPlanUid',
+        'financialYearUid',
+        'ttlHours',
+      ],
+    },
+    {
+      name: 'Bill',
+      icon: 'institution',
+      keys: [
+        'collectionCenterUid',
+        'currencyUid',
+        'exchangeRateUid',
+        'gepgBillTypeUid',
+        'gepgPayTypeUid',
+        'payPlanUid',
+        'spCodeUid',
+        'identityTypeUid',
+        'paymentServiceProviderUid',
+      ],
+    },
+    {
+      name: 'Bill Line',
+      icon: 'list',
+      keys: [
+        'subSpCodeUid',
+        'gfsCodeUid',
+        'feeUid',
+        'quantities',
+        'useItemRefOnPayUid',
+        'vatUid',
+        'withholdingTaxUid',
+        'discountUid',
+        'collspUid',
+      ],
+    },
+  ],
+  extraColumns: [
+    { field: 'fee', header: 'Fee', valueFn: (row) => row?.fee?.name },
+    { field: 'quantities', header: 'Qty' },
+    { field: 'ttlHours', header: 'Bill Lifetime (h)' },
+    { field: 'appliedDate', header: 'In Force From' },
+    { field: 'expiredDate', header: 'In Force Until' },
+  ],
+  /** The record comes back with all twenty-two nested; the form edits their ids. */
+  toModel: (data) => ({
+    systemCodeUid: data?.systemCode?.id,
+    spGrpCodeUid: data?.spGrpCode?.id,
+    billPayOptionUid: data?.billPayOption?.id,
+    billPaymentPlanUid: data?.billPaymentPlan?.id,
+    financialYearUid: data?.financialYear?.id,
+    collectionCenterUid: data?.collectionCenter?.id,
+    currencyUid: data?.currency?.id,
+    exchangeRateUid: data?.exchangeRate?.id,
+    gepgBillTypeUid: data?.gepgBillType?.id,
+    gepgPayTypeUid: data?.gepgPayType?.id,
+    payPlanUid: data?.payPlan?.id,
+    spCodeUid: data?.spCode?.id,
+    identityTypeUid: data?.identityType?.id,
+    paymentServiceProviderUid: data?.paymentServiceProvider?.id,
+    subSpCodeUid: data?.subSpCode?.id,
+    gfsCodeUid: data?.gfsCode?.id,
+    feeUid: data?.fee?.id,
+    useItemRefOnPayUid: data?.useItemRefOnPay?.id,
+    vatUid: data?.vat?.id,
+    withholdingTaxUid: data?.withholdingTax?.id,
+    discountUid: data?.discount?.id,
+    collspUid: data?.collsp?.id,
+  }),
+});
+
 //  Location — the administrative hierarchy, under `modules.setting.location`.
 //
 //  country -> region -> district -> council -> ward -> street, one table per
@@ -1649,6 +1869,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   WITHHOLDING_TAX,
   USE_ITEM_REF_ON_PAY,
   FEE,
+  BILL_HEADERS_SETTING,
 ];
 
 export const REFERENCE_LOOKUPS: LookupModule[] = [
