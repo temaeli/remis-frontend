@@ -10,7 +10,7 @@ import {
   ALL_RECONCILIATION_REQUESTS,
   ALL_RECONCILIATION_STATEMENTS,
 } from './reconciliation.graphql';
-import { requestReconciliationBtn } from './reconciliation.actions';
+import { requestReconciliationBtn, resendReconciliationBtn } from './reconciliation.actions';
 
 /**
  * Reconciliation: what we asked GePG for, and what it sent back.
@@ -45,8 +45,10 @@ export class ReconciliationComponent extends BaseComponent implements OnInit {
     'index',
     { field: 'assignedNumber', header: 'Request ID' },
     { field: 'transactionDate', header: 'Day Reconciled' },
+    { field: 'spGrpCode', header: 'SP Group Code', valueFn: (row) => row?.spGrpCode?.assignedNumber },
+    { field: 'systemCode', header: 'System Code', valueFn: (row) => row?.systemCode?.assignedNumber },
     { field: 'requestedAt', header: 'Asked At' },
-    'name',
+    'actions',
   ];
 
   statementColumns: GridKeyColumn[] = [
@@ -69,6 +71,9 @@ export class ReconciliationComponent extends BaseComponent implements OnInit {
         label: 'Requests',
         icon: 'refresh',
         keyColumns: this.requestColumns,
+        // Asking again for a day already on the list, from the row that records
+        // it -- see `resendReconciliationBtn`.
+        actionButtons: [resendReconciliationBtn(this)],
         noContentLabel: 'No reconciliation has been asked for yet',
         fetchParameter: { query: ALL_RECONCILIATION_REQUESTS },
       },

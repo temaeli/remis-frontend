@@ -46,6 +46,16 @@ export const ALL_RECONCILIATION_REQUESTS = gql`
       transactionDate
       requestedAt
       createdAt
+      spGrpCode {
+        id
+        assignedNumber
+        name
+      }
+      systemCode {
+        id
+        assignedNumber
+        name
+      }
     }
   }
 `;

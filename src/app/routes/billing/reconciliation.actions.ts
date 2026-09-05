@@ -52,7 +52,7 @@ const codeField = (key: string, label: string, lookup: LookupModule): FieldConfi
  * bare date as UTC and would land on the day before in any timezone west of
  * Greenwich.
  */
-const atStartOfDay = (value?: string | Date): string | undefined => {
+export const atStartOfDay = (value?: string | Date): string | undefined => {
   if (!value) return undefined;
 
   if (value instanceof Date) {
@@ -118,6 +118,56 @@ export function requestReconciliationBtn(comp: BaseComponent): ActionButton {
         component: FormComponent,
         width: '96%',
         maxWidth: '520px',
+      });
+    },
+  };
+}
+
+/**
+ * Asks GePG again for a day already recorded, from the requests list.
+ *
+ * The saved row holds all three things the mutation needs -- the day, the SP
+ * group code and the system code -- so this asks for nothing and confirms
+ * instead, the same way sending a saved re-use does. Until now the only way to
+ * reconcile a day again was to retype it into the form, matching two codes by
+ * eye against the row already on the screen.
+ *
+ * It sends a **new** request rather than retrying the old one. GePG identifies a
+ * reconciliation by its ReqId and the backend mints a fresh one per call, so
+ * this adds a row beside the original rather than replacing it -- which is what
+ * asking again actually is, and why the table does not refuse a day it already
+ * carries.
+ *
+ * A row action: it acts on the record picked out of the list, and the header
+ * already carries the form for a day that has never been asked for.
+ */
+export function resendReconciliationBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'send',
+    label: 'Ask GePG Again',
+    permissions: RECONCILIATION_PERMISSIONS,
+    // Hidden where a row is missing either code. Both columns are NOT NULL, so
+    // that means a read that did not ask for them rather than a broken record.
+    showFunction: (data: any) => !!data?.spGrpCode?.id && !!data?.systemCode?.id,
+    confirmDataMapper: (data?: any) => ({
+      title: 'Ask GePG Again',
+      message:
+        `Ask GePG once more for every payment it took on ${
+          data?.transactionDate?.toString().slice(0, 10) ?? 'this day'
+        }, under the same codes? This sends a new request; the original stays as it is.`,
+      confirmText: 'Send',
+    }),
+    click: async (data?: any) => {
+      await comp.fs.fetch({
+        mutation: REQUEST_RECONCILIATION,
+        notify: true,
+        loadingOn: 'content',
+        variables: {
+          spGrpCodeUid: data?.spGrpCode?.id,
+          systemCodeUid: data?.systemCode?.id,
+          transactionDate: atStartOfDay(data?.transactionDate),
+        },
+        successFn: () => payment$.next(true),
       });
     },
   };
