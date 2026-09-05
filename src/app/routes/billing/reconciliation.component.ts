@@ -10,7 +10,12 @@ import {
   ALL_RECONCILIATION_REQUESTS,
   ALL_RECONCILIATION_STATEMENTS,
 } from './reconciliation.graphql';
-import { requestReconciliationBtn, resendReconciliationBtn } from './reconciliation.actions';
+import {
+  isSent,
+  requestReconciliationBtn,
+  saveReconciliationBtn,
+  sendReconciliationBtn,
+} from './reconciliation.actions';
 
 /**
  * Reconciliation: what we asked GePG for, and what it sent back.
@@ -39,15 +44,28 @@ export class ReconciliationComponent extends BaseComponent implements OnInit {
   override title = 'Reconciliation';
   override subtitle = 'What GePG was asked to confirm, and the statements it returned';
 
-  headerActions = [requestReconciliationBtn(this)];
+  // Recording a day and asking for it are separate buttons: the first writes the
+  // row and sends nothing, the second does both. See `reconciliation.actions`.
+  headerActions = [saveReconciliationBtn(this), requestReconciliationBtn(this)];
 
   requestColumns: GridKeyColumn[] = [
     'index',
     { field: 'assignedNumber', header: 'Request ID' },
     { field: 'transactionDate', header: 'Day Reconciled' },
-    { field: 'spGrpCode', header: 'SP Group Code', valueFn: (row) => row?.spGrpCode?.assignedNumber },
-    { field: 'systemCode', header: 'System Code', valueFn: (row) => row?.systemCode?.assignedNumber },
+    {
+      field: 'spGrpCode',
+      header: 'SP Group Code',
+      valueFn: (row) => row?.spGrpCode?.assignedNumber,
+    },
+    {
+      field: 'systemCode',
+      header: 'System Code',
+      valueFn: (row) => row?.systemCode?.assignedNumber,
+    },
     { field: 'requestedAt', header: 'Asked At' },
+    // No column says whether a row went out, so this reads it off the request
+    // id: a row still carrying its placeholder has not been sent — see `isSent`.
+    { field: 'sent', header: 'Sent', valueFn: (row) => (isSent(row) ? 'Yes' : 'No') },
     'actions',
   ];
 
@@ -71,9 +89,9 @@ export class ReconciliationComponent extends BaseComponent implements OnInit {
         label: 'Requests',
         icon: 'refresh',
         keyColumns: this.requestColumns,
-        // Asking again for a day already on the list, from the row that records
-        // it -- see `resendReconciliationBtn`.
-        actionButtons: [resendReconciliationBtn(this)],
+        // Sending the row that records the day -- both the first send and any
+        // asking again afterwards. See `sendReconciliationBtn`.
+        actionButtons: [sendReconciliationBtn(this)],
         noContentLabel: 'No reconciliation has been asked for yet',
         fetchParameter: { query: ALL_RECONCILIATION_REQUESTS },
       },

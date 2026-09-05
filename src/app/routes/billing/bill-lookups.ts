@@ -7,7 +7,11 @@ import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from
 import { billHeaderRecordPanels } from './bill-header.panels';
 import { gepgFlowPanels } from './bill-gepg.panels';
 import { billHeaderGepgRecordPanels } from './bill-header.records.panels';
-import { sendReuseToGepgBtn } from './bill-gepg.actions';
+import {
+  sendCancellationRequestToGepgBtn,
+  sendChangeRequestToGepgBtn,
+  sendReuseToGepgBtn,
+} from './bill-gepg.actions';
 import {
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -249,4 +253,148 @@ export const REUSE = defineLookup({
   rowActions: (comp) => [sendReuseToGepgBtn(comp)],
 });
 
-export const BILL_CONFIGURATION_LOOKUPS: LookupModule[] = [BILL_HEADER, REUSE];
+/** The bill a request is raised against, as a select over the header list. */
+const billHeaderField: FieldConfig = {
+  key: 'billHeaderUid',
+  label: 'Bill Header',
+  type: FieldType.select,
+  optionsVariables: {
+    labelKey: 'name',
+    valueKey: 'id',
+    fetchParameter: { query: BILL_HEADER.gql.all },
+  },
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+};
+
+/**
+ * A request to move a bill's expiry date at GePG.
+ *
+ * Saved first and sent second, the way a control number re-use is: the row says
+ * which bill, which date and why, and nothing reaches GePG until the row action
+ * sends it. Preparing an amendment and reading it back before it goes is worth
+ * more here than anywhere else — the date is what a payer has left to pay in.
+ *
+ * `assignedNumber` and `name` are shown but never edited. Both exist to satisfy
+ * UNIQUE constraints on a row identified by the bill it names, so the backend
+ * generates them.
+ */
+export const BILL_CHANGE_REQUEST = defineLookup({
+  slug: 'bill-change-requests',
+  entity: 'BillChangeRequest',
+  entityPlural: 'BillChangeRequests',
+  permission: 'BILL_CHANGE_REQUEST',
+  label: 'Expiry Change Request',
+  pluralLabel: 'Expiry Change Requests',
+  subtitle: 'Expiry dates asked of GePG, and why',
+  icon: 'calendar',
+  nameKey: 'assignedNumber',
+  descriptiveGqlFields: `
+  assignedNumber
+  updateReason
+  latestExpiryDate
+  requestedAt
+`,
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'latestExpiryDate',
+      label: 'New Expiry Date',
+      hint: 'Must be in the future — GePG refuses a date that has passed',
+      type: FieldType.dateTime,
+      minDate: new Date(),
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'updateReason',
+      label: 'Reason',
+      hint: 'Must be unique — describe this bill, not the general case',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedNumber', header: 'Request' },
+    { field: 'latestExpiryDate', header: 'New Expiry' },
+    { field: 'updateReason', header: 'Reason' },
+    { field: 'requestedAt', header: 'Asked At' },
+  ],
+  extraGqlFields: `
+  billHeader { ${lookupRefGqlFields} }
+`,
+  extraFields: [billHeaderField],
+  extraColumns: ['billHeader.name as Bill Header'],
+  /** The record comes back with the header nested; the form edits its id. */
+  toModel: (data) => ({ billHeaderUid: data?.billHeader?.id }),
+  /** Saving records the change; this is what sends it — see `sendChangeRequestToGepgBtn`. */
+  rowActions: (comp) => [sendChangeRequestToGepgBtn(comp)],
+});
+
+/**
+ * A request to cancel a bill's control number at GePG.
+ *
+ * The same two steps again, and the flow they matter most for: a cancellation
+ * retires every bill under the header and cannot be taken back. The number is
+ * not asked for — it is whichever number GePG issued for the bill, filled in by
+ * the backend when the record is created, so a cancellation cannot name a number
+ * the bill does not hold.
+ *
+ * Backed by `normal_bill_control_number_cancellation_reasons`, which is the
+ * first row of the DBA's cancellation chain and the one a person fills in; the
+ * request row beside it holds the XML and is written by the send.
+ */
+export const BILL_CANCELLATION_REQUEST = defineLookup({
+  slug: 'bill-cancellation-requests',
+  entity: 'BillCancellationRequest',
+  entityPlural: 'BillCancellationRequests',
+  permission: 'BILL_CANCELLATION_REQUEST',
+  label: 'Cancellation Request',
+  pluralLabel: 'Cancellation Requests',
+  subtitle: 'Control numbers asked to be retired, and why',
+  icon: 'delete',
+  nameKey: 'assignedNumber',
+  descriptiveGqlFields: `
+  assignedNumber
+  reason
+  cancelledControlNumber
+  requestedAt
+`,
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'reason',
+      label: 'Reason',
+      hint: 'Must be unique — describe this bill, not the general case',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedNumber', header: 'Request' },
+    { field: 'cancelledControlNumber', header: 'Control Number' },
+    'reason',
+    { field: 'requestedAt', header: 'Asked At' },
+  ],
+  extraGqlFields: `
+  billHeader { ${lookupRefGqlFields} }
+`,
+  extraFields: [billHeaderField],
+  extraColumns: ['billHeader.name as Bill Header'],
+  toModel: (data) => ({ billHeaderUid: data?.billHeader?.id }),
+  /** Saving records the cancellation; this is what sends it. */
+  rowActions: (comp) => [sendCancellationRequestToGepgBtn(comp)],
+});
+
+export const BILL_CONFIGURATION_LOOKUPS: LookupModule[] = [
+  BILL_HEADER,
+  REUSE,
+  BILL_CHANGE_REQUEST,
+  BILL_CANCELLATION_REQUEST,
+];

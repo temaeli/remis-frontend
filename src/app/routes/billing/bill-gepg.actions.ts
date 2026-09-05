@@ -10,6 +10,8 @@ import {
   CHANGE_BILL_EXPIRY,
   REQUEST_CONTROL_NUMBER,
   REUSE_CONTROL_NUMBER,
+  SEND_BILL_CANCELLATION_REQUEST,
+  SEND_BILL_CHANGE_REQUEST,
 } from './bill-gepg.graphql';
 
 /**
@@ -198,6 +200,76 @@ export function sendReuseToGepgBtn(comp: BaseComponent): ActionButton {
 }
 
 /**
+ * Sends a saved expiry change to GePG, from the change requests list.
+ *
+ * The same shape as sending a saved re-use, and for the same reason: the record
+ * already holds the date and the reason, so this asks for nothing and confirms
+ * instead. Saving a change request sends nothing — the row is the decision
+ * written down, and this is what turns it into a message.
+ *
+ * Only the record's identifier goes to the backend. Passing the date and the
+ * reason back would let the screen send something the record does not say.
+ */
+export function sendChangeRequestToGepgBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'send',
+    label: 'Send Change to GePG',
+    permissions: GEPG_ACTION_PERMISSIONS,
+    confirmDataMapper: (data?: any) => ({
+      title: 'Send Change to GePG',
+      message:
+        `Ask GePG to move this bill's expiry date to ${
+          data?.latestExpiryDate?.toString().slice(0, 16).replace('T', ' ') ??
+          'the date recorded here'
+        }, with the reason on this record? GePG acknowledges immediately; the bill's ` +
+        'own callback confirms it afterwards.',
+      confirmText: 'Send',
+    }),
+    click: async (data?: any) => {
+      await comp.fs.fetch({
+        mutation: SEND_BILL_CHANGE_REQUEST,
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: data?.id },
+      });
+    },
+  };
+}
+
+/**
+ * Sends a saved cancellation to GePG, from the cancellation requests list.
+ *
+ * Worded to say what it does rather than what it sends: the number stops being
+ * payable and every bill under the same header goes with it. Red for the same
+ * reason the button on the bill screen is — it is the least reversible thing
+ * this system asks GePG for.
+ */
+export function sendCancellationRequestToGepgBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'send',
+    label: 'Send Cancellation to GePG',
+    class: 'text-red-600',
+    permissions: GEPG_CANCEL_PERMISSIONS,
+    confirmDataMapper: (data?: any) => ({
+      title: 'Send Cancellation to GePG',
+      message:
+        `Ask GePG to cancel control number ${data?.cancelledControlNumber ?? 'on this bill'}, ` +
+        'with the reason recorded here? The number stops being payable and every bill ' +
+        'raised under the same header is cancelled with it.',
+      confirmText: 'Send',
+    }),
+    click: async (data?: any) => {
+      await comp.fs.fetch({
+        mutation: SEND_BILL_CANCELLATION_REQUEST,
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: data?.id },
+      });
+    },
+  };
+}
+
+/**
  * Extends the bill: moves its expiry date at GePG.
  *
  * The date is required and the backend rejects one in the past, so the picker
@@ -220,7 +292,9 @@ export function changeBillExpiryBtn(comp: BillComp): ActionButton {
               label: 'New expiry date',
               type: FieldType.dateTime,
               class: 'col-span-full',
-              min: new Date(),
+              // minDate, not min: the date-time control reads its bound off
+              // minDate and ignores min, which is for a numeric input.
+              minDate: new Date(),
               validations: [VALIDATOR_REQUIRED],
             },
             reasonField('Reason for the change', 'Why is this bill being extended?'),

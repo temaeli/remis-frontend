@@ -71,6 +71,42 @@ export const CANCEL_CONTROL_NUMBER = gql`
 `;
 
 /**
+ * Sends an expiry change that was saved earlier, from the change requests list.
+ *
+ * Takes the record's own identifier and nothing else: the date and the reason
+ * are on the row, so what goes to GePG is what the record says. Saving a change
+ * request sends nothing on its own — this is the second half.
+ */
+export const SEND_BILL_CHANGE_REQUEST = gql`
+  mutation sendBillChangeRequest($uid: String) {
+    sendBillChangeRequest(uid: $uid) {
+      ${responseGqlFields(`
+        id
+        uid: id
+        assignedNumber
+        updateReason
+        latestExpiryDate
+      `)}
+    }
+  }
+`;
+
+/** The same, for a cancellation saved on the cancellation requests list. */
+export const SEND_BILL_CANCELLATION_REQUEST = gql`
+  mutation sendBillCancellationRequest($uid: String) {
+    sendBillCancellationRequest(uid: $uid) {
+      ${responseGqlFields(`
+        id
+        uid: id
+        assignedNumber
+        reason
+        cancelledControlNumber
+      `)}
+    }
+  }
+`;
+
+/**
  * What passed between this bill and GePG on one flow, oldest first.
  *
  * A read model rather than a table: the trail behind an operation is spread
