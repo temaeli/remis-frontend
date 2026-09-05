@@ -39,6 +39,32 @@ const codeField = (key: string, label: string, lookup: LookupModule): FieldConfi
 });
 
 /**
+ * Midnight on the day that was picked, in the shape the LocalDateTime scalar
+ * parses.
+ *
+ * The control asks for a day, because a reconciliation covers one: the service
+ * formats this value as a date and never reads the time off it. The argument is
+ * still a LocalDateTime, and `2026-09-05` on its own fails to coerce, so the
+ * time is supplied here rather than asked of the operator -- which is what the
+ * expiry-change form does instead, where the time is real.
+ *
+ * The day is taken apart as text rather than through `new Date`, which reads a
+ * bare date as UTC and would land on the day before in any timezone west of
+ * Greenwich.
+ */
+const atStartOfDay = (value?: string | Date): string | undefined => {
+  if (!value) return undefined;
+
+  if (value instanceof Date) {
+    const pad = (part: number) => `${part}`.padStart(2, '0');
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T00:00:00`;
+  }
+
+  const day = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? `${day}T00:00:00` : undefined;
+};
+
+/**
  * Opens the form and sends the request.
  *
  * The date is bounded at today because a day that has not finished has nothing
@@ -77,7 +103,7 @@ export function requestReconciliationBtn(comp: BaseComponent): ActionButton {
               notify: true,
               loadingOn: 'gepg-reconciliation',
               variables: {
-                transactionDate: data?.transactionDate,
+                transactionDate: atStartOfDay(data?.transactionDate),
                 spGrpCodeUid: data?.spGrpCodeUid,
                 systemCodeUid: data?.systemCodeUid,
               },
