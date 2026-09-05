@@ -340,8 +340,9 @@ export const BILL_CHANGE_REQUEST = defineLookup({
  * The same two steps again, and the flow they matter most for: a cancellation
  * retires every bill under the header and cannot be taken back. The number is
  * not asked for — it is whichever number GePG issued for the bill, filled in by
- * the backend when the record is created, so a cancellation cannot name a number
- * the bill does not hold.
+ * the backend, so a cancellation cannot name a number the bill does not hold. A
+ * bill still waiting for its first number can be recorded here all the same;
+ * whether GePG has anything to cancel is a question for the send.
  *
  * Backed by `normal_bill_control_number_cancellation_reasons`, which is the
  * first row of the DBA's cancellation chain and the one a person fills in; the
@@ -378,7 +379,17 @@ export const BILL_CANCELLATION_REQUEST = defineLookup({
   baseColumns: [
     'index',
     { field: 'assignedNumber', header: 'Request' },
-    { field: 'cancelledControlNumber', header: 'Control Number' },
+    // Zero means GePG had not issued a number when the request was written --
+    // the column is NOT NULL, so the row had to hold something. The send fills
+    // in the real number.
+    {
+      field: 'cancelledControlNumber',
+      header: 'Control Number',
+      valueFn: (row) =>
+        `${row?.cancelledControlNumber ?? 0}` === '0'
+          ? 'Not issued yet'
+          : row?.cancelledControlNumber,
+    },
     'reason',
     { field: 'requestedAt', header: 'Asked At' },
   ],
