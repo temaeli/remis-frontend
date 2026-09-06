@@ -1,5 +1,7 @@
 import { gql } from '@apollo/client/core';
 
+import { AttachmentSourceNameEnum } from '@shared/components/generic-form/attachment/attachment.interface';
+
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
@@ -14,10 +16,15 @@ import { defineLookup, entityLinkPanels, EntityLinkConfig, Lookup } from '@share
  * **Not the attachments screen you already know.** `AttachmentController` serves
  * `uaa.attachments`: it uploads bytes and stores them, keys on a bigint, and
  * carries `attachmentTitle` and `filePath`. This one is the DBA's table — a uuid
- * key, an `assignedCode`/`name`/`url` triple and a type enum — and it records a
- * document that already has a location rather than putting one there. Both exist
- * on the backend, so everything here is spelled `CoreAttachment` and the two never
+ * key, an `assignedCode`/`name`/`url` triple and a type enum — and it records
+ * *where* a document sits rather than holding the bytes. Both exist on the
+ * backend, so everything here is spelled `CoreAttachment` and the two never
  * share a permission.
+ *
+ * The two meet on this screen. The form uploads the file through
+ * `uploadAttachment`, which is the uaa store, and records the path that comes
+ * back as this register's `url` — so nobody has to know a path to file a
+ * document, which is what the control used to ask of them.
  *
  * The six link tables say what a document hangs off: an asset, a person, an
  * organisation, a case, a task or a unit. They are six panels rather than one
@@ -105,9 +112,15 @@ export const CORE_ATTACHMENT = defineLookup({
     },
     {
       key: 'url',
-      label: 'Location',
-      hint: 'Where the file sits. Unique — the same file cannot be recorded twice',
-      type: FieldType.input,
+      label: 'Upload Document',
+      hint: 'The file itself. Where it is stored is recorded for you — the same file cannot be recorded twice',
+      type: FieldType.attachment,
+      acceptType: ['.pdf', '.png', '.jpg', '.xls', '.xlsx', '.txt'],
+      // Uploaded as soon as it is chosen, so a path exists before this form is
+      // submitted. `sourceName` is what the store files it under: OTHERS,
+      // because a document on the register hangs off whatever links to it
+      // later rather than off one source.
+      attachment: { sourceName: AttachmentSourceNameEnum.OTHERS },
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
@@ -132,7 +145,27 @@ export const CORE_ATTACHMENT = defineLookup({
   attachmentType
 `,
   extraColumns: [typeColumn, { field: 'url', header: 'Location' }],
-  toModel: (data?: Lookup) => ({ assignedCode: data?.assignedNumber }),
+  /**
+   * `url` holds a path and the control is an upload, so the two are translated
+   * on the way in and on the way out. In: the stored path is dressed as an
+   * attachment, which is what makes the control offer a preview of the file
+   * already on the record rather than an empty upload button.
+   */
+  toModel: (data?: Lookup) => ({
+    assignedCode: data?.assignedNumber,
+    url: data?.['url'] ? { filePath: data['url'] } : undefined,
+  }),
+  /**
+   * Out: the column stores where the file sits, not the file. The upload has
+   * already happened by the time this runs — the control does it on selection —
+   * so this only takes the path off what it handed back.
+   *
+   * A string passes straight through, which is what the control still holds for
+   * a record whose stored path the attachment store could not resolve.
+   */
+  toInput: (value) => ({
+    url: typeof value?.['url'] === 'string' ? value['url'] : (value?.['url']?.filePath ?? null),
+  }),
 });
 
 //  What a document hangs off.
@@ -169,9 +202,7 @@ const linkConfig = (
   label: 'Document',
   pluralLabel: 'Documents',
   icon: 'file',
-  permission: `CORE_ATTACHMENT_${entitySuffix
-    .replace(/([a-z])([A-Z])/g, '$1_$2')
-    .toUpperCase()}`,
+  permission: `CORE_ATTACHMENT_${entitySuffix.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase()}`,
   optionsQuery: ALL_CORE_ATTACHMENTS,
   // The far side is a CoreAttachment, which carries no description — the panel's
   // default selection would ask for one and fail the query.

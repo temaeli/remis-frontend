@@ -139,6 +139,18 @@ export interface LookupConfig {
   toModel?: (data?: Lookup) => Record<string, unknown>;
 
   /**
+   * Maps the form value onto the mutation input — the reverse of `toModel`.
+   *
+   * Needed wherever a control does not hand back what the API wants. An upload
+   * field's value is the saved attachment, and the column behind it holds a
+   * path, so the document register turns one into the other here.
+   *
+   * Runs before the identifier is renamed, so it sees and returns the form's own
+   * shape.
+   */
+  toInput?: (value: Record<string, any>) => Record<string, any>;
+
+  /**
    * Groups the form's fields into steps, by key.
    *
    * A flat form is right for a table of four columns and wrong for one of

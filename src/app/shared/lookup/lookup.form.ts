@@ -62,10 +62,14 @@ export const namedLookupColumns: GridKeyColumn[] = [
   'description',
 ];
 
-export const lookupFields = (lookup: LookupModule): FieldConfig[] => [
-  ...(lookup.baseFields ?? namedLookupFields(lookup.idKey)),
-  ...(lookup.extraFields ?? []),
-];
+export const lookupFields = (lookup: LookupModule): FieldConfig[] =>
+  // Copied per open, not shared. Some controls write back onto their own config
+  // — the upload field parks the saved attachment on `field.attachment` so it
+  // can offer a preview — and a config handed straight from the module would
+  // carry one record's file into the next record's form.
+  [...(lookup.baseFields ?? namedLookupFields(lookup.idKey)), ...(lookup.extraFields ?? [])].map(
+    (field) => ({ ...field }) as FieldConfig,
+  );
 
 /** The columns a list shows, with the config's own between the base block and `active`. */
 export const lookupColumns = (lookup: LookupModule): GridKeyColumn[] => [
@@ -86,9 +90,12 @@ export const lookupColumns = (lookup: LookupModule): GridKeyColumn[] => [
  * creates, populated updates. A uaa record already carries one, so it passes
  * straight through; a core record's identifier is its `id`, which is renamed here,
  * at the single point where the form meets the API.
+ *
+ * A config's own `toInput` is folded in first, for the controls whose value is
+ * not what the column holds.
  */
 export const toLookupInput = (lookup: LookupModule, value: Record<string, unknown>) => {
-  const { id, ...rest } = value ?? {};
+  const { id, ...rest } = { ...(value ?? {}), ...(lookup.toInput?.(value ?? {}) ?? {}) };
   if (lookup.idKey === 'uid') return rest;
   return id ? { ...rest, uid: id } : rest;
 };
@@ -120,8 +127,13 @@ export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): Acti
 
       // maxWidth is passed explicitly because MatDialog caps every dialog at
       // 80vw by default, which would silently shrink any modalWidth above it.
-      comp.vs?.openModal(FormComponent, formParameter, lookup.modalWidth ?? '60%',
-          lookup.modalMaxHeight, { maxWidth: lookup.modalMaxWidth });
+      comp.vs?.openModal(
+        FormComponent,
+        formParameter,
+        lookup.modalWidth ?? '60%',
+        lookup.modalMaxHeight,
+        { maxWidth: lookup.modalMaxWidth },
+      );
     },
     permissions: lookup.upsertPermissions,
     ...getUpsertBtnProps(lookup.label, lookup.idKey),
