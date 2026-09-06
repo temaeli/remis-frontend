@@ -13,6 +13,7 @@ import {
   sendReuseToGepgBtn,
 } from './bill-gepg.actions';
 import {
+  BILL_HEADERS_SETTING,
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
   FINANCIAL_YEAR,
@@ -157,6 +158,27 @@ export const BILL_HEADER = defineLookup({
           icon: 'institution',
           permission: 'BILL_HEADER_BUSINESS_NAME',
           optionsQuery: ALL_BUSINESS_NAMES,
+        },
+        /**
+         * Where this bill came from.
+         *
+         * A settings row is the template an automatic bill is assembled out of,
+         * and it is reusable — the same template raises a bill every time the
+         * step it hangs off is reached. So this is a join, not a column: one
+         * template, many headers. A header with nothing here was typed rather
+         * than raised.
+         */
+        {
+          entity: 'BillHeaderBillHeadersSetting',
+          byOwnerQuery: 'billHeaderBillHeadersSettingsByBillHeader',
+          ownerArg: 'billHeaderUid',
+          targetArg: 'billHeadersSettingUid',
+          field: 'billHeadersSetting',
+          label: 'Bill Template',
+          pluralLabel: 'Bill Templates',
+          icon: 'settings',
+          permission: 'BILL_HEADER_BILL_HEADERS_SETTING',
+          optionsQuery: BILL_HEADERS_SETTING.gql.all,
         },
       ],
       record?.id,
