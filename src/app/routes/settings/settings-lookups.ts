@@ -1271,6 +1271,77 @@ export const METER = defineLookup({
 });
 
 /**
+ * The undecorated type → category → subcategory hierarchy the DBA added as
+ * `remis_core_schema.types` / `categories` / `subcategories`.
+ *
+ * Not the asset registry's classification: that is its own three tables
+ * (`asset_types` downwards) with its own screens under Asset Management. These
+ * are shared reference data, and nothing references them yet — no other table
+ * carries a foreign key to them — so for now the screens only maintain the
+ * hierarchy itself.
+ *
+ * The code column is spelled `assigned_code` rather than `assigned_number` in
+ * the database, but the entity remaps it onto the inherited `assignedNumber`
+ * field, so the generic documents need no override.
+ */
+export const TYPE = defineLookup({
+  slug: 'types',
+  entity: 'Type',
+  entityPlural: 'Types',
+  permission: 'TYPE',
+  label: 'Type',
+  pluralLabel: 'Types',
+  subtitle: 'Top of the shared classification hierarchy',
+  icon: 'list',
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => CATEGORY, CATEGORIES_BY_TYPE, { typeUid: record?.id }),
+  ],
+});
+
+export const CATEGORY = defineLookup({
+  slug: 'categories',
+  entity: 'Category',
+  entityPlural: 'Categories',
+  permission: 'CATEGORY',
+  label: 'Category',
+  pluralLabel: 'Categories',
+  subtitle: 'Categories and the type each belongs to',
+  icon: 'tag',
+  extraGqlFields: `
+  type {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('typeUid', 'Type', () => TYPE)],
+  extraColumns: [{ field: 'type', valueFn: (row) => row?.type?.name }],
+  toModel: (data) => ({ typeUid: data?.type?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => SUBCATEGORY, SUBCATEGORIES_BY_CATEGORY, {
+      categoryUid: record?.id,
+    }),
+  ],
+});
+
+export const SUBCATEGORY = defineLookup({
+  slug: 'subcategories',
+  entity: 'Subcategory',
+  entityPlural: 'Subcategories',
+  permission: 'SUBCATEGORY',
+  label: 'Subcategory',
+  pluralLabel: 'Subcategories',
+  subtitle: 'Subcategories and the category each belongs to',
+  icon: 'price_tag',
+  extraGqlFields: `
+  category {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('categoryUid', 'Category', () => CATEGORY)],
+  extraColumns: [{ field: 'category', valueFn: (row) => row?.category?.name }],
+  toModel: (data) => ({ categoryUid: data?.category?.id }),
+});
+
+/**
  * The rates a bill item is priced with. Both hold a multiplier rather than a
  * percentage — 0.18, not 18 — because the billing formula multiplies the bill
  * item amount by them directly. The column is numeric(15,2), so a rate finer
@@ -1785,6 +1856,22 @@ export const CURRENCIES_BY_COUNTRY = gql`
   }
 `;
 
+export const CATEGORIES_BY_TYPE = gql`
+  query categoriesByType($typeUid: String) {
+    categoriesByType(typeUid: $typeUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const SUBCATEGORIES_BY_CATEGORY = gql`
+  query subcategoriesByCategory($categoryUid: String) {
+    subcategoriesByCategory(categoryUid: $categoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const EXCHANGE_RATES_BY_CURRENCY = gql`
   query exchangeRatesByCurrency($currencyUid: String) {
     exchangeRatesByCurrency(currencyUid: $currencyUid) {
@@ -1878,6 +1965,10 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   EXCHANGE_RATE,
   FINANCIAL_YEAR,
   METER,
+  // In hierarchy order, so the menu reads type-downwards.
+  TYPE,
+  CATEGORY,
+  SUBCATEGORY,
 ];
 
 /** In hierarchy order, so the menu reads country-downwards. */
