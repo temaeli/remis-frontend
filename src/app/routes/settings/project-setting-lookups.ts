@@ -699,7 +699,13 @@ export const FLOOR_CONNECTION = defineLookup({
 `,
   extraFields: [
     refSelect('parentUid', 'Parent Floor', FLOOR.gql.all),
-    refSelect('childUid', 'Child Floor', FLOOR.gql.all),
+    {
+      ...refSelect('childUid', 'Child Floor', FLOOR.gql.all),
+      // All three are enforced on save: the child has to be a base floor, its
+      // asset has to already hang off the parent floor's asset, and the floors
+      // connected under one floor may not between them cover more than it has.
+      hint: 'A base floor, on an asset already connected under the parent floor asset',
+    },
   ],
   extraColumns: ['parent.name as Parent', 'child.name as Child'],
   toModel: (data) => ({

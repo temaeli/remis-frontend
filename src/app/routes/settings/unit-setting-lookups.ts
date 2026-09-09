@@ -80,8 +80,16 @@ export const UNIT = defineLookup({
 `,
   extraFields: [
     numberField('area', 'Area'),
-    numberField('netArea', 'Net Area'),
-    numberField('grossArea', 'Gross Area'),
+    {
+      ...numberField('netArea', 'Net Area'),
+      // Enforced on save: the units of a floor may not between them claim more
+      // net area than the floor has.
+      hint: 'Together with the other units on the floor, must fit within the floor area',
+    },
+    {
+      ...numberField('grossArea', 'Gross Area'),
+      hint: 'Not less than the net area',
+    },
     numberField('unitShares', 'Unit Shares'),
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
