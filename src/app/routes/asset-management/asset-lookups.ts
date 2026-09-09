@@ -237,6 +237,9 @@ export const ASSET = defineLookup({
     lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
       assetUid: record?.id,
     }),
+    lookupChildPanel(comp, () => ASSET_CONNECTION, ASSET_CONNECTIONS_BY_PARENT, {
+      parentUid: record?.id,
+    }),
     assetProjectsPanel(comp, record?.id),
     ...assetLinkPanels(comp, record?.id),
     ...coreAttachmentPanels(comp, 'asset', record?.id),
@@ -750,9 +753,73 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
     assetUid,
   );
 
+/**
+ * A directed edge between two assets: the child hangs off the parent.
+ *
+ * A record in its own right rather than a link panel — it carries a name, a
+ * description and who connected the two — so it gets a screen like any other
+ * lookup, with a panel on the parent asset reading the same rows.
+ */
+export const ASSET_CONNECTION = defineLookup({
+  slug: 'asset-connections',
+  entity: 'AssetToAssetConnection',
+  entityPlural: 'AssetToAssetConnections',
+  permission: 'ASSET_CONNECTION',
+  label: 'Asset Connection',
+  pluralLabel: 'Asset Connections',
+  subtitle: 'Which asset hangs off which',
+  icon: 'link',
+  extraGqlFields: `
+  connectedAt
+  parent {
+    ${lookupRefGqlFields}
+  }
+  child {
+    ${lookupRefGqlFields}
+  }
+  connectedBy {
+    id
+    uid: id
+    name
+  }
+`,
+  extraFields: [
+    parentSelect('parentUid', 'Parent Asset', ASSET.gql.all),
+    parentSelect('childUid', 'Child Asset', ASSET.gql.all),
+    parentSelect('connectedByUid', 'Connected By', ALL_PEOPLE),
+    {
+      key: 'connectedAt',
+      label: 'Connected At',
+      type: FieldType.dateTime,
+      hint: 'Defaults to now when left blank',
+    },
+  ],
+  extraColumns: [
+    'parent.name as Parent',
+    'child.name as Child',
+    'connectedBy.name as Connected By',
+    { field: 'connectedAt', header: 'Connected' },
+  ],
+  toModel: (data) => ({
+    parentUid: data?.parent?.id,
+    childUid: data?.child?.id,
+    connectedByUid: data?.connectedBy?.id,
+  }),
+});
+
+/** The assets hanging off one asset, for the panel on the asset's own page. */
+export const ASSET_CONNECTIONS_BY_PARENT = gql`
+  query assetToAssetConnectionsByParent($parentUid: String) {
+    assetToAssetConnectionsByParent(parentUid: $parentUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 /** The operational screens, which lead the menu. */
 export const ASSET_LOOKUPS: LookupModule[] = [
   ASSET,
+  ASSET_CONNECTION,
   LAND_REGISTRATION,
   ASSET_VERIFICATION,
   ACQUISITION,

@@ -1,8 +1,16 @@
 import { gql } from '@apollo/client/core';
 
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
+import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import {
+  defineLookup,
+  entityLinkPanels,
+  lookupChildGqlFields,
+  lookupChildPanel,
+  lookupRefGqlFields,
+  LookupModule,
+} from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
 import { coreAttachmentPanels } from './attachment-lookups';
@@ -46,6 +54,14 @@ const coordinateGqlFields = `
   latitude
   longitude
 `;
+
+/** A yes/no column, the same shape the asset registry's flags take on a list. */
+const flagColumn = (field: string, header?: string): GridKeyColumn => ({
+  field,
+  header,
+  valueFn: (row) => (row?.[field] ? 'Yes' : 'No'),
+  valueClassMapper: (row) => (row?.[field] ? 'text-success' : 'text-danger'),
+});
 
 /** A select over another table, all of which key on `id`. */
 const refSelect = (key: string, label: string, query: unknown): FieldConfig => ({
@@ -520,6 +536,7 @@ export const FLOOR = defineLookup({
   icon: 'layers',
   extraGqlFields: `
   area
+  isBaseFloor
   ${coordinateGqlFields}
   asset {
     ${lookupRefGqlFields}
@@ -529,9 +546,21 @@ export const FLOOR = defineLookup({
     numberField('area', 'Area'),
     ...coordinateFields(),
     refSelect('assetUid', 'Asset', ASSET.gql.all),
+    {
+      key: 'isBaseFloor',
+      label: 'Base Floor',
+      type: FieldType.toggle,
+      hint: 'The floor the asset stands on',
+      class: 'col-span-full',
+    },
   ],
-  extraColumns: ['area', 'asset.name as Asset'],
+  extraColumns: ['area', 'asset.name as Asset', flagColumn('isBaseFloor', 'Base Floor')],
   toModel: (data) => ({ assetUid: data?.asset?.id }),
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => FLOOR_CONNECTION, FLOOR_CONNECTIONS_BY_PARENT, {
+      parentUid: record?.id,
+    }),
+  ],
 });
 
 export const NET_ASSET_VALUE = defineLookup({
@@ -645,6 +674,43 @@ export const TASK_CONNECTION = defineLookup({
   }),
 });
 
+export const FLOOR_CONNECTION = defineLookup({
+  slug: 'floor-connections',
+  entity: 'FloorParentChildConnection',
+  entityPlural: 'FloorParentChildConnections',
+  permission: 'FLOOR_CONNECTION',
+  label: 'Floor Connection',
+  pluralLabel: 'Floor Connections',
+  subtitle: 'Which floor sits under which',
+  icon: 'link',
+  extraGqlFields: `
+  parent {
+    ${lookupRefGqlFields}
+  }
+  child {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    refSelect('parentUid', 'Parent Floor', FLOOR.gql.all),
+    refSelect('childUid', 'Child Floor', FLOOR.gql.all),
+  ],
+  extraColumns: ['parent.name as Parent', 'child.name as Child'],
+  toModel: (data) => ({
+    parentUid: data?.parent?.id,
+    childUid: data?.child?.id,
+  }),
+});
+
+/** The floors under one floor, for the panel on a floor's own page. */
+export const FLOOR_CONNECTIONS_BY_PARENT = gql`
+  query floorParentChildConnectionsByParent($parentUid: String) {
+    floorParentChildConnectionsByParent(parentUid: $parentUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 /**
  * Ordered as the work is planned — what it is made of, when it runs, how it is
  * judged, what it is built in, and what depends on what.
@@ -675,4 +741,5 @@ export const PROJECT_SETTING_LOOKUPS: LookupModule[] = [
   NET_ASSET_VALUE,
   ACTIVITY_CONNECTION,
   TASK_CONNECTION,
+  FLOOR_CONNECTION,
 ];
