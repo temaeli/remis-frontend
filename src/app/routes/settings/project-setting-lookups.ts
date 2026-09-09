@@ -543,14 +543,20 @@ export const FLOOR = defineLookup({
   }
 `,
   extraFields: [
-    numberField('area', 'Area'),
+    {
+      ...numberField('area', 'Area'),
+      // Enforced on save: the base floor is the asset's footprint, so nothing on
+      // that asset may be larger, and the base floor may not be shrunk below a
+      // floor already recorded.
+      hint: 'Cannot exceed the base floor area of the asset',
+    },
     ...coordinateFields(),
     refSelect('assetUid', 'Asset', ASSET.gql.all),
     {
       key: 'isBaseFloor',
       label: 'Base Floor',
       type: FieldType.toggle,
-      hint: 'The floor the asset stands on',
+      hint: 'The floor the asset stands on — only one per asset',
       class: 'col-span-full',
     },
   ],
