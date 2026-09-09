@@ -687,7 +687,7 @@ export const FLOOR_CONNECTION = defineLookup({
   permission: 'FLOOR_CONNECTION',
   label: 'Floor Connection',
   pluralLabel: 'Floor Connections',
-  subtitle: 'Which floor sits under which',
+  subtitle: 'Which base floor sits under which — optional, not every floor has one',
   icon: 'link',
   extraGqlFields: `
   parent {
@@ -698,7 +698,10 @@ export const FLOOR_CONNECTION = defineLookup({
   }
 `,
   extraFields: [
-    refSelect('parentUid', 'Parent Floor', FLOOR.gql.all),
+    {
+      ...refSelect('parentUid', 'Parent Floor', FLOOR.gql.all),
+      hint: 'A base floor — the ground the floors under it are measured against',
+    },
     {
       ...refSelect('childUid', 'Child Floor', FLOOR.gql.all),
       // All three are enforced on save: the child has to be a base floor, its
