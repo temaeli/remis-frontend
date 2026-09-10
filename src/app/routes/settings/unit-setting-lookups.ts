@@ -35,8 +35,8 @@ const numberField = (key: string, label: string): FieldConfig => ({
 
 /**
  * A required decimal. `FieldType.decimal` keeps two fractional digits, which is
- * what `numeric(30,2)` stores — a plain number input would let a third be typed
- * and then silently rounded on the way into the column.
+ * what the `numeric(15,2)` and `numeric(30,2)` columns store — a plain number
+ * input would let a third be typed and then silently rounded on the way in.
  */
 const decimalField = (key: string, label: string, hint?: string): FieldConfig => ({
   key,
@@ -92,17 +92,15 @@ export const UNIT = defineLookup({
   }
 `,
   extraFields: [
-    numberField('area', 'Area'),
-    {
-      ...numberField('netArea', 'Net Area'),
-      // Enforced on save: the units of a floor may not between them claim more
-      // net area than the floor has.
-      hint: 'Together with the other units on the floor, must fit within the floor area',
-    },
-    {
-      ...numberField('grossArea', 'Gross Area'),
-      hint: 'Not less than the net area',
-    },
+    decimalField('area', 'Area'),
+    // Enforced on save: the units of a floor may not between them claim more
+    // net area than the floor has.
+    decimalField(
+      'netArea',
+      'Net Area',
+      'Together with the other units on the floor, must fit within the floor area',
+    ),
+    decimalField('grossArea', 'Gross Area', 'Not less than the net area'),
     decimalField('unitShares', 'Unit Shares', 'Share of the common property'),
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
