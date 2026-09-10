@@ -33,6 +33,19 @@ const numberField = (key: string, label: string): FieldConfig => ({
   validations: [VALIDATOR_REQUIRED],
 });
 
+/**
+ * A required decimal. `FieldType.decimal` keeps two fractional digits, which is
+ * what `numeric(30,2)` stores — a plain number input would let a third be typed
+ * and then silently rounded on the way into the column.
+ */
+const decimalField = (key: string, label: string, hint?: string): FieldConfig => ({
+  key,
+  label,
+  hint,
+  type: FieldType.decimal,
+  validations: [VALIDATOR_REQUIRED],
+});
+
 /** The survey point the located tables all carry. */
 const coordinateFields = (): FieldConfig[] => [
   numberField('latitude', 'Latitude'),
@@ -90,7 +103,7 @@ export const UNIT = defineLookup({
       ...numberField('grossArea', 'Gross Area'),
       hint: 'Not less than the net area',
     },
-    numberField('unitShares', 'Unit Shares'),
+    decimalField('unitShares', 'Unit Shares', 'Share of the common property'),
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
     {
