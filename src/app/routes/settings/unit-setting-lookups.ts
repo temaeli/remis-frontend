@@ -34,14 +34,37 @@ const numberField = (key: string, label: string): FieldConfig => ({
 });
 
 /**
- * A required decimal. `FieldType.decimal` keeps two fractional digits, which is
- * what the `numeric(15,2)` and `numeric(30,2)` columns store — a plain number
- * input would let a third be typed and then silently rounded on the way in.
+ * How many fractional digits the unit areas keep, matching the
+ * `numeric(15,4)` and `numeric(30,4)` columns behind them. The component
+ * defaults to two, which would round a fourth digit away on the way in.
  */
-const decimalField = (key: string, label: string, hint?: string): FieldConfig => ({
+const UNIT_AREA_DECIMALS = 4;
+
+/**
+ * How many fractional digits a unit share keeps. The backend computes the
+ * expected share to this many places and compares what was sent against it, so
+ * the form has to send the same precision it will be judged on.
+ */
+const UNIT_SHARE_DECIMALS = 10;
+
+/**
+ * A required decimal, keeping `decimals` fractional digits.
+ *
+ * The input component rounds to two when `decimals` is not given, which is
+ * fewer than any of these columns hold: the unit areas are `numeric(15,4)` and
+ * `numeric(30,4)`, so each one says four explicitly.
+ *
+ * A unit share is the exception: it is a fraction of the whole property, so the
+ * part that distinguishes one share from another sits far to the right of the
+ * point. Rounding 0.9999999999 to two digits sends 1, which is a different
+ * share, and the backend rejects it against the share it computed. Ten digits
+ * is what that check expects, so ten is what the form keeps.
+ */
+const decimalField = (key: string, label: string, hint?: string, decimals?: number): FieldConfig => ({
   key,
   label,
   hint,
+  decimals,
   type: FieldType.decimal,
   validations: [VALIDATOR_REQUIRED],
 });
@@ -92,16 +115,17 @@ export const UNIT = defineLookup({
   }
 `,
   extraFields: [
-    decimalField('area', 'Area'),
+    decimalField('area', 'Area', undefined, UNIT_AREA_DECIMALS),
     // Enforced on save: the units of a floor may not between them claim more
     // net area than the floor has.
     decimalField(
       'netArea',
       'Net Area',
       'Together with the other units on the floor, must fit within the floor area',
+      UNIT_AREA_DECIMALS,
     ),
-    decimalField('grossArea', 'Gross Area', 'Not less than the net area'),
-    decimalField('unitShares', 'Unit Shares', 'Share of the common property'),
+    decimalField('grossArea', 'Gross Area', 'Not less than the net area', UNIT_AREA_DECIMALS),
+    decimalField('unitShares', 'Unit Shares', 'Share of the common property', UNIT_SHARE_DECIMALS),
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
     {
