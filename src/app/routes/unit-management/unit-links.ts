@@ -49,6 +49,15 @@ const ALL_BANK_ACCOUNT = gql`
   }
 `;
 
+const ALL_BILL_HEADER = gql`
+  query allBillHeaders {
+    allBillHeaders {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_BILL_PAY_OPTION = gql`
   query allBillPayOptions {
     allBillPayOptions {
@@ -142,6 +151,15 @@ const ALL_EVICTION = gql`
 const ALL_EXIT = gql`
   query allExits {
     allExits {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_EXPENSE = gql`
+  query allExpenses {
+    allExpenses {
       id
       name
     }
@@ -532,6 +550,18 @@ const UNIT_LINKS: EntityLinkConfig[] = [
     optionsQuery: ALL_BANK_ACCOUNT,
   },
   {
+    entity: 'UnitBillHeader',
+    byOwnerQuery: 'unitBillHeadersByUnit',
+    ownerArg: 'unitUid',
+    targetArg: 'billHeaderUid',
+    field: 'billHeader',
+    label: 'Bill Header',
+    pluralLabel: 'Bill Headers',
+    icon: 'bill_alt',
+    permission: 'UNIT_BILL_HEADER',
+    optionsQuery: ALL_BILL_HEADER,
+  },
+  {
     entity: 'UnitBillPayOption',
     byOwnerQuery: 'unitBillPayOptionsByUnit',
     ownerArg: 'unitUid',
@@ -692,6 +722,18 @@ const UNIT_LINKS: EntityLinkConfig[] = [
     icon: 'logout',
     permission: 'UNIT_EXIT',
     optionsQuery: ALL_EXIT,
+  },
+  {
+    entity: 'UnitExpense',
+    byOwnerQuery: 'unitExpensesByUnit',
+    ownerArg: 'unitUid',
+    targetArg: 'expenseUid',
+    field: 'expense',
+    label: 'Expense',
+    pluralLabel: 'Expenses',
+    icon: 'receipt',
+    permission: 'UNIT_EXPENSE',
+    optionsQuery: ALL_EXPENSE,
   },
   {
     entity: 'UnitFee',

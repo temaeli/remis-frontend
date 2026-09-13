@@ -52,6 +52,16 @@ const ALL_BUSINESS_NAMES = gql`
   }
 `;
 
+/** The units a header can be linked to, for the tab on its page. */
+const ALL_UNITS = gql`
+  query allUnits {
+    allUnits {
+      id
+      name
+    }
+  }
+`;
+
 /**
  * The bill header is the one operational billing table shaped like a lookup —
  * five plain operations over a named record — so it renders from a config.
@@ -118,7 +128,7 @@ export const BILL_HEADER = defineLookup({
   }),
   /**
    * Every record that names this header, in one list because a lookup takes one
-   * `extraContents`. Eighteen tables carry a `bill_headers_id`; these are all of
+   * `extraContents`. Nineteen tables carry a `bill_headers_id`; these are all of
    * them, grouped by what a reader is actually asking.
    *
    * First, who the bill is raised against. A join table rather than a column on
@@ -179,6 +189,23 @@ export const BILL_HEADER = defineLookup({
           icon: 'settings',
           permission: 'BILL_HEADER_BILL_HEADERS_SETTING',
           optionsQuery: BILL_HEADERS_SETTING.gql.all,
+        },
+        /**
+         * The units billed under this header. A join rather than a column, so a
+         * header can cover several units and a unit several headers. The pair is
+         * UNIQUE, so linking the same unit twice returns the existing row.
+         */
+        {
+          entity: 'UnitBillHeader',
+          byOwnerQuery: 'unitBillHeadersByBillHeader',
+          ownerArg: 'billHeaderUid',
+          targetArg: 'unitUid',
+          field: 'unit',
+          label: 'Unit',
+          pluralLabel: 'Units',
+          icon: 'domain',
+          permission: 'UNIT_BILL_HEADER',
+          optionsQuery: ALL_UNITS,
         },
       ],
       record?.id,

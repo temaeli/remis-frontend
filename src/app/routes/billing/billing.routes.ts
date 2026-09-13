@@ -3,6 +3,7 @@ import { lookupRoutes } from '@shared/lookup';
 import { matchRoute } from '@shared/components/view-component/view.helpers';
 
 import { BILL_CONFIGURATION_LOOKUPS } from './bill-lookups';
+import { EXPENSE_LOOKUPS } from './expense-lookups';
 import { BILL_RAISE_PERMISSIONS, BILL_VIEW_PERMISSIONS } from './bill.form';
 import { PAYMENT_VIEW_PERMISSIONS } from './payment.form';
 
@@ -86,6 +87,13 @@ export const BILLING_ROUTES: TypedRoutes = [
     },
     loadComponent: () => import('./raise-bill.component').then((m) => m.RaiseBillComponent),
   },
+
+  /**
+   * Money spent. A lookup rather than a screen of its own: one named record with
+   * a date, an amount and a currency, and everything it was spent on hangs off
+   * join tables shown as tabs on its page.
+   */
+  ...lookupRoutes(EXPENSE_LOOKUPS),
 
   // Bill headers are lookup-shaped, so they render from a config like the rest.
   {

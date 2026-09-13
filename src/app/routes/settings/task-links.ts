@@ -164,6 +164,15 @@ const allStreets = gql`
   }
 `;
 
+const allExpenses = gql`
+  query allExpenses {
+    allExpenses {
+      id
+      name
+    }
+  }
+`;
+
 const allUnits = gql`
   query allUnits {
     allUnits {
@@ -291,6 +300,15 @@ const TASK_LINKS: TaskLinkConfig[] = [
     icon: 'domain',
     permission: 'TASK_UNIT',
     optionsQuery: allUnits,
+  },
+  {
+    entity: 'TaskExpense',
+    field: 'expense',
+    label: 'Expense',
+    pluralLabel: 'Expenses',
+    icon: 'receipt',
+    permission: 'TASK_EXPENSE',
+    optionsQuery: allExpenses,
   },
 ];
 

@@ -9,6 +9,7 @@ import { USERS_BY_DESIGNATION_PAGEABLE } from '@routes/users-managment/users/use
 import { gql } from '@apollo/client/core';
 import {
   defineLookup,
+  entityLinkPanels,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
@@ -27,6 +28,20 @@ import { recordLinkPanels } from '@routes/unit-management/unit-links';
  * here as configs and rendered by the shared lookup screens rather than copied
  * out twenty-five times.
  */
+
+/**
+ * The expenses a person can be linked to, for the tab on their page. Declared as
+ * a bare read rather than imported from the billing registry, which imports this
+ * file.
+ */
+const ALL_EXPENSES = gql`
+  query allExpenses {
+    allExpenses {
+      id
+      name
+    }
+  }
+`;
 
 /** A required amount, the shape the numeric columns on these tables take. */
 const amountField = (key: string, label: string, hint?: string): FieldConfig => ({
@@ -196,6 +211,24 @@ export const PERSON = defineLookup({
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
     personOrganisationsPanel(comp, record?.id),
+    ...entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'BioDataExpense',
+          byOwnerQuery: 'bioDataExpensesByBioData',
+          ownerArg: 'bioDataUid',
+          targetArg: 'expenseUid',
+          field: 'expense',
+          label: 'Expense',
+          pluralLabel: 'Expenses',
+          icon: 'receipt',
+          permission: 'BIO_DATA_EXPENSE',
+          optionsQuery: ALL_EXPENSES,
+        },
+      ],
+      record?.id,
+    ),
     ...coreAttachmentPanels(comp, 'bioData', record?.id),
   ],
 });

@@ -593,6 +593,15 @@ const allCosts = gql`
   }
 `;
 
+const allExpenses = gql`
+  query allExpenses {
+    allExpenses {
+      id
+      name
+    }
+  }
+`;
+
 const allTasks = gql`
   query allTasks {
     allTasks {
@@ -688,6 +697,18 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
         icon: 'land_administration',
         permission: 'ASSET_LAND_USE',
         optionsQuery: LAND_USE.gql.all,
+      },
+      {
+        entity: 'ExpenseAsset',
+        byOwnerQuery: 'expenseAssetsByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'expenseUid',
+        field: 'expense',
+        label: 'Expense',
+        pluralLabel: 'Expenses',
+        icon: 'receipt',
+        permission: 'EXPENSE_ASSET',
+        optionsQuery: allExpenses,
       },
       {
         entity: 'AssetTask',
