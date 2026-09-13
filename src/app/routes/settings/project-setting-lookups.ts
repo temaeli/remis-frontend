@@ -700,15 +700,16 @@ export const FLOOR_CONNECTION = defineLookup({
   extraFields: [
     {
       ...refSelect('parentUid', 'Parent Floor', FLOOR.gql.all),
-      hint: 'A base floor — a land, or the footprint of a building on it',
+      hint: 'A base floor, or a storey that other storeys of its building sit on',
     },
     {
       ...refSelect('childUid', 'Child Floor', FLOOR.gql.all),
       // Enforced on save. A child base floor has to be on an asset already
-      // connected under the parent floor's asset, and the base floors under one
-      // floor may not between them cover more than it has. A storey has to be on
-      // the parent floor's own asset and no larger than it.
-      hint: 'A building base floor on an asset under the parent asset, or a storey of the parent floor asset',
+      // connected under the parent floor's asset, only under a base floor, and
+      // the base floors under one floor may not between them cover more than it
+      // has. A storey has to be on the parent floor's own asset, no larger than
+      // that asset's base floor, and may sit under a base floor or a storey.
+      hint: 'A building base floor under a base floor, or a storey of the parent floor asset',
     },
   ],
   extraColumns: ['parent.name as Parent', 'child.name as Child'],
