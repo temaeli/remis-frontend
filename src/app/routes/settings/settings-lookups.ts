@@ -1199,7 +1199,37 @@ export const CURRENCY = defineLookup({
   pluralLabel: 'Currencies',
   subtitle: 'Currencies and the country that issues each',
   icon: 'coins',
+  // assigned_code is varchar(3) -- the three-letter code, such as TZS -- so the
+  // form requires it: the backend cannot generate one that fits.
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'assignedNumber',
+      label: 'Code',
+      type: FieldType.input,
+      hint: 'Three letters, such as TZS',
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: ['index', { field: 'assignedNumber', header: 'Code' }, 'name', 'description'],
   extraGqlFields: `
+  domestic
   country {
     ${lookupRefGqlFields}
   }
@@ -1217,9 +1247,22 @@ export const CURRENCY = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
+    {
+      key: 'domestic',
+      label: 'Domestic',
+      type: FieldType.toggle,
+      hint: 'On for the one home currency (TZS); off for every other',
+      class: 'col-span-full',
+    },
   ],
-  extraColumns: [{ field: 'country', valueFn: (row) => row?.country?.name }],
-  toModel: (data) => ({ countryUid: data?.country?.id }),
+  extraColumns: [
+    { field: 'country', valueFn: (row) => row?.country?.name },
+    { field: 'domestic', header: 'Domestic', valueFn: (row) => (row?.domestic ? 'Yes' : 'No') },
+  ],
+  // A new currency starts as foreign: only one currency may be domestic, and the
+  // backend refuses a second. Set on the model rather than as the toggle's value,
+  // which would win over an existing currency's saved value on edit.
+  toModel: (data) => ({ countryUid: data?.country?.id, domestic: data?.domestic ?? false }),
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => EXCHANGE_RATE, EXCHANGE_RATES_BY_CURRENCY, {
       currencyUid: record?.id,
