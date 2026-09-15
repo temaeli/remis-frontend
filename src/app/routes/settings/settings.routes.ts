@@ -11,6 +11,7 @@ import {
 import { PROJECT_SETTING_LOOKUPS } from './project-setting-lookups';
 import { AGREEMENT_SETTING_LOOKUPS } from './agreement-setting-lookups';
 import { UNIT_SETTING_LOOKUPS } from './unit-setting-lookups';
+import { INVENTORY_LOOKUPS } from './inventory-lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),
@@ -136,6 +137,21 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'countries', pathMatch: 'full' },
       ...lookupRoutes(REFERENCE_LOOKUPS),
+    ],
+  },
+
+  // Inventory — stock items, the units they are counted in, and the assets that
+  // hold them.
+  {
+    path: 'inventory',
+    data: {
+      isMenu: true,
+      name: 'Inventory',
+      icon: 'store',
+    },
+    children: [
+      { path: '', redirectTo: 'inventories', pathMatch: 'full' },
+      ...lookupRoutes(INVENTORY_LOOKUPS),
     ],
   },
 

@@ -602,6 +602,15 @@ const allExpenses = gql`
   }
 `;
 
+const allInventories = gql`
+  query allInventories {
+    allInventories {
+      id
+      name
+    }
+  }
+`;
+
 const allTasks = gql`
   query allTasks {
     allTasks {
@@ -709,6 +718,18 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
         icon: 'receipt',
         permission: 'EXPENSE_ASSET',
         optionsQuery: allExpenses,
+      },
+      {
+        entity: 'InventoryAsset',
+        byOwnerQuery: 'inventoryAssetsByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'inventoryUid',
+        field: 'inventory',
+        label: 'Inventory',
+        pluralLabel: 'Inventories',
+        icon: 'store',
+        permission: 'INVENTORY_ASSET',
+        optionsQuery: allInventories,
       },
       {
         entity: 'AssetTask',
