@@ -16,6 +16,7 @@ import { Lookup } from '@shared/lookup/lookup.interface';
 import { PERSON } from '@routes/settings/settings-lookups';
 
 import { ENCUMBRANCE_TYPE_OPTIONS, OWNER_TYPE_OPTIONS } from './land-registration';
+import { ParcelPoint, cornerLines, parseCornerLines } from './parcel-map.helpers';
 
 /**
  * The three tabs a land registration carries: who owns it, what is registered
@@ -139,6 +140,15 @@ export const POINTS_OF_REGISTRATION = gql`
 export const SAVE_LAND_PARCEL_POINT = gql`
   mutation saveLandParcelPoint($input: LandParcelPointDtoInput) {
     saveLandParcelPoint(input: $input) {
+      ${responseGqlFields(parcelPointFieldsGql)}
+    }
+  }
+`;
+
+/** Every corner of a parcel at once, so the database checks the finished boundary. */
+export const REPLACE_LAND_PARCEL_POINTS = gql`
+  mutation replaceLandParcelPoints($landRegistrationUid: String, $corners: [LandParcelPointDtoInput]) {
+    replaceLandParcelPoints(landRegistrationUid: $landRegistrationUid, corners: $corners) {
       ${responseGqlFields(parcelPointFieldsGql)}
     }
   }
@@ -475,7 +485,7 @@ const pointFormFields = (): FieldConfig[] => [
   {
     key: 'name',
     label: 'Name',
-    hint: 'Unique across every parcel in the system, not just this one',
+    hint: 'Such as Beacon 1. Unique on this parcel',
     type: FieldType.input,
     validations: [VALIDATOR_REQUIRED],
   },
@@ -488,15 +498,17 @@ const pointFormFields = (): FieldConfig[] => [
   {
     key: 'latitude',
     label: 'Latitude',
-    type: FieldType.input,
-    inputType: 'number',
+    hint: 'Decimal degrees, between -90 and 90 (e.g. -6.800000)',
+    type: FieldType.decimal,
+    decimals: 6,
     validations: [VALIDATOR_REQUIRED],
   },
   {
     key: 'longitude',
     label: 'Longitude',
-    type: FieldType.input,
-    inputType: 'number',
+    hint: 'Decimal degrees, between -180 and 180 (e.g. 39.280000)',
+    type: FieldType.decimal,
+    decimals: 6,
     validations: [VALIDATOR_REQUIRED],
   },
   {
@@ -556,6 +568,59 @@ function openPointForm(comp: BaseComponent, registrationUid?: string, row?: Look
   };
 }
 
+/**
+ * The whole boundary as text: one corner per line, in order around the plot.
+ *
+ * The database checks a parcel's boundary when the save commits — at least 3
+ * corners, not crossing itself, within 5% of the gross area — so a new parcel's
+ * corners are entered here together rather than one at a time.
+ */
+function openCornersForm(comp: BaseComponent, registrationUid?: string) {
+  return async () => {
+    const existing: ParcelPoint[] =
+      (await comp.fs.fetch({
+        query: POINTS_OF_REGISTRATION,
+        variables: { landRegistrationUid: registrationUid },
+        showLoading: false,
+      })) ?? [];
+
+    const close$ = new Subject<void>();
+    const formParameter: FormParameters = {
+      title: 'Enter All Corners',
+      model: { corners: cornerLines(existing) },
+      fields: [
+        {
+          key: 'corners',
+          label: 'Corners',
+          hint: 'One per line, in order around the plot: name, latitude, longitude. At least 3. Pasting from a spreadsheet works',
+          type: FieldType.textarea,
+          rows: 12,
+          validations: [VALIDATOR_REQUIRED],
+          class: 'col-span-full',
+        },
+      ],
+      closeAction$: close$,
+
+      onSubmit: async (value: any) => {
+        await comp.fs.fetch({
+          notify: true,
+          variables: {
+            landRegistrationUid: registrationUid,
+            corners: parseCornerLines(value?.corners),
+          },
+          mutation: REPLACE_LAND_PARCEL_POINTS,
+          successFn: (res) => {
+            pointReloaded$.next(res?.data);
+            close$.next();
+          },
+        });
+      },
+    };
+
+    comp.vs?.openModal(FormComponent, formParameter, '55%');
+  };
+}
+
 const pointColumns: GridKeyColumn[] = [
   'pointOrder as No.',
   'assignedNumber as Code',
@@ -569,7 +634,9 @@ const pointColumns: GridKeyColumn[] = [
  * The surveyed corners of the parcel.
  *
  * Listed in `point_order`, their place around the boundary, which is the order
- * the Map tab joins them in.
+ * the Map tab joins them in. Record Point adds or amends one corner, and works on
+ * a parcel whose boundary is still valid afterwards; Enter All Corners sets them
+ * all at once, which is how a new parcel's corners go in.
  */
 export const landRegistrationPointPanel = (
   comp: BaseComponent,
@@ -587,6 +654,13 @@ export const landRegistrationPointPanel = (
       label: 'Record Point',
       class: 'btn-add-primary',
       click: openPointForm(comp, registrationUid),
+      permissions: ['ROLE_CREATE_LAND_PARCEL_POINT', 'ROLE_UPDATE_LAND_PARCEL_POINT'],
+    } as ActionButton,
+    {
+      icon: 'edit',
+      label: 'Enter All Corners',
+      class: 'btn-add-primary',
+      click: openCornersForm(comp, registrationUid),
       permissions: ['ROLE_CREATE_LAND_PARCEL_POINT', 'ROLE_UPDATE_LAND_PARCEL_POINT'],
     } as ActionButton,
   ],

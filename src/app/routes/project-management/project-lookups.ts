@@ -32,20 +32,25 @@ const numberField = (key: string, label: string): FieldConfig => ({
   class: 'col-span-full',
 });
 
-/** The latitude/longitude pair projects, cost types and master plans all carry. */
+/**
+ * The latitude/longitude pair projects, cost types and master plans all carry.
+ * Stored as numeric(9,6), so the controls take decimals and round to six places.
+ */
 const coordinateFields = (): FieldConfig[] => [
   {
     key: 'latitude',
     label: 'Latitude',
-    type: FieldType.input,
-    inputType: 'number',
+    hint: 'Decimal degrees, between -90 and 90',
+    type: FieldType.decimal,
+    decimals: 6,
     validations: [VALIDATOR_REQUIRED],
   },
   {
     key: 'longitude',
     label: 'Longitude',
-    type: FieldType.input,
-    inputType: 'number',
+    hint: 'Decimal degrees, between -180 and 180',
+    type: FieldType.decimal,
+    decimals: 6,
     validations: [VALIDATOR_REQUIRED],
   },
 ];

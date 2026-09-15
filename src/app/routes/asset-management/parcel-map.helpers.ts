@@ -119,3 +119,42 @@ export function areaDifferencePercent(
   if (!drawnSqm || !Number.isFinite(registered) || registered <= 0) return null;
   return ((drawnSqm - registered) / registered) * 100;
 }
+
+/** One corner as typed into the Enter All Corners box. */
+export interface CornerLine {
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/**
+ * One corner per line: name, latitude, longitude — separated by commas, tabs or
+ * semicolons, so a copy from a spreadsheet works. Blank lines are skipped, and so
+ * is a first line whose coordinates are not numbers (a header). A coordinate that
+ * does not parse comes back null and the backend says which corner it is.
+ */
+export function parseCornerLines(text: string): CornerLine[] {
+  const rows = (text ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => {
+      const cells = line.split(/\s*[,;\t]\s*/);
+      // The name may itself contain a separator; the last two cells are the coordinates.
+      const lng = cells.length >= 3 ? cells.pop()! : '';
+      const lat = cells.length >= 2 ? cells.pop()! : '';
+      const toNumber = (value: string) =>
+        value !== '' && Number.isFinite(Number(value)) ? Number(value) : null;
+      return { name: cells.join(', ').trim(), latitude: toNumber(lat), longitude: toNumber(lng) };
+    });
+  if (rows.length && rows[0].latitude === null && rows[0].longitude === null) rows.shift();
+  return rows;
+}
+
+/** The corners back as lines, in order, for editing. */
+export function cornerLines(points: ParcelPoint[]): string {
+  return [...points]
+    .sort((a, b) => Number(a.pointOrder) - Number(b.pointOrder) || a.name.localeCompare(b.name))
+    .map((p) => `${p.name}, ${Number(p.latitude).toFixed(6)}, ${Number(p.longitude).toFixed(6)}`)
+    .join('\n');
+}
