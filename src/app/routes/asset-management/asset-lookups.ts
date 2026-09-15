@@ -11,6 +11,7 @@ import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import { ParcelMapComponent } from './parcel-map.component';
 import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import {
   encumbranceFields,
@@ -286,6 +287,18 @@ export const LAND_REGISTRATION = defineLookup({
   extraContents: (comp, record) => [
     landRegistrationOwnerPanel(comp, record?.id),
     landRegistrationEncumbrancePanel(comp, record?.id),
+    {
+      type: 'component',
+      name: 'Map',
+      label: 'Map',
+      icon: 'map',
+      componentType: ParcelMapComponent,
+      componentInputs: {
+        landRegistrationUid: record?.id,
+        grossArea: record?.grossArea,
+        title: record?.parcelNumber,
+      },
+    },
     landRegistrationPointPanel(comp, record?.id),
   ],
   extraColumns: [

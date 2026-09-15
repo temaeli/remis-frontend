@@ -32,7 +32,8 @@ import { ENCUMBRANCE_TYPE_OPTIONS, OWNER_TYPE_OPTIONS } from './land-registratio
 
 const ownerReloaded$ = new Subject<unknown>();
 const encumbranceReloaded$ = new Subject<unknown>();
-const pointReloaded$ = new Subject<unknown>();
+/** Exported so the Map tab redraws when a corner changes. */
+export const pointReloaded$ = new Subject<unknown>();
 
 // ---------------------------------------------------------------- documents
 
@@ -67,6 +68,7 @@ const parcelPointFieldsGql = `
   assignedNumber
   name
   description
+  pointOrder
   latitude
   longitude
 `;
@@ -159,7 +161,11 @@ const ownerFormFields = (unallocated: string): FieldConfig[] => [
     label: 'Owner',
     hint: 'Someone already on the register',
     type: FieldType.select,
-    optionsVariables: { labelKey: 'name', valueKey: 'id', fetchParameter: { query: PERSON.gql.all } },
+    optionsVariables: {
+      labelKey: 'name',
+      valueKey: 'id',
+      fetchParameter: { query: PERSON.gql.all },
+    },
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
   },
@@ -460,9 +466,16 @@ export const landRegistrationEncumbrancePanel = (
 const pointFormFields = (): FieldConfig[] => [
   { key: 'uid', type: FieldType.input, visible: false },
   {
+    key: 'pointOrder',
+    label: 'Point Number',
+    hint: 'Its place around the boundary. Leave blank to add after the last point',
+    type: FieldType.input,
+    inputType: 'number',
+  },
+  {
     key: 'name',
     label: 'Name',
-    hint: 'The corners come back in name order — there is no sequence column',
+    hint: 'Such as Beacon 1. Unique on this parcel',
     type: FieldType.input,
     validations: [VALIDATOR_REQUIRED],
   },
@@ -489,7 +502,6 @@ const pointFormFields = (): FieldConfig[] => [
   {
     key: 'description',
     label: 'Description',
-    hint: 'Unique across every parcel in the system, not just this one',
     type: FieldType.textarea,
     rows: 2,
     validations: [VALIDATOR_REQUIRED],
@@ -505,6 +517,7 @@ function openPointForm(comp: BaseComponent, registrationUid?: string, row?: Look
       model: row?.['id']
         ? {
             uid: row['id'],
+            pointOrder: row['pointOrder'],
             name: row['name'],
             assignedNumber: row['assignedNumber'],
             latitude: row['latitude'],
@@ -518,7 +531,17 @@ function openPointForm(comp: BaseComponent, registrationUid?: string, row?: Look
       onSubmit: async (value: any) => {
         await comp.fs.fetch({
           notify: true,
-          variables: { input: { ...value, landRegistrationUid: registrationUid } },
+          variables: {
+            input: {
+              ...value,
+              // Blank means "after the last point"; an empty string is not an Int.
+              pointOrder:
+                value?.pointOrder === '' || value?.pointOrder == null
+                  ? null
+                  : Number(value.pointOrder),
+              landRegistrationUid: registrationUid,
+            },
+          },
           mutation: SAVE_LAND_PARCEL_POINT,
           successFn: (res) => {
             pointReloaded$.next(res?.data);
@@ -533,7 +556,7 @@ function openPointForm(comp: BaseComponent, registrationUid?: string, row?: Look
 }
 
 const pointColumns: GridKeyColumn[] = [
-  'index',
+  'pointOrder as No.',
   'assignedNumber as Code',
   'name',
   'latitude',
@@ -544,11 +567,8 @@ const pointColumns: GridKeyColumn[] = [
 /**
  * The surveyed corners of the parcel.
  *
- * These are a set of points, not a boundary. The table carries no sequence,
- * index or ring number, so nothing says which corner follows which — the rows
- * are listed by name, which holds only as far as whoever entered them named
- * them in order. Drawing a polygon from this would be guessing. A
- * `point_order` column is the fix, and it is with the DBA.
+ * Listed in `point_order`, their place around the boundary, which is the order
+ * the Map tab joins them in.
  */
 export const landRegistrationPointPanel = (
   comp: BaseComponent,
