@@ -74,6 +74,13 @@ const AREA_TOLERANCE_PERCENT = 5;
           @if (shape().perimeterM) {
             <span>Perimeter {{ shape().perimeterM | number: '1.0-1' }} m</span>
           }
+          @if (shape().repeatedNumbers.length) {
+            <span class="text-red-600" role="alert">
+              Point number(s) {{ shape().repeatedNumbers.join(', ') }} are used by more than one
+              corner. Renumber them on the Parcel Points tab; until then those corners are joined in
+              name order.
+            </span>
+          }
           @if (shape().crossesItself) {
             <span class="text-red-600" role="alert">
               The outline crosses itself: the corners are probably numbered out of order
@@ -201,7 +208,9 @@ export class ParcelMapComponent {
     this.layer.clearLayers();
 
     const { ring, areaSqm, crossesItself } = this.shape();
-    const rows = [...this.points()].sort((a, b) => Number(a.pointOrder) - Number(b.pointOrder));
+    const rows = [...this.points()].sort(
+      (a, b) => Number(a.pointOrder) - Number(b.pointOrder) || a.name.localeCompare(b.name),
+    );
 
     if (ring.length >= 3) {
       L.polygon(ring, {

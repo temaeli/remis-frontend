@@ -475,7 +475,7 @@ const pointFormFields = (): FieldConfig[] => [
   {
     key: 'name',
     label: 'Name',
-    hint: 'Such as Beacon 1. Unique on this parcel',
+    hint: 'Unique across every parcel in the system, not just this one',
     type: FieldType.input,
     validations: [VALIDATOR_REQUIRED],
   },
@@ -502,6 +502,7 @@ const pointFormFields = (): FieldConfig[] => [
   {
     key: 'description',
     label: 'Description',
+    hint: 'Unique across every parcel in the system, not just this one',
     type: FieldType.textarea,
     rows: 2,
     validations: [VALIDATOR_REQUIRED],

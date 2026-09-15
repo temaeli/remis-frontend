@@ -16,6 +16,8 @@ export interface ParcelShape {
   perimeterM: number;
   /** True when two non-adjacent edges cross — the corners are out of order. */
   crossesItself: boolean;
+  /** Point numbers held by more than one corner, so the drawing order is a guess. */
+  repeatedNumbers: number[];
 }
 
 const EARTH_RADIUS_M = 6_378_137;
@@ -24,7 +26,7 @@ const rad = (deg: number) => (deg * Math.PI) / 180;
 /** The corners in order, dropping any whose coordinates do not parse. */
 export function orderedRing(points: ParcelPoint[]): [number, number][] {
   return [...points]
-    .sort((a, b) => Number(a.pointOrder) - Number(b.pointOrder))
+    .sort((a, b) => Number(a.pointOrder) - Number(b.pointOrder) || a.name.localeCompare(b.name))
     .map((p) => [Number(p.latitude), Number(p.longitude)] as [number, number])
     .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
 }
@@ -78,6 +80,18 @@ export function ringCrossesItself(ring: [number, number][]): boolean {
   return false;
 }
 
+/** Point numbers used by more than one corner, lowest first. */
+export function repeatedNumbers(points: ParcelPoint[]): number[] {
+  const counts = new Map<number, number>();
+  points.forEach((p) =>
+    counts.set(Number(p.pointOrder), (counts.get(Number(p.pointOrder)) ?? 0) + 1),
+  );
+  return [...counts]
+    .filter(([, count]) => count > 1)
+    .map(([n]) => n)
+    .sort((a, b) => a - b);
+}
+
 export function parcelShape(points: ParcelPoint[]): ParcelShape {
   const ring = orderedRing(points);
   let perimeterM = 0;
@@ -92,6 +106,7 @@ export function parcelShape(points: ParcelPoint[]): ParcelShape {
     areaSqm: ringAreaSqm(ring),
     perimeterM,
     crossesItself: ringCrossesItself(ring),
+    repeatedNumbers: repeatedNumbers(points),
   };
 }
 
