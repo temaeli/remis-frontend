@@ -69,7 +69,25 @@ export const UNIT_OF_MEASURE = defineLookup({
   ],
 });
 
-/** Which assets an inventory is held for. The same link shows on the asset's page. */
+/** What an inventory item is linked to. Each link shows on the other record's page too. */
+const ALL_ENTRIES = gql`
+  query allEntries {
+    allEntries {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_EXITS = gql`
+  query allExits {
+    allExits {
+      id
+      name
+    }
+  }
+`;
+
 const INVENTORY_LINKS: EntityLinkConfig[] = [
   {
     entity: 'InventoryAsset',
@@ -82,6 +100,31 @@ const INVENTORY_LINKS: EntityLinkConfig[] = [
     icon: 'shop',
     permission: 'INVENTORY_ASSET',
     optionsQuery: ALL_ASSETS,
+  },
+  // Move-ins and move-outs: the items a tenant received, and handed back.
+  {
+    entity: 'InventoryEntry',
+    byOwnerQuery: 'inventoryEntriesByInventory',
+    ownerArg: 'inventoryUid',
+    targetArg: 'entryUid',
+    field: 'entry',
+    label: 'Move-in',
+    pluralLabel: 'Move-ins',
+    icon: 'login',
+    permission: 'INVENTORY_ENTRY',
+    optionsQuery: ALL_ENTRIES,
+  },
+  {
+    entity: 'InventoryExit',
+    byOwnerQuery: 'inventoryExitsByInventory',
+    ownerArg: 'inventoryUid',
+    targetArg: 'exitUid',
+    field: 'exit',
+    label: 'Move-out',
+    pluralLabel: 'Move-outs',
+    icon: 'logout',
+    permission: 'INVENTORY_EXIT',
+    optionsQuery: ALL_EXITS,
   },
 ];
 

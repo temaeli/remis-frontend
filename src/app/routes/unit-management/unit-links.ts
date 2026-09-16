@@ -157,6 +157,15 @@ const ALL_EXIT = gql`
   }
 `;
 
+const ALL_CHARGE = gql`
+  query allCharges {
+    allCharges {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_EXPENSE = gql`
   query allExpenses {
     allExpenses {
@@ -734,6 +743,18 @@ const UNIT_LINKS: EntityLinkConfig[] = [
     icon: 'receipt',
     permission: 'UNIT_EXPENSE',
     optionsQuery: ALL_EXPENSE,
+  },
+  {
+    entity: 'UnitCharge',
+    byOwnerQuery: 'unitChargesByUnit',
+    ownerArg: 'unitUid',
+    targetArg: 'chargeUid',
+    field: 'charge',
+    label: 'Charge',
+    pluralLabel: 'Charges',
+    icon: 'bill',
+    permission: 'UNIT_CHARGE',
+    optionsQuery: ALL_CHARGE,
   },
   {
     entity: 'UnitFee',

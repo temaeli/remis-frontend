@@ -12,6 +12,7 @@ import { PROJECT_SETTING_LOOKUPS } from './project-setting-lookups';
 import { AGREEMENT_SETTING_LOOKUPS } from './agreement-setting-lookups';
 import { UNIT_SETTING_LOOKUPS } from './unit-setting-lookups';
 import { INVENTORY_LOOKUPS } from './inventory-lookups';
+import { CUSTOMER_LOOKUPS } from './customer-lookups';
 
 /**
  * Grouped the way the backend groups `modules.setting`: access control (uaa),
@@ -91,6 +92,7 @@ export const SETTINGS_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'business-names', pathMatch: 'full' },
       ...lookupRoutes(GENERAL_LOOKUPS),
+      ...lookupRoutes(CUSTOMER_LOOKUPS),
 
       // System Settings
       {

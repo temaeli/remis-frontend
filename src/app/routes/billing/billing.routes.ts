@@ -4,6 +4,7 @@ import { matchRoute } from '@shared/components/view-component/view.helpers';
 
 import { BILL_CONFIGURATION_LOOKUPS } from './bill-lookups';
 import { EXPENSE_LOOKUPS } from './expense-lookups';
+import { CHARGE_LOOKUPS } from './charge-lookups';
 import { BILL_RAISE_PERMISSIONS, BILL_VIEW_PERMISSIONS } from './bill.form';
 import { PAYMENT_VIEW_PERMISSIONS } from './payment.form';
 
@@ -69,7 +70,8 @@ export const BILLING_ROUTES: TypedRoutes = [
       icon: 'money_exchange',
       permissions: PAYMENT_VIEW_PERMISSIONS,
     },
-    loadComponent: () => import('./reconciliation.component').then((m) => m.ReconciliationComponent),
+    loadComponent: () =>
+      import('./reconciliation.component').then((m) => m.ReconciliationComponent),
   },
 
   /**
@@ -94,6 +96,9 @@ export const BILLING_ROUTES: TypedRoutes = [
    * join tables shown as tabs on its page.
    */
   ...lookupRoutes(EXPENSE_LOOKUPS),
+
+  // Amounts due on a date, applied to units — the other side of expenses.
+  ...lookupRoutes(CHARGE_LOOKUPS),
 
   // Bill headers are lookup-shaped, so they render from a config like the rest.
   {

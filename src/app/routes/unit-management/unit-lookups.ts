@@ -2,9 +2,42 @@ import { gql } from '@apollo/client/core';
 
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import {
+  defineLookup,
+  EntityLinkConfig,
+  entityLinkPanels,
+  lookupRefGqlFields,
+  LookupModule,
+} from '@shared/lookup';
 
 import { recordLinkPanels } from './unit-links';
+
+/** Declared here rather than imported: the inventory registry sits in settings. */
+const ALL_INVENTORIES = gql`
+  query allInventories {
+    allInventories {
+      id
+      name
+    }
+  }
+`;
+
+/** The inventory items handed over at a move-in, or checked at a move-out. */
+const inventoryLink = (entity: 'InventoryEntry' | 'InventoryExit'): EntityLinkConfig => {
+  const isEntry = entity === 'InventoryEntry';
+  return {
+    entity,
+    byOwnerQuery: isEntry ? 'inventoryEntriesByEntry' : 'inventoryExitsByExit',
+    ownerArg: isEntry ? 'entryUid' : 'exitUid',
+    targetArg: 'inventoryUid',
+    field: 'inventory',
+    label: 'Inventory Item',
+    pluralLabel: 'Inventory Items',
+    icon: 'store',
+    permission: isEntry ? 'INVENTORY_ENTRY' : 'INVENTORY_EXIT',
+    optionsQuery: ALL_INVENTORIES,
+  };
+};
 
 /**
  * The unit module — `modules.unit` on the backend. Everything that happens to a
@@ -164,7 +197,10 @@ export const ENTRY = defineLookup({
   ],
   extraColumns: [{ field: 'enteredAt', header: 'Entered at' }],
   // The join read from this side — which units this record applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'Entry', record?.id),
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'Entry', record?.id),
+    ...entityLinkPanels(comp, [inventoryLink('InventoryEntry')], record?.id),
+  ],
 });
 
 export const EVICTION = defineLookup({
@@ -233,7 +269,10 @@ export const EXIT = defineLookup({
   ],
   extraColumns: [{ field: 'exitedAt', header: 'Exited at' }],
   // The join read from this side — which units this record applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'Exit', record?.id),
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'Exit', record?.id),
+    ...entityLinkPanels(comp, [inventoryLink('InventoryExit')], record?.id),
+  ],
 });
 
 export const HANDOVER = defineLookup({

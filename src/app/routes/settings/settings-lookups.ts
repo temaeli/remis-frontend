@@ -43,6 +43,20 @@ const ALL_EXPENSES = gql`
   }
 `;
 
+/**
+ * Every person by display name, for the pickers that link a person to something.
+ * PERSON's own list selects the name parts rather than `name`, which the picker
+ * labels with.
+ */
+const ALL_BIO_DATA_NAMES = gql`
+  query allBioData {
+    allBioData {
+      id
+      name
+    }
+  }
+`;
+
 /** A required amount, the shape the numeric columns on these tables take. */
 const amountField = (key: string, label: string, hint?: string): FieldConfig => ({
   key,
@@ -225,6 +239,18 @@ export const PERSON = defineLookup({
           icon: 'receipt',
           permission: 'BIO_DATA_EXPENSE',
           optionsQuery: ALL_EXPENSES,
+        },
+        {
+          entity: 'BioDataStreet',
+          byOwnerQuery: 'bioDataStreetsByBioData',
+          ownerArg: 'bioDataUid',
+          targetArg: 'streetUid',
+          field: 'street',
+          label: 'Street',
+          pluralLabel: 'Streets',
+          icon: 'location',
+          permission: 'BIO_DATA_STREET',
+          optionsQuery: STREET.gql.all,
         },
       ],
       record?.id,
@@ -619,6 +645,11 @@ export enum GepgEndPointType {
   RECONCILIATION_REQUEST = 'RECONCILIATION_REQUEST',
   CONTROL_NUMBER_REUSE = 'CONTROL_NUMBER_REUSE',
   BILL_CHANGE_UPDATE = 'BILL_CHANGE_UPDATE',
+  // Not outbound calls: these key Code Statuses, so the status a GePG payment
+  // leaves a bill in is configured. No endpoint URL is needed for them.
+  GEPG_FULL_PAYMENT_NOTIFICATION = 'GEPG_FULL_PAYMENT_NOTIFICATION',
+  GEPG_PARTIAL_PAYMENT_NOTIFICATION = 'GEPG_PARTIAL_PAYMENT_NOTIFICATION',
+  GEPG_EXACT_PAYMENT_NOTIFICATION = 'GEPG_EXACT_PAYMENT_NOTIFICATION',
 }
 
 export const GEPG_END_POINT_TYPE_OPTIONS: Option[] = Object.values(GepgEndPointType).map(
@@ -784,7 +815,9 @@ export const HEADERS_FOR_CN_REUSE = defineLookup({
   icon: 'loop_alt',
   nameKey: 'gepgCom',
   descriptiveGqlFields: gepgHeaderGqlFields,
-  baseFields: gepgHeaderFields('The operation a control number reuse announces, e.g. reusebill.sp.in'),
+  baseFields: gepgHeaderFields(
+    'The operation a control number reuse announces, e.g. reusebill.sp.in',
+  ),
   baseColumns: gepgHeaderColumns,
 });
 
@@ -864,12 +897,7 @@ export const CODE = defineLookup({
       class: 'col-span-full',
     },
   ],
-  baseColumns: [
-    'index',
-    { field: 'assignedNumber', header: 'GePG Code' },
-    'name',
-    'description',
-  ],
+  baseColumns: ['index', { field: 'assignedNumber', header: 'GePG Code' }, 'name', 'description'],
 });
 
 /**
@@ -1688,7 +1716,11 @@ export const BILL_HEADERS_SETTING = defineLookup({
     templateSelect('payPlanUid', 'Pay Plan', PAY_PLAN),
     templateSelect('spCodeUid', 'SP Code', SP_CODE),
     templateSelect('identityTypeUid', 'Identity Type', IDENTITY_TYPE),
-    templateSelect('paymentServiceProviderUid', 'Payment Service Provider', PAYMENT_SERVICE_PROVIDER),
+    templateSelect(
+      'paymentServiceProviderUid',
+      'Payment Service Provider',
+      PAYMENT_SERVICE_PROVIDER,
+    ),
     templateSelect('subSpCodeUid', 'Sub SP Code', SUB_SP_CODE),
     templateSelect('gfsCodeUid', 'GFS Code', GFS_CODE),
     templateSelect('feeUid', 'Fee', FEE),
@@ -1909,8 +1941,35 @@ export const STREET = defineLookup({
   extraFields: [parentSelect('wardUid', 'Ward', () => WARD), ...coordinateFields()],
   extraColumns: [{ field: 'ward', valueFn: (row) => row?.ward?.name }],
   toModel: (data) => ({ wardUid: data?.ward?.id }),
-  // The join read from this side — which units this applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'Street', record?.id),
+  // The joins read from this side — which units, and which people, it is tied to.
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'Street', record?.id),
+    ...entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'BioDataStreet',
+          byOwnerQuery: 'bioDataStreetsByStreet',
+          ownerArg: 'streetUid',
+          targetArg: 'bioDataUid',
+          field: 'bioData',
+          label: 'Person',
+          pluralLabel: 'People',
+          icon: 'person',
+          permission: 'BIO_DATA_STREET',
+          optionsQuery: ALL_BIO_DATA_NAMES,
+          // A person has no assigned number, so the default selection does not apply.
+          targetGqlFields: `
+    id
+    uid: id
+    name
+  `,
+          columns: ['index', 'bioData.name as Person', 'actions'],
+        },
+      ],
+      record?.id,
+    ),
+  ],
 });
 
 //  The parent-filtered reads the drill-downs above are built on. Exported so
