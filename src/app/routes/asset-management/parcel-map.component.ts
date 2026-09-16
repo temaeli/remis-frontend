@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { gql } from '@apollo/client/core';
 import * as L from 'leaflet';
 import 'leaflet-fullscreen';
 
@@ -21,6 +22,16 @@ import { POINTS_OF_REGISTRATION, pointReloaded$ } from './land-registration-pane
 import { ParcelPoint, areaDifferencePercent, parcelShape } from './parcel-map.helpers';
 
 const TZ_CENTER: L.LatLngTuple = [-6.369, 34.888];
+
+/**
+ * The outline the database built from the corners and checked. Read rather than
+ * recomputed: it is what was accepted, and it carries its own area.
+ */
+const PARCEL_BOUNDARY = gql`
+  query parcelBoundaryGeoJson($landRegistrationUid: String) {
+    parcelBoundaryGeoJson(landRegistrationUid: $landRegistrationUid)
+  }
+`;
 
 /** Beyond this, the drawn area is flagged against the registered gross area. */
 const AREA_TOLERANCE_PERCENT = 5;
@@ -55,6 +66,13 @@ const AREA_TOLERANCE_PERCENT = 5;
           <span
             ><strong>{{ shape().ring.length }}</strong> corner(s)</span
           >
+          @if (savedArea() !== null) {
+            <span class="text-green-700"
+              >Boundary saved: <strong>{{ savedArea() | number: '1.0-2' }} sqm</strong></span
+            >
+          } @else if (shape().ring.length >= 3) {
+            <span class="text-amber-600">Not saved as a boundary yet — drawn from the corners</span>
+          }
           @if (shape().ring.length >= 3) {
             <span
               >Drawn area <strong>{{ shape().areaSqm | number: '1.0-2' }} sqm</strong></span
@@ -112,13 +130,20 @@ export class ParcelMapComponent {
   protected readonly loading = signal(false);
   protected readonly error = signal('');
   private readonly points = signal<ParcelPoint[]>([]);
+  /** The saved outline as a GeoJSON FeatureCollection, empty until one is built. */
+  private readonly boundary = signal<any | null>(null);
+
+  /** Square metres as the database measured them, or null when nothing is saved. */
+  protected readonly savedArea = computed<number | null>(() => {
+    const area = this.boundary()?.features?.[0]?.properties?.areaSqm;
+    return area == null ? null : Number(area);
+  });
 
   protected readonly shape = computed(() => parcelShape(this.points()));
-  protected readonly areaDiff = computed(() =>
-    this.shape().ring.length >= 3
-      ? areaDifferencePercent(this.shape().areaSqm, this.grossArea())
-      : null,
-  );
+  protected readonly areaDiff = computed(() => {
+    const area = this.savedArea() ?? (this.shape().ring.length >= 3 ? this.shape().areaSqm : 0);
+    return area ? areaDifferencePercent(area, this.grossArea()) : null;
+  });
   protected readonly areaOff = computed(
     () => Math.abs(this.areaDiff() ?? 0) > AREA_TOLERANCE_PERCENT,
   );
@@ -137,6 +162,7 @@ export class ParcelMapComponent {
 
     effect(() => {
       this.shape();
+      this.boundary();
       this.draw();
     });
 
@@ -156,12 +182,21 @@ export class ParcelMapComponent {
     this.loading.set(true);
     this.error.set('');
     try {
-      const rows = await this.fs.fetch({
-        query: POINTS_OF_REGISTRATION,
-        variables: { landRegistrationUid: uid },
-        showLoading: false,
-      });
+      // Neither read depends on the other, and the map needs both.
+      const [rows, geoJson] = await Promise.all([
+        this.fs.fetch({
+          query: POINTS_OF_REGISTRATION,
+          variables: { landRegistrationUid: uid },
+          showLoading: false,
+        }),
+        this.fs.fetch({
+          query: PARCEL_BOUNDARY,
+          variables: { landRegistrationUid: uid },
+          showLoading: false,
+        }),
+      ]);
       this.points.set(rows ?? []);
+      this.boundary.set(this.parseBoundary(geoJson));
     } catch {
       this.error.set(
         "The parcel's corners could not be read. Reopen the registration to try again.",
@@ -212,11 +247,23 @@ export class ParcelMapComponent {
       (a, b) => Number(a.pointOrder) - Number(b.pointOrder) || a.name.localeCompare(b.name),
     );
 
-    if (ring.length >= 3) {
+    const saved = this.boundary();
+    if (saved) {
+      // The database's own outline: solid, because it has passed its checks.
+      L.geoJSON(saved, { style: { color: '#16a34a', weight: 3, fillOpacity: 0.2 } })
+        .bindPopup(
+          `<strong>${this.escape(this.title() ?? 'Parcel')}</strong><br>${(
+            this.savedArea() ?? 0
+          ).toLocaleString(undefined, { maximumFractionDigits: 2 })} sqm (saved boundary)`,
+        )
+        .addTo(this.layer);
+    } else if (ring.length >= 3) {
+      // Corners only: dashed, so an unsaved outline never looks official.
       L.polygon(ring, {
         color: crossesItself ? '#dc2626' : '#f59e0b',
         weight: 3,
-        fillOpacity: 0.2,
+        dashArray: '6 6',
+        fillOpacity: 0.1,
       })
         .bindPopup(
           `<strong>${this.escape(this.title() ?? 'Parcel')}</strong><br>${areaSqm.toLocaleString(
@@ -250,6 +297,17 @@ export class ParcelMapComponent {
     });
 
     this.fit();
+  }
+
+  /** The query returns GeoJSON text; an empty collection counts as no boundary. */
+  private parseBoundary(geoJson: unknown): any | null {
+    if (typeof geoJson !== 'string' || !geoJson.trim()) return null;
+    try {
+      const parsed = JSON.parse(geoJson);
+      return parsed?.features?.length ? parsed : null;
+    } catch {
+      return null;
+    }
   }
 
   private fit(): void {

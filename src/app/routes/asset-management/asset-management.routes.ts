@@ -18,6 +18,19 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
   // The register itself — assets, the registrations against them, their verifications.
   ...lookupRoutes(ASSET_LOOKUPS),
 
+  // Every registered parcel on one map, drawn from the boundaries the database
+  // builds out of each registration's corners.
+  {
+    path: 'plots-map',
+    data: {
+      isMenu: true,
+      name: 'Plots Map',
+      icon: 'map',
+      permissions: ['ROLE_VIEW_ALL_LAND_REGISTRATION', 'ROLE_VIEW_LAND_REGISTRATION'],
+    },
+    loadComponent: () => import('./parcels-map.component').then((m) => m.ParcelsMapComponent),
+  },
+
   /**
    * Reference data that classifies the registry. Grouped behind one menu and kept
    * last, so the operational screens above lead.
