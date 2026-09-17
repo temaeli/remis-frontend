@@ -7,6 +7,9 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { USERS_BY_DESIGNATION_PAGEABLE } from '@routes/users-managment/users/user.graphql';
 
 import { gql } from '@apollo/client/core';
+import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
+import { BaseComponent } from '@shared/components/base-componet/base-component';
+import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import {
   defineLookup,
   entityLinkPanels,
@@ -1341,6 +1344,49 @@ export const EXCHANGE_RATE = defineLookup({
   toModel: (data) => ({ currencyUid: data?.currency?.id }),
 });
 
+/**
+ * Switches a financial year on or off. Only one year is in force at a time, so
+ * the backend refuses to switch one on while another is on and says which to
+ * switch off first.
+ */
+const PATCH_FINANCIAL_YEAR_ACTIVE = gql`
+  mutation patchFinancialYearActive($uid: String, $active: Boolean) {
+    patchFinancialYearActive(uid: $uid, active: $active) {
+      ${responseGqlFields(`
+    id
+    name
+    active
+  `)}
+    }
+  }
+`;
+
+/** Switch this year on, or off; only the one that applies is shown per row. */
+const financialYearActiveBtn = (comp: BaseComponent, active: boolean): ActionButton => ({
+  icon: active ? 'check_circle' : 'block',
+  label: active ? 'Set Active' : 'Set Inactive',
+  permissions: ['ROLE_CREATE_FINANCIAL_YEAR', 'ROLE_UPDATE_FINANCIAL_YEAR'],
+  showFunction: (data: any) => !!data?.id && !!data?.active !== active,
+  confirmDataMapper: (data?: any) => ({
+    title: active ? 'Set Active' : 'Set Inactive',
+    message: active
+      ? `Make ${data?.name ?? 'this financial year'} the year in force? Only one year can be ` +
+        'active, so switch the current one off first if it still is.'
+      : `Switch ${data?.name ?? 'this financial year'} off? Until another is switched on, no ` +
+        'financial year will be offered on the forms.',
+    confirmText: active ? 'Set Active' : 'Set Inactive',
+  }),
+  click: async (data?: any) => {
+    await comp.fs.fetch({
+      mutation: PATCH_FINANCIAL_YEAR_ACTIVE,
+      notify: true,
+      loadingOn: 'content',
+      variables: { uid: data?.id, active },
+      successFn: () => FINANCIAL_YEAR.changed$.next(data),
+    });
+  },
+});
+
 export const FINANCIAL_YEAR = defineLookup({
   slug: 'financial-years',
   entity: 'FinancialYear',
@@ -1359,6 +1405,8 @@ export const FINANCIAL_YEAR = defineLookup({
     { field: 'startedAt', header: 'Start Date' },
     { field: 'endedAt', header: 'End Date' },
   ],
+  // One year is in force at a time: switch the current one off, then the next on.
+  rowActions: (comp) => [financialYearActiveBtn(comp, true), financialYearActiveBtn(comp, false)],
 });
 
 export const METER = defineLookup({
