@@ -65,6 +65,15 @@ const allBusinessNames = gql`
   }
 `;
 
+const allProgressReports = gql`
+  query allProgressReports {
+    allProgressReports {
+      id
+      name
+    }
+  }
+`;
+
 const allDeliverables = gql`
   query allDeliverables {
     allDeliverables {
@@ -309,6 +318,15 @@ const TASK_LINKS: TaskLinkConfig[] = [
     icon: 'receipt',
     permission: 'TASK_EXPENSE',
     optionsQuery: allExpenses,
+  },
+  {
+    entity: 'TaskProgressReport',
+    field: 'progressReport',
+    label: 'Progress Report',
+    pluralLabel: 'Progress Reports',
+    icon: 'assessment',
+    permission: 'TASK_PROGRESS_REPORT',
+    optionsQuery: allProgressReports,
   },
 ];
 

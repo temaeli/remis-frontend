@@ -324,11 +324,113 @@ export const PROJECT_CONNECTIONS_BY_PARENT = gql`
 `;
 
 /** The operational screens, which lead the menu. */
+const ALL_SUBCATEGORIES = gql`
+  query allSubcategories {
+    allSubcategories {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_TASKS_FOR_REPORTS = gql`
+  query allTasks {
+    allTasks {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_MILESTONES_FOR_REPORTS = gql`
+  query allMilestones {
+    allMilestones {
+      id
+      name
+    }
+  }
+`;
+
+/** A longer free-text answer, the shape progress and plan both take. */
+const textArea = (key: string, label: string, hint: string): FieldConfig => ({
+  key,
+  label,
+  hint,
+  type: FieldType.textarea,
+  rows: 4,
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
+
+/** How project work is going: what was done, what comes next, and what it covers. */
+const PROGRESS_REPORT_LINKS: EntityLinkConfig[] = [
+  {
+    entity: 'TaskProgressReport',
+    byOwnerQuery: 'taskProgressReportsByProgressReport',
+    ownerArg: 'progressReportUid',
+    targetArg: 'taskUid',
+    field: 'task',
+    label: 'Task',
+    pluralLabel: 'Tasks',
+    icon: 'assignment',
+    permission: 'TASK_PROGRESS_REPORT',
+    optionsQuery: ALL_TASKS_FOR_REPORTS,
+  },
+  {
+    entity: 'MilestoneProgressReport',
+    byOwnerQuery: 'milestoneProgressReportsByProgressReport',
+    ownerArg: 'progressReportUid',
+    targetArg: 'milestoneUid',
+    field: 'milestone',
+    label: 'Milestone',
+    pluralLabel: 'Milestones',
+    icon: 'flag',
+    permission: 'MILESTONE_PROGRESS_REPORT',
+    optionsQuery: ALL_MILESTONES_FOR_REPORTS,
+  },
+];
+
+export const PROGRESS_REPORT = defineLookup({
+  slug: 'progress-reports',
+  entity: 'ProgressReport',
+  entityPlural: 'ProgressReports',
+  permission: 'PROGRESS_REPORT',
+  label: 'Progress Report',
+  pluralLabel: 'Progress Reports',
+  subtitle: 'What was done, what comes next, and which tasks and milestones it covers',
+  icon: 'assessment',
+  extraGqlFields: `
+  progressReportsDate
+  progress
+  plan
+  subcategory { ${lookupRefGqlFields} }
+`,
+  extraFields: [
+    {
+      key: 'progressReportsDate',
+      label: 'Report Date',
+      hint: 'The date the report is for',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    parentSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
+    textArea('progress', 'Progress', 'What was done'),
+    textArea('plan', 'Plan', 'What comes next'),
+  ],
+  extraColumns: [
+    { field: 'progressReportsDate', header: 'Date' },
+    'subcategory.name as Subcategory',
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => entityLinkPanels(comp, PROGRESS_REPORT_LINKS, record?.id),
+});
+
 export const PROJECT_LOOKUPS: LookupModule[] = [
   REGISTRY_PROJECT,
   PROJECT_CONNECTION,
   COST,
   REGISTRY_MASTER_PLAN,
+  PROGRESS_REPORT,
 ];
 
 /** The taxonomy that classifies them, grouped behind one menu and kept last. */

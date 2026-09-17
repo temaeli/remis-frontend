@@ -108,6 +108,34 @@ export const ACTIVITY = defineLookup({
   icon: 'work',
 });
 
+/** The far sides of the milestone and deliverable links. */
+const ALL_PROGRESS_REPORTS = gql`
+  query allProgressReports {
+    allProgressReports {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_MILESTONES = gql`
+  query allMilestones {
+    allMilestones {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_DELIVERABLES = gql`
+  query allDeliverables {
+    allDeliverables {
+      id
+      name
+    }
+  }
+`;
+
 export const TASK = defineLookup({
   slug: 'tasks',
   entity: 'Task',
@@ -139,6 +167,26 @@ export const DELIVERABLE = defineLookup({
 `,
   extraFields: [numberField('weight', 'Weight')],
   extraColumns: ['weight'],
+  // The milestones a deliverable is due at.
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'DeliverableMilestone',
+          byOwnerQuery: 'deliverableMilestonesByDeliverable',
+          ownerArg: 'deliverableUid',
+          targetArg: 'milestoneUid',
+          field: 'milestone',
+          label: 'Milestone',
+          pluralLabel: 'Milestones',
+          icon: 'flag',
+          permission: 'DELIVERABLE_MILESTONE',
+          optionsQuery: ALL_MILESTONES,
+        },
+      ],
+      record?.id,
+    ),
 });
 
 export const MILESTONE = defineLookup({
@@ -156,6 +204,38 @@ export const MILESTONE = defineLookup({
 `,
   extraFields: [numberField('weight', 'Weight'), ...coordinateFields()],
   extraColumns: ['weight'],
+  // What is due at the milestone, and the reports on how it is going.
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'DeliverableMilestone',
+          byOwnerQuery: 'deliverableMilestonesByMilestone',
+          ownerArg: 'milestoneUid',
+          targetArg: 'deliverableUid',
+          field: 'deliverable',
+          label: 'Deliverable',
+          pluralLabel: 'Deliverables',
+          icon: 'layers',
+          permission: 'DELIVERABLE_MILESTONE',
+          optionsQuery: ALL_DELIVERABLES,
+        },
+        {
+          entity: 'MilestoneProgressReport',
+          byOwnerQuery: 'milestoneProgressReportsByMilestone',
+          ownerArg: 'milestoneUid',
+          targetArg: 'progressReportUid',
+          field: 'progressReport',
+          label: 'Progress Report',
+          pluralLabel: 'Progress Reports',
+          icon: 'assessment',
+          permission: 'MILESTONE_PROGRESS_REPORT',
+          optionsQuery: ALL_PROGRESS_REPORTS,
+        },
+      ],
+      record?.id,
+    ),
 });
 
 export const PHASE = defineLookup({
