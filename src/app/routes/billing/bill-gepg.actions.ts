@@ -10,6 +10,7 @@ import {
   CHANGE_BILL_EXPIRY,
   REQUEST_CONTROL_NUMBER,
   REUSE_CONTROL_NUMBER,
+  SEND_BILL_REUSE_REQUEST,
   SEND_BILL_CANCELLATION_REQUEST,
   SEND_BILL_CHANGE_REQUEST,
 } from './bill-gepg.graphql';
@@ -164,9 +165,15 @@ export function reuseControlNumberBtn(comp: BillComp): ActionButton {
  * the list, and on a list header there would be nothing saying which re-use it
  * would send.
  *
- * Repeating it is safe in the sense that matters: the backend refuses a bill
- * with no control number to reuse and says so. It does not refuse a second
- * reuse of the same number, which is the point of the table.
+ * Sends the record's own identifier and nothing else. It used to send the bill's
+ * identifier and the reason, which made the backend look up a control number on
+ * the receiving bill — the one place it is not, since a re-use moves a finished
+ * bill's number onto a bill that has none. Every send came back "no control
+ * number to reuse".
+ *
+ * Repeating it is safe in the sense that matters: GePG's refusal comes back
+ * here. It does not refuse a second reuse of the same number, which is the
+ * point of the table.
  */
 export function sendReuseToGepgBtn(comp: BaseComponent): ActionButton {
   return {
@@ -187,13 +194,10 @@ export function sendReuseToGepgBtn(comp: BaseComponent): ActionButton {
     }),
     click: async (data?: any) => {
       await comp.fs.fetch({
-        mutation: REUSE_CONTROL_NUMBER,
+        mutation: SEND_BILL_REUSE_REQUEST,
         notify: true,
         loadingOn: 'content',
-        variables: {
-          billHeaderUid: data?.billHeader?.id,
-          reason: data?.reason,
-        },
+        variables: { uid: data?.id },
       });
     },
   };

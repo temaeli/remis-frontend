@@ -91,6 +91,28 @@ export const SEND_BILL_CHANGE_REQUEST = gql`
   }
 `;
 
+/**
+ * Sends a re-use that was saved earlier, from the re-uses list.
+ *
+ * Takes the record's own identifier and nothing else. The number being moved is
+ * on the row and nowhere else: a re-use puts a finished bill's control number
+ * onto a bill that has none, so asking the receiving bill for one always came
+ * back empty.
+ */
+export const SEND_BILL_REUSE_REQUEST = gql`
+  mutation sendBillReuseRequest($uid: String) {
+    sendBillReuseRequest(uid: $uid) {
+      ${responseGqlFields(`
+        id
+        uid: id
+        assignedCode
+        controlNumber
+        reason
+      `)}
+    }
+  }
+`;
+
 /** The same, for a cancellation saved on the cancellation requests list. */
 export const SEND_BILL_CANCELLATION_REQUEST = gql`
   mutation sendBillCancellationRequest($uid: String) {
