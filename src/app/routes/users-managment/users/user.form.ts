@@ -327,7 +327,8 @@ export function userAssignRolesBtn(comp: BaseComponent): ActionButton {
         onSubmit: async (value: any) => {
           if (!data?.uid) return;
 
-          const roleIds: number[] = Array.isArray(value?.roleUuid) ? value.roleUuid : [];
+          // Role keys are uuids since uaa was aligned with the core schema.
+          const roleIds: string[] = Array.isArray(value?.roleUuid) ? value.roleUuid : [];
           if (roleIds.length === 0) return;
 
           await comp.fs.fetch({
@@ -335,7 +336,7 @@ export function userAssignRolesBtn(comp: BaseComponent): ActionButton {
             variables: {
               uid: data.uid,
               userRoleListDto: {
-                rolesList: roleIds.map((id: number) => ({ id })),
+                rolesList: roleIds.map((id: string) => ({ id })),
               },
             },
             mutation: ASSIGN_ROLES_TO_USER,

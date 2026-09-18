@@ -1,5 +1,5 @@
 export interface Permission {
-  id?: number;
+  id?: string;
   uid?: string;
   name?: string;
   displayName?: string;
@@ -13,7 +13,7 @@ export interface PermissionGroup {
 }
 
 export interface Role {
-  id?: number;
+  id?: string;
   uid?: string;
   name?: string;
   description?: string;
@@ -29,5 +29,5 @@ export interface RoleDtoInput {
   uid?: string;
   name?: string;
   description?: string;
-  permissionList?: { id: number }[];
+  permissionList?: { id: string }[];
 }

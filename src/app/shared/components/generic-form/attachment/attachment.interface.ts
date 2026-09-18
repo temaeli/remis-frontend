@@ -112,7 +112,7 @@ export interface AttachmentDtoInput {
   dataBinary?: string;
   filePath?: string;
   fullPath?: string;
-  id?: number;
+  id?: string;
   mediaSize?: string;
   mediaType?: string;
   sourceId?: string;
