@@ -175,6 +175,20 @@ const ALL_EXPENSE = gql`
   }
 `;
 
+/**
+ * The grace period bill settings a unit can be put under. They have no name
+ * column — the backend composes one from the grace period and the bill template
+ * the row names, which is what the picker and the grid show.
+ */
+const ALL_GRACE_PERIOD_BILL_SETTING = gql`
+  query allGracePeriodBillHeadersSettings {
+    allGracePeriodBillHeadersSettings {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_FEE = gql`
   query allFees {
     allFees {
@@ -755,6 +769,31 @@ const UNIT_LINKS: EntityLinkConfig[] = [
     icon: 'bill',
     permission: 'UNIT_CHARGE',
     optionsQuery: ALL_CHARGE,
+  },
+  {
+    entity: 'UnitGracePeriodBillHeadersSetting',
+    byOwnerQuery: 'unitGracePeriodBillHeadersSettingsByUnit',
+    ownerArg: 'unitUid',
+    targetArg: 'gracePeriodBillHeadersSettingUid',
+    field: 'gracePeriodBillHeadersSetting',
+    label: 'Grace Period Bill Setting',
+    pluralLabel: 'Grace Period Bill Settings',
+    icon: 'clock',
+    permission: 'UNIT_GRACE_PERIOD_BILL_SETTING',
+    optionsQuery: ALL_GRACE_PERIOD_BILL_SETTING,
+    // No assignedNumber on this table: the name above is composed, and the
+    // quantity is what distinguishes two settings at a glance.
+    targetGqlFields: `
+      id
+      name
+      quantities
+    `,
+    columns: [
+      'index',
+      'gracePeriodBillHeadersSetting.name as Setting',
+      'gracePeriodBillHeadersSetting.quantities as Quantity',
+      'actions',
+    ],
   },
   {
     entity: 'UnitFee',

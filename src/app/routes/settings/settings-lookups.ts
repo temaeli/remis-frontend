@@ -20,6 +20,7 @@ import {
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
+import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
@@ -110,6 +111,83 @@ const parentSelect = (key: string, label: string, parent: () => LookupModule): F
   validations: [VALIDATOR_REQUIRED],
   class: 'col-span-full',
 });
+
+/**
+ * A month of the year, named rather than numbered: `renews` and `grace_periods`
+ * both store the number, and "month 9" on a form is a worse way of saying
+ * September than September is.
+ */
+const MONTH_OPTIONS: Option[] = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+].map((label, index) => ({ value: index + 1, label }));
+
+const monthField = (key: string, label: string): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.select,
+  options: MONTH_OPTIONS,
+  validations: [VALIDATOR_REQUIRED],
+});
+
+/**
+ * A day of the month, with no month to measure it against — the tables store the
+ * two apart. The ceiling is 31 here and the backend refuses the days the chosen
+ * month does not have, which is the only place both numbers are known.
+ */
+const dayField = (key: string, label: string): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.input,
+  inputType: 'number',
+  min: 1,
+  max: 31,
+  validations: [VALIDATOR_REQUIRED],
+});
+
+/** The month's name, for a column showing a stored month number. */
+const monthName = (month?: number): string =>
+  MONTH_OPTIONS.find((option) => option.value === month)?.label ?? '';
+
+/**
+ * One of `grace_periods`' three steps: how many minutes of grace, and the window
+ * of the year it applies in. The column names are the step's name followed by
+ * the field, so both are built from the prefix rather than written out three
+ * times.
+ */
+const graceStepKeys = (prefix: 'first' | 'second' | 'third'): string[] => [
+  `${prefix}GracePeriodMinutes`,
+  `${prefix}GracePeriodStartedDay`,
+  `${prefix}GracePeriodStartedMonth`,
+  `${prefix}GracePeriodEndedDay`,
+  `${prefix}GracePeriodEndedMonth`,
+];
+
+const graceStepFields = (prefix: 'first' | 'second' | 'third', label: string): FieldConfig[] => [
+  {
+    key: `${prefix}GracePeriodMinutes`,
+    label: `${label} Grace Period (minutes)`,
+    type: FieldType.decimal,
+    decimals: 2,
+    min: 0,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+  dayField(`${prefix}GracePeriodStartedDay`, 'Starts On (Day)'),
+  monthField(`${prefix}GracePeriodStartedMonth`, 'Starts In (Month)'),
+  dayField(`${prefix}GracePeriodEndedDay`, 'Ends On (Day)'),
+  monthField(`${prefix}GracePeriodEndedMonth`, 'Ends In (Month)'),
+];
 
 /** The start/end pair that `Discount` and `FinancialYear` both carry. */
 const dateRangeFields = (): FieldConfig[] => [
@@ -1491,6 +1569,140 @@ export const SUBCATEGORY = defineLookup({
   extraFields: [parentSelect('categoryUid', 'Category', () => CATEGORY)],
   extraColumns: [{ field: 'category', valueFn: (row) => row?.category?.name }],
   toModel: (data) => ({ categoryUid: data?.category?.id }),
+  // What this subcategory renews on, and the grace it is given — both read from
+  // this side, where someone looking at the subcategory expects them.
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => RENEW, RENEWS_BY_SUBCATEGORY, { subcategoryUid: record?.id }),
+    lookupChildPanel(comp, () => GRACE_PERIOD, GRACE_PERIODS_BY_SUBCATEGORY, {
+      subcategoryUid: record?.id,
+    }),
+  ],
+});
+
+/**
+ * When what a subcategory covers comes up for renewal: the same day every year,
+ * from a start date, with the last renewal recorded.
+ */
+export const RENEW = defineLookup({
+  slug: 'renewals',
+  entity: 'Renew',
+  entityPlural: 'Renews',
+  permission: 'RENEW',
+  label: 'Renewal',
+  pluralLabel: 'Renewals',
+  subtitle: 'The day of the year a subcategory comes up for renewal',
+  icon: 'refresh',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  renewedAt
+  startedAt
+  renewsDay
+  renewsMonth
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    dayField('renewsDay', 'Renews On (Day)'),
+    monthField('renewsMonth', 'Renews In (Month)'),
+    {
+      key: 'startedAt',
+      label: 'Start Date',
+      type: FieldType.date,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    // Optional on purpose: a schedule nobody has renewed yet should not have to
+    // claim a date. The backend takes today when it is left empty.
+    {
+      key: 'renewedAt',
+      label: 'Last Renewed On',
+      hint: 'Left empty, this is set to today',
+      type: FieldType.date,
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'renewsDay', header: 'Day' },
+    {
+      field: 'renewsMonth',
+      header: 'Month',
+      valueFn: (row) => monthName(row?.renewsMonth),
+    },
+    { field: 'startedAt', header: 'Start Date' },
+    { field: 'renewedAt', header: 'Last Renewed' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  // Read-only: a bill setting belongs to a grace period, and that is where it is
+  // maintained. Shown here because a renewal is what decides when it comes round.
+  extraContents: (_comp, record) => [renewBillSettingsPanel(record?.id)],
+});
+
+/**
+ * How long a subcategory is given before it counts as late, in three steps. Each
+ * step is a number of minutes and the window of the year it applies in, written
+ * as a day and a month at each end — so the form is a stepper, one page per
+ * step, rather than fifteen controls in a column.
+ *
+ * A window may run backwards through the turn of the year (December into
+ * January); nothing rejects that, here or in the database.
+ */
+export const GRACE_PERIOD = defineLookup({
+  slug: 'grace-periods',
+  entity: 'GracePeriod',
+  entityPlural: 'GracePeriods',
+  permission: 'GRACE_PERIOD',
+  label: 'Grace Period',
+  pluralLabel: 'Grace Periods',
+  subtitle: 'How long a subcategory is given before it is treated as late',
+  icon: 'clock',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  firstGracePeriodMinutes
+  secondGracePeriodMinutes
+  thirdGracePeriodMinutes
+  firstGracePeriodStartedDay
+  firstGracePeriodStartedMonth
+  firstGracePeriodEndedDay
+  firstGracePeriodEndedMonth
+  secondGracePeriodStartedDay
+  secondGracePeriodStartedMonth
+  secondGracePeriodEndedDay
+  secondGracePeriodEndedMonth
+  thirdGracePeriodStartedDay
+  thirdGracePeriodStartedMonth
+  thirdGracePeriodEndedDay
+  thirdGracePeriodEndedMonth
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    ...graceStepFields('first', 'First'),
+    ...graceStepFields('second', 'Second'),
+    ...graceStepFields('third', 'Third'),
+  ],
+  // Grouped step by step, which is the only grouping these fifteen have. A field
+  // in no step still submits but renders nowhere, so every key appears once.
+  formSteppers: [
+    {
+      name: 'Grace Period',
+      icon: 'clock',
+      keys: ['id', 'name', 'assignedNumber', 'description', 'subcategoryUid'],
+    },
+    { name: 'First Step', icon: 'looks_one', keys: graceStepKeys('first') },
+    { name: 'Second Step', icon: 'looks_two', keys: graceStepKeys('second') },
+    { name: 'Third Step', icon: 'looks_3', keys: graceStepKeys('third') },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'firstGracePeriodMinutes', header: 'First (min)' },
+    { field: 'secondGracePeriodMinutes', header: 'Second (min)' },
+    { field: 'thirdGracePeriodMinutes', header: 'Third (min)' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  // What it bills once it has run out. Its own table, with no name and no flags,
+  // so it is a panel with a form of its own rather than a lookup screen.
+  extraContents: (comp, record) => [gracePeriodBillSettingsPanel(comp, record?.id)],
 });
 
 /**
@@ -2055,6 +2267,22 @@ export const SUBCATEGORIES_BY_CATEGORY = gql`
   }
 `;
 
+export const RENEWS_BY_SUBCATEGORY = gql`
+  query renewsBySubcategory($subcategoryUid: String) {
+    renewsBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const GRACE_PERIODS_BY_SUBCATEGORY = gql`
+  query gracePeriodsBySubcategory($subcategoryUid: String) {
+    gracePeriodsBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const EXCHANGE_RATES_BY_CURRENCY = gql`
   query exchangeRatesByCurrency($currencyUid: String) {
     exchangeRatesByCurrency(currencyUid: $currencyUid) {
@@ -2152,6 +2380,10 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   TYPE,
   CATEGORY,
   SUBCATEGORY,
+  // What a subcategory renews on, and the grace it is given — both hang off a
+  // subcategory and nothing else, so they follow it.
+  RENEW,
+  GRACE_PERIOD,
 ];
 
 /** In hierarchy order, so the menu reads country-downwards. */
