@@ -5,7 +5,7 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
-import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
+import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
@@ -28,11 +28,32 @@ import { Lookup } from '@shared/lookup/lookup.interface';
 
 const settingReloaded$ = new Subject<unknown>();
 
+/** Named months, so "month 9" on a form reads as September. */
+const MONTH_OPTIONS: Option[] = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+].map((label, index) => ({ value: index + 1, label }));
+
+const monthName = (month?: number): string =>
+  MONTH_OPTIONS.find((option) => option.value === month)?.label ?? '';
+
 const settingFieldsGql = `
   id
   uid
   name
   quantities
+  day
+  month
   gracePeriod { id name }
   billHeadersSetting { id name }
   fee { id name }
@@ -40,6 +61,7 @@ const settingFieldsGql = `
   penalty { id name }
   bioData { id name }
   renew { id name }
+  financialYear { id name }
 `;
 
 const SETTINGS_BY_GRACE_PERIOD = gql`
@@ -86,6 +108,7 @@ const ALL_SUBCATEGORIES = gql`query allSubcategories { allSubcategories { ${name
 const ALL_PENALTIES = gql`query allPenalties { allPenalties { ${named} } }`;
 const ALL_BIO_DATA = gql`query allBioData { allBioData { ${named} } }`;
 const ALL_RENEWS = gql`query allRenews { allRenews { ${named} } }`;
+const ALL_FINANCIAL_YEARS = gql`query allFinancialYears { allFinancialYears { ${named} } }`;
 
 const select = (key: string, label: string, query: unknown): FieldConfig => ({
   key,
@@ -106,6 +129,9 @@ const settingFormFields = (): FieldConfig[] => [
   select('penaltyUid', 'Penalty', ALL_PENALTIES),
   select('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
   select('renewUid', 'Renewal', ALL_RENEWS),
+  // Every year, switched on or off: a setting for next year is written while
+  // that year is still switched off, since only one is in force at a time.
+  select('financialYearUid', 'Financial Year', ALL_FINANCIAL_YEARS),
   select('bioDataUid', 'Charged To', ALL_BIO_DATA),
   {
     key: 'quantities',
@@ -116,6 +142,24 @@ const settingFormFields = (): FieldConfig[] => [
     min: 0,
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
+  },
+  // The day and month it applies from. The backend refuses a day the chosen
+  // month does not have, as it does on a renewal.
+  {
+    key: 'day',
+    label: 'Applies On (Day)',
+    type: FieldType.input,
+    inputType: 'number',
+    min: 1,
+    max: 31,
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'month',
+    label: 'Applies In (Month)',
+    type: FieldType.select,
+    options: MONTH_OPTIONS,
+    validations: [VALIDATOR_REQUIRED],
   },
 ];
 
@@ -134,7 +178,10 @@ function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Loo
             subcategoryUid: row['subcategory']?.id,
             renewUid: row['renew']?.id,
             bioDataUid: row['bioData']?.id,
+            financialYearUid: row['financialYear']?.id,
             quantities: row['quantities'],
+            day: row['day'],
+            month: row['month'],
           }
         : {},
       fields: settingFormFields(),
@@ -164,7 +211,10 @@ const settingColumns: GridKeyColumn[] = [
   'penalty.name as Penalty',
   'renew.name as Renewal',
   'bioData.name as Charged To',
+  'financialYear.name as Financial Year',
   { field: 'quantities', header: 'Quantity' },
+  { field: 'day', header: 'Day' },
+  { field: 'month', header: 'Month', valueFn: (row: any) => monthName(row?.month) },
   'actions',
 ];
 
@@ -258,6 +308,7 @@ export const renewBillSettingsPanel = (renewUid?: string): ContentParameter => (
     'billHeadersSetting.name as Bill Template',
     'fee.name as Fee',
     'penalty.name as Penalty',
+    'financialYear.name as Financial Year',
     { field: 'quantities', header: 'Quantity' },
   ],
   reloadActions$: [settingReloaded$],
