@@ -1576,6 +1576,9 @@ export const SUBCATEGORY = defineLookup({
     lookupChildPanel(comp, () => GRACE_PERIOD, GRACE_PERIODS_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
     }),
+    lookupChildPanel(comp, () => PERCENTAGE, PERCENTAGES_BY_SUBCATEGORY, {
+      subcategoryUid: record?.id,
+    }),
   ],
 });
 
@@ -1703,6 +1706,65 @@ export const GRACE_PERIOD = defineLookup({
   // What it bills once it has run out. Its own table, with no name and no flags,
   // so it is a panel with a form of its own rather than a lookup screen.
   extraContents: (comp, record) => [gracePeriodBillSettingsPanel(comp, record?.id)],
+});
+
+/**
+ * A figure and the direction it moves an amount in — `percentages`, under a
+ * subcategory like the two above.
+ *
+ * `INCREASE` adds to what is owed, `DECREASE` takes away. Neither the table nor
+ * the backend says whether 18 means 18% or something else: what it means is
+ * decided where it is applied, so the form asks for a figure and a direction and
+ * nothing more.
+ */
+export const PERCENTAGE = defineLookup({
+  slug: 'percentages',
+  entity: 'Percentage',
+  entityPlural: 'Percentages',
+  permission: 'PERCENTAGE',
+  label: 'Percentage',
+  pluralLabel: 'Percentages',
+  subtitle: 'Figures that raise or lower what a subcategory is charged',
+  icon: 'calculator',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  taxesType
+  amount
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'taxesType',
+      label: 'Direction',
+      hint: 'Increase adds to what is owed, decrease takes away',
+      type: FieldType.select,
+      options: [
+        { value: 'INCREASE', label: 'Increase' },
+        { value: 'DECREASE', label: 'Decrease' },
+      ],
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'amount',
+      label: 'Amount',
+      type: FieldType.decimal,
+      decimals: 4,
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    {
+      field: 'taxesType',
+      header: 'Direction',
+      valueFn: (row) => (row?.taxesType === 'DECREASE' ? 'Decrease' : 'Increase'),
+    },
+    { field: 'amount', header: 'Amount' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
 });
 
 /**
@@ -2275,6 +2337,14 @@ export const RENEWS_BY_SUBCATEGORY = gql`
   }
 `;
 
+export const PERCENTAGES_BY_SUBCATEGORY = gql`
+  query percentagesBySubcategory($subcategoryUid: String) {
+    percentagesBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const GRACE_PERIODS_BY_SUBCATEGORY = gql`
   query gracePeriodsBySubcategory($subcategoryUid: String) {
     gracePeriodsBySubcategory(subcategoryUid: $subcategoryUid) {
@@ -2384,6 +2454,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   // subcategory and nothing else, so they follow it.
   RENEW,
   GRACE_PERIOD,
+  PERCENTAGE,
 ];
 
 /** In hierarchy order, so the menu reads country-downwards. */

@@ -58,7 +58,6 @@ const settingFieldsGql = `
   billHeadersSetting { id name }
   fee { id name }
   subcategory { id name }
-  penalty { id name }
   bioData { id name }
   renew { id name }
   financialYear { id name }
@@ -76,6 +75,23 @@ const SETTINGS_BY_RENEW = gql`
   query gracePeriodBillHeadersSettingsByRenew($renewUid: String) {
     gracePeriodBillHeadersSettingsByRenew(renewUid: $renewUid) {
       ${settingFieldsGql}
+    }
+  }
+`;
+
+const LINKS_OF_SETTING = gql`
+  query settingLinks($uid: String) {
+    penaltiesOfGracePeriodBillHeadersSetting(gracePeriodBillHeadersSettingUid: $uid) {
+      uid
+    }
+    percentagesOfGracePeriodBillHeadersSetting(gracePeriodBillHeadersSettingUid: $uid) {
+      uid
+      percentage {
+        id
+        name
+        taxesType
+        amount
+      }
     }
   }
 `;
@@ -108,6 +124,16 @@ const ALL_SUBCATEGORIES = gql`query allSubcategories { allSubcategories { ${name
 const ALL_PENALTIES = gql`query allPenalties { allPenalties { ${named} } }`;
 const ALL_BIO_DATA = gql`query allBioData { allBioData { ${named} } }`;
 const ALL_RENEWS = gql`query allRenews { allRenews { ${named} } }`;
+const ALL_PERCENTAGES = gql`
+  query allPercentages {
+    allPercentages {
+      id
+      name
+      taxesType
+      amount
+    }
+  }
+`;
 const ALL_FINANCIAL_YEARS = gql`query allFinancialYears { allFinancialYears { ${named} } }`;
 
 const select = (key: string, label: string, query: unknown): FieldConfig => ({
@@ -123,12 +149,40 @@ const select = (key: string, label: string, query: unknown): FieldConfig => ({
   class: 'col-span-full',
 });
 
+/**
+ * Both are lists: a setting charges any number of penalties and applies any
+ * number of percentages, each through its own table. Sending a list replaces
+ * what is linked.
+ */
+const linkField = (
+  key: string,
+  label: string,
+  query: unknown,
+  mapFn?: (o: any) => any,
+): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.multiple_select,
+  class: 'col-span-full',
+  optionsVariables: {
+    fetchParameter: { query },
+    mapFunction: mapFn ?? ((option: any) => ({ ...option, label: option.name, value: option.id })),
+  },
+});
+
 const settingFormFields = (): FieldConfig[] => [
   select('billHeadersSettingUid', 'Bill Template', ALL_BILL_HEADERS_SETTINGS),
   select('feeUid', 'Fee', ALL_FEES),
-  select('penaltyUid', 'Penalty', ALL_PENALTIES),
   select('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
   select('renewUid', 'Renewal', ALL_RENEWS),
+  linkField('penaltyUids', 'Penalties', ALL_PENALTIES),
+  // Named with the direction and the figure: two percentages called "Late" tell
+  // the reader nothing, and the direction is what decides which way money moves.
+  linkField('percentageUids', 'Percentages', ALL_PERCENTAGES, (option: any) => ({
+    ...option,
+    label: `${option.name} (${option.taxesType === 'DECREASE' ? '−' : '+'}${option.amount})`,
+    value: option.id,
+  })),
   // Every year, switched on or off: a setting for next year is written while
   // that year is still switched off, since only one is in force at a time.
   select('financialYearUid', 'Financial Year', ALL_FINANCIAL_YEARS),
@@ -166,6 +220,16 @@ const settingFormFields = (): FieldConfig[] => [
 /** Opens the form, with the grace period fixed to the page's own record. */
 function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Lookup) {
   return async () => {
+    // What it already charges and applies, so the pickers open on it rather than
+    // empty — an empty list would read as "remove them all".
+    const links = row?.['id']
+      ? await comp.fs.fetch({
+          query: LINKS_OF_SETTING,
+          showLoading: false,
+          variables: { uid: row['id'] },
+        })
+      : null;
+
     const close$ = new Subject<void>();
     const formParameter: FormParameters = {
       title: row?.['id'] ? 'Change Bill Setting' : 'Add Bill Setting',
@@ -174,7 +238,6 @@ function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Loo
             uid: row['id'],
             billHeadersSettingUid: row['billHeadersSetting']?.id,
             feeUid: row['fee']?.id,
-            penaltyUid: row['penalty']?.id,
             subcategoryUid: row['subcategory']?.id,
             renewUid: row['renew']?.id,
             bioDataUid: row['bioData']?.id,
@@ -182,6 +245,12 @@ function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Loo
             quantities: row['quantities'],
             day: row['day'],
             month: row['month'],
+            penaltyUids: (links?.penaltiesOfGracePeriodBillHeadersSetting ?? []).map(
+              (link: any) => link?.penalty?.id,
+            ),
+            percentageUids: (links?.percentagesOfGracePeriodBillHeadersSetting ?? []).map(
+              (link: any) => link?.percentage?.id,
+            ),
           }
         : {},
       fields: settingFormFields(),
@@ -208,7 +277,6 @@ const settingColumns: GridKeyColumn[] = [
   'index',
   'billHeadersSetting.name as Bill Template',
   'fee.name as Fee',
-  'penalty.name as Penalty',
   'renew.name as Renewal',
   'bioData.name as Charged To',
   'financialYear.name as Financial Year',
@@ -307,7 +375,6 @@ export const renewBillSettingsPanel = (renewUid?: string): ContentParameter => (
     'gracePeriod.name as Grace Period',
     'billHeadersSetting.name as Bill Template',
     'fee.name as Fee',
-    'penalty.name as Penalty',
     'financialYear.name as Financial Year',
     { field: 'quantities', header: 'Quantity' },
   ],
