@@ -10,7 +10,7 @@ export interface BaseEntity {
   deletedAt?: string;
   deletedBy?: number;
   deletedId?: number;
-  id?: number;
+  id?: string;
   isDeleted?: boolean;
   migrated?: boolean;
   uid?: string;

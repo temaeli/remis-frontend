@@ -11,7 +11,7 @@ export interface SystemSetting {
   deletedBy?: number;
   deletedId?: number;
   description?: string;
-  id: number;
+  id: string;
   isDeleted: boolean;
   migrated?: boolean;
   settingKey: string;
