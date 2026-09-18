@@ -94,16 +94,19 @@ export const BILL_HEADER = defineLookup({
   // generates the request id, and the group bill id is the number of the bill
   // raised under this header, which nobody can type in advance.
   extraFields: [
+    // dateTime, not date: BillHeadersSettingDto takes a LocalDateTime, and a
+    // bare "2026-09-18" is refused by the scalar before the mutation runs. The
+    // same two fields on the GePG template screen are already date-times.
     {
       key: 'appliedDate',
       label: 'Applied Date',
-      type: FieldType.date,
+      type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
     {
       key: 'expiredDate',
       label: 'Expiry Date',
-      type: FieldType.date,
+      type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
     codeField('systemCodeUid', 'System Code', SYSTEM_CODE),

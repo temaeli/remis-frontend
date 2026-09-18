@@ -93,7 +93,9 @@ function promptForDay(
           key: 'transactionDate',
           label: 'Transaction date',
           hint: 'The day being reconciled, not the day you are asking',
-          type: FieldType.date,
+          // dateTime, not date: the mutation's transactionDate argument is a
+          // LocalDateTime, which refuses a bare date.
+          type: FieldType.dateTime,
           class: 'col-span-full',
           // maxDate, not max: the date control binds [min]/[max] from
           // minDate/maxDate, and max alone left the picker unbounded.
