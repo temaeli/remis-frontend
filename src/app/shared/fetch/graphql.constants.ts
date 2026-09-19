@@ -5,14 +5,18 @@ export const baseMinimalGqlFields = `
   createdAt
 `;
 
+/**
+ * The audit block every table now carries. `updatedAt` and `deletedAt` are not
+ * in it: the uaa tables were aligned with remis_core_schema, which records only
+ * when a row was created and by whom, so asking for them fails the whole query
+ * with "Field 'updatedAt' in type 'User' is undefined".
+ */
 export const baseGqlFields = `
   id
   uid
   isDeleted
   active
-  updatedAt
   createdAt
-  deletedAt
 `;
 
 /**
