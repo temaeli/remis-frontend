@@ -155,6 +155,7 @@ const SAVED_REQUEST_COLUMNS: GridKeyColumn[] = [
 const SAVED_EXTENSION_COLUMNS: GridKeyColumn[] = [
   'index',
   'assignedCode as Reference',
+  { field: 'latestExpiryDate', header: 'New Expiry' },
   'updateReason as Reason',
   { field: 'createdAt', header: 'Written' },
 ];

@@ -206,48 +206,37 @@ export function sendReuseToGepgBtn(comp: BaseComponent): ActionButton {
 /**
  * Sends a saved expiry change to GePG, from the change requests list.
  *
- * A prompt rather than a confirmation, because the date is not on the saved
- * row: `control_number_extension_requests` records which bill and why, and the
- * date belongs to the change request written when this actually goes. So the
- * operator names it here, at the moment of sending, and the reason still comes
- * off the record rather than from the screen.
+ * The same shape as sending a saved re-use, and for the same reason: the record
+ * already holds the date and the reason, so this asks for nothing and confirms
+ * instead. Saving a change request sends nothing — the row is the decision
+ * written down, and this is what turns it into a message.
+ *
+ * Only the record's identifier goes to the backend. Passing the date and the
+ * reason back would let the screen send something the record does not say.
  */
 export function sendChangeRequestToGepgBtn(comp: BaseComponent): ActionButton {
   return {
     icon: 'send',
     label: 'Send Change to GePG',
     permissions: GEPG_ACTION_PERMISSIONS,
-    click: (data?: any) =>
-      promptThen(
-        comp,
-        {
-          title: 'Send Change to GePG',
-          subTitle:
-            'Moves the expiry date at GePG, with the reason on this record. The control number is kept.',
-          fields: [
-            {
-              key: 'latestExpiryDate',
-              label: 'New expiry date',
-              hint: 'Must be in the future — GePG refuses a date that has passed',
-              type: FieldType.dateTime,
-              class: 'col-span-full',
-              // minDate, not min: the date-time control reads its bound off
-              // minDate and ignores min, which is for a numeric input.
-              minDate: new Date(),
-              validations: [VALIDATOR_REQUIRED],
-            },
-          ],
-        } as FormParameters,
-        async (form, close) => {
-          await comp.fs.fetch({
-            mutation: SEND_BILL_CHANGE_REQUEST,
-            notify: true,
-            loadingOn: 'content',
-            variables: { uid: data?.id, latestExpiryDate: form?.latestExpiryDate },
-          });
-          close();
-        },
-      ),
+    confirmDataMapper: (data?: any) => ({
+      title: 'Send Change to GePG',
+      message:
+        `Ask GePG to move this bill's expiry date to ${
+          data?.latestExpiryDate?.toString().slice(0, 16).replace('T', ' ') ??
+          'the date recorded here'
+        }, with the reason on this record? GePG acknowledges immediately; the bill's ` +
+        'own callback confirms it afterwards.',
+      confirmText: 'Send',
+    }),
+    click: async (data?: any) => {
+      await comp.fs.fetch({
+        mutation: SEND_BILL_CHANGE_REQUEST,
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: data?.id },
+      });
+    },
   };
 }
 

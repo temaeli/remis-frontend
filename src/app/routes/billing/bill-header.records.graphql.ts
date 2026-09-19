@@ -131,6 +131,7 @@ export const EXTENSION_SAVED_REQUESTS_OF_BILL_HEADER = gql`
       assignedCode
       name
       updateReason
+      latestExpiryDate
     }
   }
 `;

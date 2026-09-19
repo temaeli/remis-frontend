@@ -323,15 +323,14 @@ const billHeaderField: FieldConfig = {
  * A request to move a bill's expiry date at GePG.
  *
  * Saved first and sent second, the way a control number re-use is: the row says
- * which bill and why, and nothing reaches GePG until the row action sends it.
+ * which bill, which date and why, and nothing reaches GePG until the row action
+ * sends it. Preparing an amendment and reading it back before it goes is worth
+ * more here than anywhere else — the date is what a payer has left to pay in.
  *
  * Backed by `control_number_extension_requests`, the head of the DBA's change
  * chain and the only row in it a person fills in. Everything behind it — the
- * change request carrying the date, the payload, the acknowledgement, the
- * extension, the new expiry date and the bill's status — is written by the send.
- *
- * **No date on this form.** The saved row has no column for one, so the date is
- * asked for at the moment of sending — see `sendChangeRequestToGepgBtn`.
+ * change request, the payload, the acknowledgement, the extension, the new
+ * expiry date and the bill's status — is written by the send.
  *
  * `assignedCode` and `name` are shown but never edited. Both exist to satisfy
  * UNIQUE constraints on a row identified by the bill it names, so the backend
@@ -350,9 +349,19 @@ export const BILL_CHANGE_REQUEST = defineLookup({
   descriptiveGqlFields: `
   assignedCode
   updateReason
+  latestExpiryDate
 `,
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'latestExpiryDate',
+      label: 'New Expiry Date',
+      hint: 'Must be in the future — GePG refuses a date that has passed',
+      type: FieldType.dateTime,
+      minDate: new Date(),
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
     {
       key: 'updateReason',
       label: 'Reason',
@@ -366,6 +375,7 @@ export const BILL_CHANGE_REQUEST = defineLookup({
   baseColumns: [
     'index',
     { field: 'assignedCode', header: 'Request' },
+    { field: 'latestExpiryDate', header: 'New Expiry' },
     { field: 'updateReason', header: 'Reason' },
     { field: 'createdAt', header: 'Written At' },
   ],
