@@ -217,3 +217,177 @@ export const personIdentificationsPanel = (
   reloadActions$: [anyOtherId$],
   fetchParameter: { query: IDENTIFICATIONS_OF_PERSON, variables: { bioDataUid } },
 });
+
+/* ------------------------------------------------------------------ *
+ * Which identity type on the register each label means.
+ *
+ * `identity_types` is the editable lookup a person's record points at;
+ * `identification_types` is the fixed enum above. This is the bridge, shown on
+ * the identity type's own detail page.
+ *
+ * A label belongs to exactly one identity type — `identification_types` is
+ * UNIQUE on its own — so mapping one that is already mapped is refused by the
+ * backend, naming the type it belongs to.
+ * ------------------------------------------------------------------ */
+
+/** Notifies the mapping panel that a label was mapped, re-pointed or removed. */
+export const identityTypeIdentification$ = new Subject<unknown>();
+
+const mappingGqlFields = `
+  id
+  uid: id
+  assignedNumber
+  identificationType
+  description
+  identityType {
+    id
+    name
+  }
+`;
+
+export const IDENTIFICATIONS_OF_IDENTITY_TYPE = gql`
+  query identificationTypesByIdentityType($identityTypeUid: String) {
+    identificationTypesByIdentityType(identityTypeUid: $identityTypeUid) {
+      ${mappingGqlFields}
+    }
+  }
+`;
+
+export const SAVE_IDENTITY_TYPE_IDENTIFICATION = gql`
+  mutation saveIdentityTypeIdentificationType($input: IdentityTypeIdentificationTypeDtoInput) {
+    saveIdentityTypeIdentificationType(input: $input) {
+      ${responseGqlFields(mappingGqlFields)}
+    }
+  }
+`;
+
+export const DELETE_IDENTITY_TYPE_IDENTIFICATION = gql`
+  mutation deleteIdentityTypeIdentificationType($uid: String) {
+    deleteIdentityTypeIdentificationType(uid: $uid) {
+      ${responseGqlFields(mappingGqlFields)}
+    }
+  }
+`;
+
+const MAP_VIEW_PERMISSIONS = [
+  'ROLE_VIEW_ALL_IDENTITY_TYPE_IDENTIFICATION_TYPE',
+  'ROLE_VIEW_IDENTITY_TYPE_IDENTIFICATION_TYPE',
+];
+const MAP_WRITE_PERMISSIONS = [
+  'ROLE_CREATE_IDENTITY_TYPE_IDENTIFICATION_TYPE',
+  'ROLE_UPDATE_IDENTITY_TYPE_IDENTIFICATION_TYPE',
+];
+const MAP_DELETE_PERMISSIONS = ['ROLE_DELETE_IDENTITY_TYPE_IDENTIFICATION_TYPE'];
+
+function mapUpsertBtn(
+  comp: BaseComponent,
+  identityTypeUid: string | undefined,
+  editing: boolean,
+): ActionButton {
+  return {
+    icon: editing ? 'edit' : 'add',
+    label: editing ? 'Edit' : 'Map Identification Type',
+    class: editing ? '' : 'btn-add-primary',
+    click: (row?: any) => {
+      const close$ = new Subject<void>();
+      const formParameter: FormParameters = {
+        model: editing
+          ? { uid: row?.uid, identificationType: row?.identificationType, description: row?.description }
+          : {},
+        title: editing ? 'Edit Mapping' : 'Map Identification Type',
+        fields: [
+          {
+            key: 'identificationType',
+            label: 'Identification Type',
+            hint: 'Each one belongs to a single identity type.',
+            type: FieldType.select,
+            options: IDENTIFICATION_TYPE_OPTIONS,
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+          {
+            key: 'description',
+            label: 'Description',
+            hint: 'Optional. Generated from the label and this identity type when left blank.',
+            type: FieldType.textarea,
+            rows: 2,
+            class: 'col-span-full',
+          },
+        ],
+        closeAction$: close$,
+
+        onSubmit: async (value: any) => {
+          await comp.fs.fetch({
+            notify: true,
+            variables: { input: { identityTypeUid, ...value } },
+            mutation: SAVE_IDENTITY_TYPE_IDENTIFICATION,
+            successFn: (res) => {
+              identityTypeIdentification$.next(res?.data);
+              close$.next();
+            },
+          });
+        },
+      };
+
+      comp.vs?.openModal(FormComponent, formParameter, '40%');
+    },
+    permissions: MAP_WRITE_PERMISSIONS,
+  };
+}
+
+function mapRemoveBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'block',
+    label: 'Unmap',
+    class: 'text-danger',
+    confirmDataMapper: (row: any) => ({
+      title: 'Unmap Identification Type',
+      confirmText: 'UNMAP',
+      confirmButtonColor: 'red',
+      message: `Stop treating <b class='text-danger'>${getDisplayName(
+        row?.identificationType,
+      )}</b> as this identity type?`,
+    }),
+    click: async (row: any) => {
+      await comp.fs.fetch({
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: row?.uid },
+        mutation: DELETE_IDENTITY_TYPE_IDENTIFICATION,
+        successFn: (res) => identityTypeIdentification$.next(res?.data),
+      });
+    },
+    permissions: MAP_DELETE_PERMISSIONS,
+  };
+}
+
+/** The labels that mean one identity type, for its detail page. */
+export const identityTypeIdentificationsPanel = (
+  comp: BaseComponent,
+  identityTypeUid?: string,
+): ContentParameter => ({
+  type: 'table',
+  name: 'Identification Types',
+  label: 'Identification Types',
+  icon: 'id_card',
+  permissions: MAP_VIEW_PERMISSIONS,
+  keyColumns: [
+    'index',
+    {
+      field: 'identificationType',
+      header: 'Identification Type',
+      valueFn: (row: any) => getDisplayName(row?.identificationType),
+    },
+    'description',
+    'actions',
+  ],
+  headerButtons: [mapUpsertBtn(comp, identityTypeUid, false)],
+  actionButtons: [
+    { ...MORE_BTN, buttons: [mapUpsertBtn(comp, identityTypeUid, true), mapRemoveBtn(comp)] },
+  ],
+  reloadActions$: [identityTypeIdentification$],
+  fetchParameter: {
+    query: IDENTIFICATIONS_OF_IDENTITY_TYPE,
+    variables: { identityTypeUid },
+  },
+});

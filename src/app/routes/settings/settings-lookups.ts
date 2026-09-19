@@ -19,7 +19,10 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
-import { personIdentificationsPanel } from './person-identifications';
+import {
+  identityTypeIdentificationsPanel,
+  personIdentificationsPanel,
+} from './person-identifications';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
@@ -217,6 +220,10 @@ export const IDENTITY_TYPE = defineLookup({
   pluralLabel: 'Identity Types',
   subtitle: 'How people and organisations on the register are identified',
   icon: 'id_card',
+  // Which of the fixed identification labels mean this type. The labels are an
+  // enum the application ships; this is where they are tied to the lookup rows
+  // an operator maintains.
+  extraContents: (comp, record) => [identityTypeIdentificationsPanel(comp, record?.id)],
 });
 
 /**
