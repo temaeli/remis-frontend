@@ -517,10 +517,6 @@ export const WORKFLOW_STEP = defineLookup({
   actionType
   returnType
   stepType
-  role {
-    id
-    name
-  }
   workflowDefinition {
     id
     uid: id
@@ -554,7 +550,9 @@ export const WORKFLOW_STEP = defineLookup({
       WORKFLOW_STATUS_OPTIONS,
       'What the record becomes once this step completes',
     ),
-    roleSelect('Held By Role'),
+    // Who holds a step is not on the step any more: workflow_steps lost roles_id,
+    // and the Roles tab below records one row per office, which is what a step
+    // sitting with two of them needs.
     enumSelect('actionType', 'Action Type', ACTION_TYPE_OPTIONS),
     enumSelect(
       'returnType',
@@ -605,7 +603,6 @@ export const WORKFLOW_STEP = defineLookup({
   ],
   extraColumns: [
     { field: 'sequence', header: 'Seq' },
-    'role.name as Role',
     'workflowDefinition.workflowKey as Workflow',
     enumColumn('actionType', 'Action'),
     enumColumn('newStatus', 'Resulting Status'),
@@ -616,7 +613,6 @@ export const WORKFLOW_STEP = defineLookup({
   ],
   toModel: (data) => ({
     ...codeToModel(data),
-    roleId: data?.role?.id,
     workflowDefinitionUid: data?.workflowDefinition?.id,
     // parentStep and childStep are null where the record points at itself, which
     // is how the backend spells "none" on a NOT NULL column.
@@ -668,9 +664,9 @@ export const WORKFLOW_STEP = defineLookup({
 /**
  * A step may sit with more than one office at once.
  *
- * Supersedes the single `roleId` on the step itself, which allowed exactly one
- * holder and is still there. Where both are set the step's own column is the older
- * answer — read these rows.
+ * This is the only record of who holds a step. The step itself used to carry a
+ * single `roles_id`, which allowed exactly one holder; the column is gone and
+ * these rows replaced it.
  *
  * The pair is not unique in the database, so the same role could be added twice;
  * the backend checks before inserting and answers with a message.
@@ -695,7 +691,10 @@ export const WORKFLOW_STEP_ROLE = defineLookup({
     name
   }
 `,
-  extraFields: [refSelect('workflowStepUid', 'Workflow Step', ALL_WORKFLOW_STEPS), roleSelect('Held By Role')],
+  extraFields: [
+    refSelect('workflowStepUid', 'Workflow Step', ALL_WORKFLOW_STEPS),
+    roleSelect('Held By Role'),
+  ],
   extraColumns: ['workflowStep.name as Step', 'role.name as Role'],
   toModel: (data) => ({
     ...codeToModel(data),
@@ -920,7 +919,11 @@ export const WORKFLOW_STEP_CONNECTION = defineLookup({
     sequence
   }
 `,
-  extraColumns: ['workflowDefinition.workflowKey as Workflow', 'parent.name as From', 'child.name as To'],
+  extraColumns: [
+    'workflowDefinition.workflowKey as Workflow',
+    'parent.name as From',
+    'child.name as To',
+  ],
   toModel: (data) => ({
     ...codeToModel(data),
     workflowDefinitionUid: data?.workflowDefinition?.id,
@@ -1110,7 +1113,9 @@ export const STEP_ACTION_EXECUTION = defineLookup({
   }
 `,
   extraFields: [
-    refSelect('workflowDefinitionUid', 'Workflow', ALL_WORKFLOW_DEFINITIONS, { labelKey: 'workflowKey' }),
+    refSelect('workflowDefinitionUid', 'Workflow', ALL_WORKFLOW_DEFINITIONS, {
+      labelKey: 'workflowKey',
+    }),
     refSelect('currentStepUid', 'Step Acted On', ALL_WORKFLOW_STEPS, {
       hint: 'Where the record stood when the action was taken',
     }),
@@ -1291,7 +1296,7 @@ export const WORKFLOW_STEP_EXECUTION = defineLookup({
     }),
     {
       ...enumSelect('actionType', 'Direction', ACTION_TYPE_OPTIONS),
-      hint: 'Which way the case moved. FORWARD goes to the step\'s child on this case\'s route, BACK to its parent',
+      hint: "Which way the case moved. FORWARD goes to the step's child on this case's route, BACK to its parent",
     },
     // Three columns this form deliberately does not ask for, all of them filled
     // by the backend because none of them is really the caller's to choose:
