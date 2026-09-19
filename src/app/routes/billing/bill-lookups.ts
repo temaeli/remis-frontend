@@ -323,11 +323,17 @@ const billHeaderField: FieldConfig = {
  * A request to move a bill's expiry date at GePG.
  *
  * Saved first and sent second, the way a control number re-use is: the row says
- * which bill, which date and why, and nothing reaches GePG until the row action
- * sends it. Preparing an amendment and reading it back before it goes is worth
- * more here than anywhere else — the date is what a payer has left to pay in.
+ * which bill and why, and nothing reaches GePG until the row action sends it.
  *
- * `assignedNumber` and `name` are shown but never edited. Both exist to satisfy
+ * Backed by `control_number_extension_requests`, the head of the DBA's change
+ * chain and the only row in it a person fills in. Everything behind it — the
+ * change request carrying the date, the payload, the acknowledgement, the
+ * extension, the new expiry date and the bill's status — is written by the send.
+ *
+ * **No date on this form.** The saved row has no column for one, so the date is
+ * asked for at the moment of sending — see `sendChangeRequestToGepgBtn`.
+ *
+ * `assignedCode` and `name` are shown but never edited. Both exist to satisfy
  * UNIQUE constraints on a row identified by the bill it names, so the backend
  * generates them.
  */
@@ -340,24 +346,13 @@ export const BILL_CHANGE_REQUEST = defineLookup({
   pluralLabel: 'Expiry Change Requests',
   subtitle: 'Expiry dates asked of GePG, and why',
   icon: 'calendar',
-  nameKey: 'assignedNumber',
+  nameKey: 'assignedCode',
   descriptiveGqlFields: `
-  assignedNumber
+  assignedCode
   updateReason
-  latestExpiryDate
-  requestedAt
 `,
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
-    {
-      key: 'latestExpiryDate',
-      label: 'New Expiry Date',
-      hint: 'Must be in the future — GePG refuses a date that has passed',
-      type: FieldType.dateTime,
-      minDate: new Date(),
-      validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
-    },
     {
       key: 'updateReason',
       label: 'Reason',
@@ -370,10 +365,9 @@ export const BILL_CHANGE_REQUEST = defineLookup({
   ],
   baseColumns: [
     'index',
-    { field: 'assignedNumber', header: 'Request' },
-    { field: 'latestExpiryDate', header: 'New Expiry' },
+    { field: 'assignedCode', header: 'Request' },
     { field: 'updateReason', header: 'Reason' },
-    { field: 'requestedAt', header: 'Asked At' },
+    { field: 'createdAt', header: 'Written At' },
   ],
   extraGqlFields: `
   billHeader { ${lookupRefGqlFields} }
@@ -391,14 +385,16 @@ export const BILL_CHANGE_REQUEST = defineLookup({
  *
  * The same two steps again, and the flow they matter most for: a cancellation
  * retires every bill under the header and cannot be taken back. The number is
- * not asked for — it is whichever number GePG issued for the bill, filled in by
- * the backend, so a cancellation cannot name a number the bill does not hold. A
- * bill still waiting for its first number can be recorded here all the same;
- * whether GePG has anything to cancel is a question for the send.
+ * not asked for and is not kept here — the send reads whichever number GePG
+ * issued for the bill, so a cancellation cannot name a number the bill does not
+ * hold. A bill still waiting for its first number can be recorded here all the
+ * same; whether GePG has anything to cancel is a question for the send.
  *
- * Backed by `normal_bill_control_number_cancellation_reasons`, which is the
- * first row of the DBA's cancellation chain and the one a person fills in; the
- * request row beside it holds the XML and is written by the send.
+ * Backed by `control_number_cancellation_requests`, the head of the DBA's
+ * cancellation chain and the only row in it a person fills in. The five rows
+ * behind it — the reason, the request carrying the XML, the acknowledgement, the
+ * response body and the response — are written by the send, each keyed back to
+ * this one.
  */
 export const BILL_CANCELLATION_REQUEST = defineLookup({
   slug: 'bill-cancellation-requests',
@@ -409,12 +405,10 @@ export const BILL_CANCELLATION_REQUEST = defineLookup({
   pluralLabel: 'Cancellation Requests',
   subtitle: 'Control numbers asked to be retired, and why',
   icon: 'delete',
-  nameKey: 'assignedNumber',
+  nameKey: 'assignedCode',
   descriptiveGqlFields: `
-  assignedNumber
+  assignedCode
   reason
-  cancelledControlNumber
-  requestedAt
 `,
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
@@ -430,20 +424,9 @@ export const BILL_CANCELLATION_REQUEST = defineLookup({
   ],
   baseColumns: [
     'index',
-    { field: 'assignedNumber', header: 'Request' },
-    // Zero means GePG had not issued a number when the request was written --
-    // the column is NOT NULL, so the row had to hold something. The send fills
-    // in the real number.
-    {
-      field: 'cancelledControlNumber',
-      header: 'Control Number',
-      valueFn: (row) =>
-        `${row?.cancelledControlNumber ?? 0}` === '0'
-          ? 'Not issued yet'
-          : row?.cancelledControlNumber,
-    },
+    { field: 'assignedCode', header: 'Request' },
     'reason',
-    { field: 'requestedAt', header: 'Asked At' },
+    { field: 'createdAt', header: 'Written At' },
   ],
   extraGqlFields: `
   billHeader { ${lookupRefGqlFields} }

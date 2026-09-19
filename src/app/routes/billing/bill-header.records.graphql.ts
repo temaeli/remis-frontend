@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client/core';
 
 /**
- * The fourteen GePG tables a bill header owns, read one at a time.
+ * The sixteen GePG tables a bill header owns, read one at a time.
  *
  * `gepgTrailOfBillHeader` reads the same rows folded into four conversations,
  * which answers what happened. These answer what a row says — every column the
@@ -109,6 +109,28 @@ export const REUSE_REQUESTS_OF_BILL_HEADER = gql`
         id
         reason
       }
+    }
+  }
+`;
+
+export const CANCELLATION_SAVED_REQUESTS_OF_BILL_HEADER = gql`
+  query billCancellationRequestsByBillHeader($billHeaderUid: String) {
+    billCancellationRequestsByBillHeader(billHeaderUid: $billHeaderUid) {
+      ${recordFields}
+      assignedCode
+      name
+      reason
+    }
+  }
+`;
+
+export const EXTENSION_SAVED_REQUESTS_OF_BILL_HEADER = gql`
+  query billChangeRequestsByBillHeader($billHeaderUid: String) {
+    billChangeRequestsByBillHeader(billHeaderUid: $billHeaderUid) {
+      ${recordFields}
+      assignedCode
+      name
+      updateReason
     }
   }
 `;

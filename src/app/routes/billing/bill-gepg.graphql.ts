@@ -73,19 +73,20 @@ export const CANCEL_CONTROL_NUMBER = gql`
 /**
  * Sends an expiry change that was saved earlier, from the change requests list.
  *
- * Takes the record's own identifier and nothing else: the date and the reason
- * are on the row, so what goes to GePG is what the record says. Saving a change
- * request sends nothing on its own — this is the second half.
+ * Takes the record's identifier and the date being asked for. The bill and the
+ * reason are on the row, so what goes to GePG is what the record says; the date
+ * comes from the operator here because `control_number_extension_requests` has
+ * no column to keep one in. Saving a change request sends nothing on its own —
+ * this is the second half.
  */
 export const SEND_BILL_CHANGE_REQUEST = gql`
-  mutation sendBillChangeRequest($uid: String) {
-    sendBillChangeRequest(uid: $uid) {
+  mutation sendBillChangeRequest($uid: String, $latestExpiryDate: DateTime) {
+    sendBillChangeRequest(uid: $uid, latestExpiryDate: $latestExpiryDate) {
       ${responseGqlFields(`
         id
         uid: id
-        assignedNumber
+        assignedCode
         updateReason
-        latestExpiryDate
       `)}
     }
   }
@@ -113,16 +114,21 @@ export const SEND_BILL_REUSE_REQUEST = gql`
   }
 `;
 
-/** The same, for a cancellation saved on the cancellation requests list. */
+/**
+ * The same, for a cancellation saved on the cancellation requests list.
+ *
+ * Takes the identifier alone. The number being cancelled is not on the saved
+ * row — the backend reads whichever number GePG issued for the bill at the
+ * moment of sending, which is the only one it could truthfully name.
+ */
 export const SEND_BILL_CANCELLATION_REQUEST = gql`
   mutation sendBillCancellationRequest($uid: String) {
     sendBillCancellationRequest(uid: $uid) {
       ${responseGqlFields(`
         id
         uid: id
-        assignedNumber
+        assignedCode
         reason
-        cancelledControlNumber
       `)}
     }
   }

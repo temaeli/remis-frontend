@@ -13,6 +13,8 @@ import {
   CHANGE_REQUEST_PAYLOADS_OF_BILL_HEADER,
   CONTROL_NUMBERS_OF_BILL_HEADER,
   CONTROL_NUMBER_REQUESTS_OF_BILL_HEADER,
+  CANCELLATION_SAVED_REQUESTS_OF_BILL_HEADER,
+  EXTENSION_SAVED_REQUESTS_OF_BILL_HEADER,
   EXPIRY_DATES_OF_BILL_HEADER,
   EXPIRY_EXTENSIONS_OF_BILL_HEADER,
   FINAL_RESPONSES_OF_BILL_HEADER,
@@ -140,6 +142,23 @@ const EXPIRY_EXTENSION_COLUMNS: GridKeyColumn[] = [
   payloadColumn('Body'),
 ];
 
+// What an operator wrote down before anything was sent. These two tables head
+// their flows; everything else on this screen was written by the send or by a
+// callback.
+const SAVED_REQUEST_COLUMNS: GridKeyColumn[] = [
+  'index',
+  'assignedCode as Reference',
+  'reason',
+  { field: 'createdAt', header: 'Written' },
+];
+
+const SAVED_EXTENSION_COLUMNS: GridKeyColumn[] = [
+  'index',
+  'assignedCode as Reference',
+  'updateReason as Reason',
+  { field: 'createdAt', header: 'Written' },
+];
+
 // The date itself, not a body: billexprdt keeps one row per accepted change, so
 // reading down this column is the sequence of dates the bill has held.
 const EXPIRY_DATE_COLUMNS: GridKeyColumn[] = [
@@ -253,6 +272,13 @@ export function billHeaderGepgRecordPanels(billHeaderUid?: string): ContentParam
       'Nothing has been sent to reuse a control number',
     ),
     tab(
+      'Extension Requests',
+      'calendar',
+      SAVED_EXTENSION_COLUMNS,
+      EXTENSION_SAVED_REQUESTS_OF_BILL_HEADER,
+      'No extension has been written down for this bill',
+    ),
+    tab(
       'Change Requests',
       'changebill',
       CHANGE_REQUEST_COLUMNS,
@@ -279,6 +305,13 @@ export function billHeaderGepgRecordPanels(billHeaderUid?: string): ContentParam
       EXPIRY_DATE_COLUMNS,
       EXPIRY_DATES_OF_BILL_HEADER,
       'This bill has not been moved to a new expiry date',
+    ),
+    tab(
+      'Cancellation Written',
+      'delete',
+      SAVED_REQUEST_COLUMNS,
+      CANCELLATION_SAVED_REQUESTS_OF_BILL_HEADER,
+      'No cancellation has been written down for this bill',
     ),
     tab(
       'Cancellation Reasons',
