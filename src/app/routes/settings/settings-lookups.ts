@@ -19,6 +19,7 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
+import { personIdentificationsPanel } from './person-identifications';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
@@ -306,6 +307,9 @@ export const PERSON = defineLookup({
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
     personOrganisationsPanel(comp, record?.id),
+    // The documents beyond the one on the record itself: ZANID, driving
+    // licence, TIN. bio_data holds a single nin and one identity type.
+    personIdentificationsPanel(comp, record?.id),
     ...entityLinkPanels(
       comp,
       [
