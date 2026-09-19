@@ -51,8 +51,8 @@ export const TINS_OF_BUSINESS_NAME = gql`
 `;
 
 const ALL_TIN_DATA_FOR_LINK = gql`
-  query allTinData {
-    allTinData {
+  query allTinDatas {
+    allTinDatas {
       id
       assignedNumber
       name

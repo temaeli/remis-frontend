@@ -391,3 +391,159 @@ export const identityTypeIdentificationsPanel = (
     variables: { identityTypeUid },
   },
 });
+
+/* ------------------------------------------------------------------ *
+ * The same documents, for an organisation rather than a person.
+ *
+ * `any_other_id` keys to a person; `business_names_identification_types` keys
+ * to an organisation. Same five labels, same rules, so this shares the form and
+ * the type list above rather than restating them.
+ * ------------------------------------------------------------------ */
+
+/** Notifies the organisation panel that a document changed. */
+export const businessNameIdentification$ = new Subject<unknown>();
+
+const organisationIdentificationGqlFields = `
+  id
+  uid: id
+  assignedNumber
+  identificationType
+  description
+  createdAt
+`;
+
+export const IDENTIFICATIONS_OF_BUSINESS_NAME = gql`
+  query identificationsByBusinessName($businessNameUid: String) {
+    identificationsByBusinessName(businessNameUid: $businessNameUid) {
+      ${organisationIdentificationGqlFields}
+    }
+  }
+`;
+
+export const SAVE_BUSINESS_NAME_IDENTIFICATION = gql`
+  mutation saveBusinessNameIdentification($input: BusinessNameIdentificationDtoInput) {
+    saveBusinessNameIdentification(input: $input) {
+      ${responseGqlFields(organisationIdentificationGqlFields)}
+    }
+  }
+`;
+
+export const DELETE_BUSINESS_NAME_IDENTIFICATION = gql`
+  mutation deleteBusinessNameIdentification($uid: String) {
+    deleteBusinessNameIdentification(uid: $uid) {
+      ${responseGqlFields(organisationIdentificationGqlFields)}
+    }
+  }
+`;
+
+const ORG_VIEW_PERMISSIONS = [
+  'ROLE_VIEW_ALL_BUSINESS_NAME_IDENTIFICATION',
+  'ROLE_VIEW_BUSINESS_NAME_IDENTIFICATION',
+];
+const ORG_WRITE_PERMISSIONS = [
+  'ROLE_CREATE_BUSINESS_NAME_IDENTIFICATION',
+  'ROLE_UPDATE_BUSINESS_NAME_IDENTIFICATION',
+];
+const ORG_DELETE_PERMISSIONS = ['ROLE_DELETE_BUSINESS_NAME_IDENTIFICATION'];
+
+function orgUpsertBtn(
+  comp: BaseComponent,
+  businessNameUid: string | undefined,
+  editing: boolean,
+): ActionButton {
+  return {
+    icon: editing ? 'edit' : 'add',
+    label: editing ? 'Edit' : 'Add Identification',
+    class: editing ? '' : 'btn-add-primary',
+    click: (row?: any) => {
+      const close$ = new Subject<void>();
+      const formParameter: FormParameters = {
+        model: editing
+          ? {
+              uid: row?.uid,
+              identificationType: row?.identificationType,
+              assignedCode: row?.assignedNumber,
+              description: row?.description,
+            }
+          : {},
+        title: editing ? 'Edit Identification' : 'Add Identification',
+        fields: identificationFields(),
+        closeAction$: close$,
+
+        onSubmit: async (value: any) => {
+          await comp.fs.fetch({
+            notify: true,
+            variables: { input: { businessNameUid, ...value } },
+            mutation: SAVE_BUSINESS_NAME_IDENTIFICATION,
+            successFn: (res) => {
+              businessNameIdentification$.next(res?.data);
+              close$.next();
+            },
+          });
+        },
+      };
+
+      comp.vs?.openModal(FormComponent, formParameter, '40%');
+    },
+    permissions: ORG_WRITE_PERMISSIONS,
+  };
+}
+
+function orgRemoveBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'delete',
+    label: 'Remove',
+    class: 'text-danger',
+    confirmDataMapper: (row: any) => ({
+      title: 'Remove Identification',
+      confirmText: 'REMOVE',
+      confirmButtonColor: 'red',
+      message: `Remove <b class='text-danger'>${getDisplayName(
+        row?.identificationType,
+      )} ${row?.assignedNumber}</b> from this organisation?`,
+    }),
+    click: async (row: any) => {
+      await comp.fs.fetch({
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: row?.uid },
+        mutation: DELETE_BUSINESS_NAME_IDENTIFICATION,
+        successFn: (res) => businessNameIdentification$.next(res?.data),
+      });
+    },
+    permissions: ORG_DELETE_PERMISSIONS,
+  };
+}
+
+/** The documents one organisation holds, for its detail page. */
+export const businessNameIdentificationsPanel = (
+  comp: BaseComponent,
+  businessNameUid?: string,
+): ContentParameter => ({
+  type: 'table',
+  name: 'Identifications',
+  label: 'Identifications',
+  icon: 'badge',
+  permissions: ORG_VIEW_PERMISSIONS,
+  keyColumns: [
+    'index',
+    {
+      field: 'identificationType',
+      header: 'Type',
+      valueFn: (row: any) => getDisplayName(row?.identificationType),
+    },
+    'assignedNumber as Number',
+    'description',
+    { field: 'createdAt', header: 'Recorded' },
+    'actions',
+  ],
+  headerButtons: [orgUpsertBtn(comp, businessNameUid, false)],
+  actionButtons: [
+    { ...MORE_BTN, buttons: [orgUpsertBtn(comp, businessNameUid, true), orgRemoveBtn(comp)] },
+  ],
+  reloadActions$: [businessNameIdentification$],
+  fetchParameter: {
+    query: IDENTIFICATIONS_OF_BUSINESS_NAME,
+    variables: { businessNameUid },
+  },
+});

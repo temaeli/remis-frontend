@@ -20,6 +20,7 @@ import {
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
 import {
+  businessNameIdentificationsPanel,
   identityTypeIdentificationsPanel,
   personIdentificationsPanel,
 } from './person-identifications';
@@ -407,6 +408,7 @@ export const BUSINESS_NAME = defineLookup({
       issuerUid: record?.id,
     }),
     businessNamePeoplePanel(comp, record?.id),
+    businessNameIdentificationsPanel(comp, record?.id),
     businessNameTinsPanel(comp, record?.id),
     ...coreAttachmentPanels(comp, 'businessName', record?.id),
   ],
