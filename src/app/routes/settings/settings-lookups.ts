@@ -23,6 +23,7 @@ import {
   identityTypeIdentificationsPanel,
   personIdentificationsPanel,
 } from './person-identifications';
+import { businessNameTinsPanel, personTinsPanel } from './tin-links';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
@@ -317,6 +318,9 @@ export const PERSON = defineLookup({
     // The documents beyond the one on the record itself: ZANID, driving
     // licence, TIN. bio_data holds a single nin and one identity type.
     personIdentificationsPanel(comp, record?.id),
+    // Where GePG's CustId reads a TIN from, when the bill's identity type
+    // means TIN.
+    personTinsPanel(comp, record?.id),
     ...entityLinkPanels(
       comp,
       [
@@ -403,6 +407,7 @@ export const BUSINESS_NAME = defineLookup({
       issuerUid: record?.id,
     }),
     businessNamePeoplePanel(comp, record?.id),
+    businessNameTinsPanel(comp, record?.id),
     ...coreAttachmentPanels(comp, 'businessName', record?.id),
   ],
 });
