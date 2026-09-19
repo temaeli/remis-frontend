@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client/core';
 
 /**
- * The thirteen GePG tables a bill header owns, read one at a time.
+ * The fourteen GePG tables a bill header owns, read one at a time.
  *
  * `gepgTrailOfBillHeader` reads the same rows folded into four conversations,
  * which answers what happened. These answer what a row says — every column the
@@ -148,6 +148,18 @@ export const EXPIRY_EXTENSIONS_OF_BILL_HEADER = gql`
       assignedNumber
       name
       payload
+    }
+  }
+`;
+
+export const EXPIRY_DATES_OF_BILL_HEADER = gql`
+  query billExpiryDatesByBillHeader($billHeaderUid: String) {
+    billExpiryDatesByBillHeader(billHeaderUid: $billHeaderUid) {
+      ${recordFields}
+      assignedNumber
+      name
+      description
+      expiryDate
     }
   }
 `;

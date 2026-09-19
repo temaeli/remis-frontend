@@ -13,6 +13,7 @@ import {
   CHANGE_REQUEST_PAYLOADS_OF_BILL_HEADER,
   CONTROL_NUMBERS_OF_BILL_HEADER,
   CONTROL_NUMBER_REQUESTS_OF_BILL_HEADER,
+  EXPIRY_DATES_OF_BILL_HEADER,
   EXPIRY_EXTENSIONS_OF_BILL_HEADER,
   FINAL_RESPONSES_OF_BILL_HEADER,
   REUSE_REASONS_OF_BILL_HEADER,
@@ -139,6 +140,15 @@ const EXPIRY_EXTENSION_COLUMNS: GridKeyColumn[] = [
   payloadColumn('Body'),
 ];
 
+// The date itself, not a body: billexprdt keeps one row per accepted change, so
+// reading down this column is the sequence of dates the bill has held.
+const EXPIRY_DATE_COLUMNS: GridKeyColumn[] = [
+  'index',
+  'assignedNumber as Reference',
+  { field: 'expiryDate', header: 'Expires' },
+  { field: 'createdAt', header: 'Filed' },
+];
+
 const CANCELLATION_REASON_COLUMNS: GridKeyColumn[] = [
   'index',
   'assignedNumber as Reference',
@@ -262,6 +272,13 @@ export function billHeaderGepgRecordPanels(billHeaderUid?: string): ContentParam
       EXPIRY_EXTENSION_COLUMNS,
       EXPIRY_EXTENSIONS_OF_BILL_HEADER,
       'GePG has not answered a change of expiry date',
+    ),
+    tab(
+      'Expiry Dates',
+      'schedule',
+      EXPIRY_DATE_COLUMNS,
+      EXPIRY_DATES_OF_BILL_HEADER,
+      'This bill has not been moved to a new expiry date',
     ),
     tab(
       'Cancellation Reasons',
