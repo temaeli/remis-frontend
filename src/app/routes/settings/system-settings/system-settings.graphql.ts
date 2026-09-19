@@ -9,7 +9,6 @@ export const systemSettingGqlFields = `
 category
 defaultValue
 description
-migrated
 settingKey
 settingValue
 systemSeed

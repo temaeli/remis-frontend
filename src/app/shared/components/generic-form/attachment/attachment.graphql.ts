@@ -8,8 +8,7 @@ export const attachmentGqlFields = `
   isDeleted
   mediaSize
   mediaType
-  migrated
-  sourceId
+    sourceId
   sourceName
   ${baseGqlFields}
 `;
