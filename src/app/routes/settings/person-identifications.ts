@@ -557,7 +557,9 @@ export const businessNameIdentificationsPanel = (
  * panel is what makes them billable.
  *
  * One per person, permanently — `bio_data_id` is UNIQUE on its own — so the
- * panel shows a single row and the button reads Set rather than Add.
+ * panel shows a single row and the button reads Set rather than Add. The query
+ * still answers with a list, because a table reads a list: a list of nought or
+ * one.
  * ------------------------------------------------------------------ */
 
 /** Notifies the panel that the number changed. */
@@ -578,11 +580,7 @@ const renewalNumberGqlFields = `
 export const RENEWAL_NUMBER_OF_PERSON = gql`
   query renewalControlNumberByPerson($bioDataUid: String) {
     renewalControlNumberByPerson(bioDataUid: $bioDataUid) {
-      status
-      message
-      data {
-        ${renewalNumberGqlFields}
-      }
+      ${renewalNumberGqlFields}
     }
   }
 `;
