@@ -25,6 +25,7 @@ import {
   personIdentificationsPanel,
 } from './person-identifications';
 import { businessNameTinsPanel, personTinsPanel } from './tin-links';
+import { billSettingPeoplePanel, personBillSettingsPanel } from './bill-setting-people';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
@@ -322,6 +323,8 @@ export const PERSON = defineLookup({
     // Where GePG's CustId reads a TIN from, when the bill's identity type
     // means TIN.
     personTinsPanel(comp, record?.id),
+    // Which automatic bill settings are raised for this person.
+    personBillSettingsPanel(comp, record?.id),
     ...entityLinkPanels(
       comp,
       [
@@ -2154,6 +2157,8 @@ export const BILL_HEADERS_SETTING = defineLookup({
     discountUid: data?.discount?.id,
     collspUid: data?.collsp?.id,
   }),
+  // Whom this setting raises bills for.
+  extraContents: (comp, record) => [billSettingPeoplePanel(comp, record?.id)],
 });
 
 //  Location — the administrative hierarchy, under `modules.setting.location`.
