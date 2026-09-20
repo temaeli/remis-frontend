@@ -547,3 +547,192 @@ export const businessNameIdentificationsPanel = (
     variables: { businessNameUid },
   },
 });
+
+/* ------------------------------------------------------------------ *
+ * The control number a person's renewals are raised against.
+ *
+ * `normal_bill_control_numbers_bio_data`. An automatic renewal never asks GePG
+ * for a new number: it reuses one the person already holds, and this is where
+ * the run reads it from. A person without one is skipped by the run, so this
+ * panel is what makes them billable.
+ *
+ * One per person, permanently — `bio_data_id` is UNIQUE on its own — so the
+ * panel shows a single row and the button reads Set rather than Add.
+ * ------------------------------------------------------------------ */
+
+/** Notifies the panel that the number changed. */
+export const renewalControlNumber$ = new Subject<unknown>();
+
+const renewalNumberGqlFields = `
+  id
+  uid: id
+  assignedNumber
+  reason
+  createdAt
+  controlNumber {
+    id
+    controlNumber
+  }
+`;
+
+export const RENEWAL_NUMBER_OF_PERSON = gql`
+  query renewalControlNumberByPerson($bioDataUid: String) {
+    renewalControlNumberByPerson(bioDataUid: $bioDataUid) {
+      status
+      message
+      data {
+        ${renewalNumberGqlFields}
+      }
+    }
+  }
+`;
+
+const ALL_CONTROL_NUMBERS_FOR_LINK = gql`
+  query allNormalBillControlNumbers {
+    allNormalBillControlNumbers {
+      id
+      controlNumber
+    }
+  }
+`;
+
+export const SAVE_RENEWAL_NUMBER = gql`
+  mutation saveRenewalControlNumber($input: NormalBillControlNumberPersonDtoInput) {
+    saveRenewalControlNumber(input: $input) {
+      ${responseGqlFields(renewalNumberGqlFields)}
+    }
+  }
+`;
+
+export const DELETE_RENEWAL_NUMBER = gql`
+  mutation deleteRenewalControlNumber($uid: String) {
+    deleteRenewalControlNumber(uid: $uid) {
+      ${responseGqlFields(renewalNumberGqlFields)}
+    }
+  }
+`;
+
+const RENEWAL_VIEW_PERMISSIONS = [
+  'ROLE_VIEW_ALL_RENEWAL_CONTROL_NUMBER',
+  'ROLE_VIEW_RENEWAL_CONTROL_NUMBER',
+];
+const RENEWAL_WRITE_PERMISSIONS = [
+  'ROLE_CREATE_RENEWAL_CONTROL_NUMBER',
+  'ROLE_UPDATE_RENEWAL_CONTROL_NUMBER',
+];
+const RENEWAL_DELETE_PERMISSIONS = ['ROLE_DELETE_RENEWAL_CONTROL_NUMBER'];
+
+function setRenewalNumberBtn(
+  comp: BaseComponent,
+  bioDataUid: string | undefined,
+  editing: boolean,
+): ActionButton {
+  return {
+    icon: editing ? 'edit' : 'add',
+    label: editing ? 'Change' : 'Set Renewal Control Number',
+    class: editing ? '' : 'btn-add-primary',
+    click: (row?: any) => {
+      const close$ = new Subject<void>();
+      const formParameter: FormParameters = {
+        model: editing
+          ? { uid: row?.uid, controlNumberUid: row?.controlNumber?.id, reason: row?.reason }
+          : {},
+        title: editing ? 'Change Renewal Control Number' : 'Set Renewal Control Number',
+        fields: [
+          {
+            key: 'controlNumberUid',
+            label: 'Control Number',
+            hint: 'A number GePG has already issued. Each one serves one person only',
+            type: FieldType.select,
+            optionsVariables: {
+              labelKey: 'controlNumber',
+              valueKey: 'id',
+              fetchParameter: { query: ALL_CONTROL_NUMBERS_FOR_LINK },
+            },
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+          {
+            key: 'reason',
+            label: 'Reason',
+            hint: 'Goes to GePG with every renewal. Must be unique — describe this client',
+            type: FieldType.textarea,
+            rows: 2,
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+        ],
+        closeAction$: close$,
+
+        onSubmit: async (value: any) => {
+          await comp.fs.fetch({
+            notify: true,
+            variables: { input: { bioDataUid, ...value } },
+            mutation: SAVE_RENEWAL_NUMBER,
+            successFn: (res) => {
+              renewalControlNumber$.next(res?.data);
+              close$.next();
+            },
+          });
+        },
+      };
+
+      comp.vs?.openModal(FormComponent, formParameter, '40%');
+    },
+    permissions: RENEWAL_WRITE_PERMISSIONS,
+  };
+}
+
+function clearRenewalNumberBtn(comp: BaseComponent): ActionButton {
+  return {
+    icon: 'block',
+    label: 'Remove',
+    class: 'text-danger',
+    confirmDataMapper: (row: any) => ({
+      title: 'Remove Renewal Control Number',
+      confirmText: 'REMOVE',
+      confirmButtonColor: 'red',
+      message:
+        `Remove control number <b class='text-danger'>${row?.controlNumber?.controlNumber ?? ''}</b> ` +
+        'from this person? Their renewals will be skipped until another is set.',
+    }),
+    click: async (row: any) => {
+      await comp.fs.fetch({
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: row?.uid },
+        mutation: DELETE_RENEWAL_NUMBER,
+        successFn: (res) => renewalControlNumber$.next(res?.data),
+      });
+    },
+    permissions: RENEWAL_DELETE_PERMISSIONS,
+  };
+}
+
+/** The number this person's renewals are raised against, for their detail page. */
+export const personRenewalNumberPanel = (
+  comp: BaseComponent,
+  bioDataUid?: string,
+): ContentParameter => ({
+  type: 'table',
+  name: 'Renewal Control Number',
+  label: 'Renewal Control Number',
+  icon: 'loop_alt',
+  permissions: RENEWAL_VIEW_PERMISSIONS,
+  keyColumns: [
+    'index',
+    'controlNumber.controlNumber as Control Number',
+    'reason',
+    { field: 'createdAt', header: 'Set' },
+    'actions',
+  ],
+  headerButtons: [setRenewalNumberBtn(comp, bioDataUid, false)],
+  actionButtons: [
+    {
+      ...MORE_BTN,
+      buttons: [setRenewalNumberBtn(comp, bioDataUid, true), clearRenewalNumberBtn(comp)],
+    },
+  ],
+  reloadActions$: [renewalControlNumber$],
+  fetchParameter: { query: RENEWAL_NUMBER_OF_PERSON, variables: { bioDataUid } },
+});
