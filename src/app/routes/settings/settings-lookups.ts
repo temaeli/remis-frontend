@@ -309,6 +309,7 @@ export const PERSON = defineLookup({
     },
   ],
   baseColumns: [
+    'index',
     { field: 'firstName', header: 'First Name' },
     { field: 'secondName', header: 'Middle Name' },
     { field: 'thirdName', header: 'Last Name' },
