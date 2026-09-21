@@ -10,6 +10,8 @@ import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
+import { ContentsViewComponent } from '@shared/components/view-component/contents-view/contents-view.component';
+import { obligationAmountPanels } from '@routes/billing/bill-amounts.panels';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { Lookup } from '@shared/lookup/lookup.interface';
 
@@ -292,6 +294,32 @@ const settingColumns: GridKeyColumn[] = [
  * Removing a setting a unit still points at is refused by the backend rather
  * than cascading: the unit link's foreign key is ON DELETE RESTRICT.
  */
+/**
+ * Opens the principal and its penalties for one bill setting.
+ *
+ * A modal rather than a page: `grace_periods_bill_headers_settings` is a row
+ * inside the grace period's own screen and has no route of its own, while the
+ * amounts key on exactly that row. The two panels are the same ones the bill
+ * screen used to carry, before the principal stopped belonging to a bill.
+ */
+function openObligationAmounts(comp: BaseComponent, row: Lookup) {
+  const obligationUid = row?.['id'] as string | undefined;
+  const setting = (row?.['billHeadersSetting'] as Record<string, unknown>)?.['name'];
+
+  comp.vs?.openModal(
+    ContentsViewComponent,
+    {
+      title: `Principal & Penalties — ${setting ?? 'this setting'}`,
+      icon: 'coins',
+      showContentInTabs: true,
+      contents: obligationAmountPanels(comp, obligationUid),
+    },
+    '96%',
+    'auto',
+    { maxWidth: '1100px' },
+  );
+}
+
 export const gracePeriodBillSettingsPanel = (
   comp: BaseComponent,
   gracePeriodUid?: string,
@@ -320,6 +348,15 @@ export const gracePeriodBillSettingsPanel = (
       label: 'Edit',
       click: (row: Lookup) => openSettingForm(comp, gracePeriodUid, row)(),
       permissions: ['ROLE_UPDATE_GRACE_PERIOD_BILL_SETTING'],
+    },
+    // What this person owes under this setting, and the penalties on it. The
+    // amounts key on this row, and this row has no page of its own, so they are
+    // opened over it rather than linked to.
+    {
+      icon: 'coins',
+      label: 'Principal & Penalties',
+      click: (row: Lookup) => openObligationAmounts(comp, row),
+      permissions: ['ROLE_VIEW_ALL_PRINCIPAL_AMOUNT', 'ROLE_VIEW_PRINCIPAL_AMOUNT'],
     },
     {
       ...MORE_BTN,
