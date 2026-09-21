@@ -10,8 +10,6 @@ import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
-import { ContentsViewComponent } from '@shared/components/view-component/contents-view/contents-view.component';
-import { obligationAmountPanels } from '@routes/billing/bill-amounts.panels';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { Lookup } from '@shared/lookup/lookup.interface';
 
@@ -301,10 +299,24 @@ const settingColumns: GridKeyColumn[] = [
  * inside the grace period's own screen and has no route of its own, while the
  * amounts key on exactly that row. The two panels are the same ones the bill
  * screen used to carry, before the principal stopped belonging to a bill.
+ *
+ * Both halves are imported when the button is pressed, not when this file is
+ * read. This is a configuration file that the settings routes pull in eagerly,
+ * and `ContentsViewComponent` reaches `DataGridComponent` and
+ * `DetailsComponent` — dragging that graph into the settings chunk changed the
+ * order things initialise in and produced NG0919, a metadata read failing on
+ * one of the import cycles that already exist under `shared/components`. Every
+ * other importer of this component is a route component, loaded lazily; this
+ * keeps it that way.
  */
-function openObligationAmounts(comp: BaseComponent, row: Lookup) {
+async function openObligationAmounts(comp: BaseComponent, row: Lookup) {
   const obligationUid = row?.['id'] as string | undefined;
   const setting = (row?.['billHeadersSetting'] as Record<string, unknown>)?.['name'];
+
+  const [{ ContentsViewComponent }, { obligationAmountPanels }] = await Promise.all([
+    import('@shared/components/view-component/contents-view/contents-view.component'),
+    import('@routes/billing/bill-amounts.panels'),
+  ]);
 
   comp.vs?.openModal(
     ContentsViewComponent,
