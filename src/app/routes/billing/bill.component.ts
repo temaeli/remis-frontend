@@ -9,7 +9,7 @@ import { FetchParameter } from '@shared/fetch/fetch.interface';
 
 import { BILL_AMOUNT_OF_BILL, BILL_ITEMS_OF_BILL, FIND_BILL } from './bill.graphql';
 import { gepgFlowPanels } from './bill-gepg.panels';
-import { billAmountPanels, childBillPanels } from './bill-amounts.panels';
+import { childBillPanels } from './bill-amounts.panels';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
 import { gepgActionButtons, reuseControlNumberBtn } from './bill-gepg.actions';
@@ -145,7 +145,6 @@ export class BillComponent extends BaseComponent implements OnInit {
           variables: { billHeaderUid: this.bill?.billHeader?.id },
         },
       },
-      ...billAmountPanels(this, this.bill?.billHeader?.id),
       ...childBillPanels(this, this.bill?.billHeader?.id),
       ...gepgFlowPanels(this.bill?.billHeader?.id, { reuse: [reuseControlNumberBtn(this)] }),
       {

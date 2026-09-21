@@ -38,7 +38,7 @@ const principalFields = `
   name
   description
   principalAmount
-  billHeader { id assignedNumber }
+  gracePeriodBillHeadersSetting { id }
 `;
 
 const penaltyFields = `
@@ -51,17 +51,17 @@ const penaltyFields = `
   principalAmount { id name principalAmount }
 `;
 
-const PRINCIPALS_OF_BILL = gql`
-  query principalAmountsByBillHeader($billHeaderUid: String) {
-    principalAmountsByBillHeader(billHeaderUid: $billHeaderUid) {
+const PRINCIPALS_OF_OBLIGATION = gql`
+  query principalAmountsByGracePeriodBillSetting($obligationUid: String) {
+    principalAmountsByGracePeriodBillSetting(gracePeriodBillHeadersSettingUid: $obligationUid) {
       ${principalFields}
     }
   }
 `;
 
-const PENALTIES_OF_BILL = gql`
-  query penaltyAmountsByBillHeader($billHeaderUid: String) {
-    penaltyAmountsByBillHeader(billHeaderUid: $billHeaderUid) {
+const PENALTIES_OF_OBLIGATION = gql`
+  query penaltyAmountsByGracePeriodBillSetting($obligationUid: String) {
+    penaltyAmountsByGracePeriodBillSetting(gracePeriodBillHeadersSettingUid: $obligationUid) {
       ${penaltyFields}
     }
   }
@@ -128,7 +128,7 @@ const amountField = (key: string, label: string): FieldConfig => ({
   class: 'col-span-full',
 });
 
-function openPrincipalForm(comp: BaseComponent, billHeaderUid?: string, row?: Lookup) {
+function openPrincipalForm(comp: BaseComponent, obligationUid?: string, row?: Lookup) {
   return async () => {
     const close$ = new Subject<void>();
     const formParameter: FormParameters = {
@@ -148,7 +148,7 @@ function openPrincipalForm(comp: BaseComponent, billHeaderUid?: string, row?: Lo
       onSubmit: async (value: any) => {
         await comp.fs.fetch({
           notify: true,
-          variables: { input: { ...value, billHeaderUid } },
+          variables: { input: { ...value, gracePeriodBillHeadersSettingUid: obligationUid } },
           mutation: SAVE_PRINCIPAL,
           successFn: (res) => {
             principalReloaded$.next(res?.data);
@@ -162,7 +162,7 @@ function openPrincipalForm(comp: BaseComponent, billHeaderUid?: string, row?: Lo
   };
 }
 
-function openPenaltyForm(comp: BaseComponent, billHeaderUid?: string, row?: Lookup) {
+function openPenaltyForm(comp: BaseComponent, obligationUid?: string, row?: Lookup) {
   return async () => {
     const close$ = new Subject<void>();
     const formParameter: FormParameters = {
@@ -187,7 +187,7 @@ function openPenaltyForm(comp: BaseComponent, billHeaderUid?: string, row?: Look
           optionsVariables: {
             labelKey: 'name',
             valueKey: 'id',
-            fetchParameter: { query: PRINCIPALS_OF_BILL, variables: { billHeaderUid } },
+            fetchParameter: { query: PRINCIPALS_OF_OBLIGATION, variables: { obligationUid } },
           },
           validations: [VALIDATOR_REQUIRED],
           class: 'col-span-full',
@@ -268,9 +268,20 @@ const removeBtn = (
 });
 
 /** The principal owed on this bill, and the penalties charged on it. */
-export const billAmountPanels = (
+/**
+ * The principal owed under one renewal obligation, and the penalties on it.
+ *
+ * Keyed on a `grace_periods_bill_headers_settings` row — the person, the
+ * setting and the fee — not on a bill. A principal outlives any one bill:
+ * the same obligation is billed again next year.
+ *
+ * Not mounted anywhere yet. It hung off the bill's own screen while
+ * `principal_amounts` keyed on `bill_headers`, and there is no path from a bill
+ * to an obligation now. It needs a home on whatever screen knows one.
+ */
+export const obligationAmountPanels = (
   comp: BaseComponent,
-  billHeaderUid?: string,
+  obligationUid?: string,
 ): ContentParameter[] => [
   {
     type: 'table',
@@ -284,7 +295,7 @@ export const billAmountPanels = (
         icon: 'add',
         label: 'Add Principal',
         class: 'btn-add-primary',
-        click: openPrincipalForm(comp, billHeaderUid),
+        click: openPrincipalForm(comp, obligationUid),
         permissions: ['ROLE_CREATE_PRINCIPAL_AMOUNT', 'ROLE_UPDATE_PRINCIPAL_AMOUNT'],
       } as ActionButton,
     ],
@@ -292,13 +303,13 @@ export const billAmountPanels = (
       {
         icon: 'edit',
         label: 'Edit',
-        click: (row: Lookup) => openPrincipalForm(comp, billHeaderUid, row)(),
+        click: (row: Lookup) => openPrincipalForm(comp, obligationUid, row)(),
         permissions: ['ROLE_UPDATE_PRINCIPAL_AMOUNT'],
       },
       removeBtn(comp, 'Principal', DELETE_PRINCIPAL, principalReloaded$, 'PRINCIPAL_AMOUNT'),
     ],
     reloadActions$: [principalReloaded$, penaltyReloaded$],
-    fetchParameter: { query: PRINCIPALS_OF_BILL, variables: { billHeaderUid } },
+    fetchParameter: { query: PRINCIPALS_OF_OBLIGATION, variables: { obligationUid } },
   },
   {
     type: 'table',
@@ -312,7 +323,7 @@ export const billAmountPanels = (
         icon: 'add',
         label: 'Add Penalty',
         class: 'btn-add-primary',
-        click: openPenaltyForm(comp, billHeaderUid),
+        click: openPenaltyForm(comp, obligationUid),
         permissions: ['ROLE_CREATE_PENALTY_AMOUNT', 'ROLE_UPDATE_PENALTY_AMOUNT'],
       } as ActionButton,
     ],
@@ -320,13 +331,13 @@ export const billAmountPanels = (
       {
         icon: 'edit',
         label: 'Edit',
-        click: (row: Lookup) => openPenaltyForm(comp, billHeaderUid, row)(),
+        click: (row: Lookup) => openPenaltyForm(comp, obligationUid, row)(),
         permissions: ['ROLE_UPDATE_PENALTY_AMOUNT'],
       },
       removeBtn(comp, 'Penalty', DELETE_PENALTY, penaltyReloaded$, 'PENALTY_AMOUNT'),
     ],
     reloadActions$: [penaltyReloaded$],
-    fetchParameter: { query: PENALTIES_OF_BILL, variables: { billHeaderUid } },
+    fetchParameter: { query: PENALTIES_OF_OBLIGATION, variables: { obligationUid } },
   },
 ];
 
@@ -364,5 +375,5 @@ const CHILD_BILL_LINKS: EntityLinkConfig[] = [
   },
 ];
 
-export const childBillPanels = (comp: BaseComponent, billHeaderUid?: string): ContentParameter[] =>
-  entityLinkPanels(comp, CHILD_BILL_LINKS, billHeaderUid);
+export const childBillPanels = (comp: BaseComponent, obligationUid?: string): ContentParameter[] =>
+  entityLinkPanels(comp, CHILD_BILL_LINKS, obligationUid);
