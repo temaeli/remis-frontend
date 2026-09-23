@@ -184,9 +184,28 @@ export const REGISTRY_PROJECT = defineLookup({
       parentUid: record?.id,
     }),
     projectAssetsPanel(comp, record?.id),
-    lookupChildPanel(comp, () => PROJECT_PERSON, PROJECT_PEOPLE_BY_PROJECT, {
-      projectUid: record?.id,
-    }),
+    lookupChildPanel(
+      comp,
+      () => PROJECT_PERSON,
+      PROJECT_PEOPLE_BY_PROJECT,
+      { projectUid: record?.id },
+      {
+        presetModel: { projectUid: record?.id },
+        // The person is the point of the row; the code and the description say
+        // far less here than they do on a lookup of their own.
+        keyColumns: [
+          'index',
+          { field: 'person', header: 'Person', valueFn: (row: any) => personName(row?.person) },
+          {
+            field: 'subcategory',
+            header: 'Capacity',
+            valueFn: (row: any) => row?.subcategory?.name,
+          },
+          'name',
+          'actions',
+        ],
+      },
+    ),
     projectPrioritiesPanel(comp, record?.id),
     ...entityLinkPanels(comp, PROJECT_STREET_LINK, record?.id),
     ...entityLinkPanels(comp, PROJECT_SP_CODE_LINK, record?.id),
@@ -215,10 +234,22 @@ const ALL_BIO_DATA = gql`
   query allBioData {
     allBioData {
       id
-      name
+      firstName
+      secondName
+      thirdName
     }
   }
 `;
+
+/**
+ * First, middle and last, skipping whichever are absent.
+ *
+ * `bio_data` carries no `name` or `assigned_number` of its own, unlike every
+ * other table these screens read, so the shallow reference fields cannot be
+ * used on it — asking for them is a validation error, not an empty column.
+ */
+const personName = (person: any): string =>
+  [person?.firstName, person?.secondName, person?.thirdName].filter(Boolean).join(' ').trim();
 
 /**
  * Which service provider codes a project collects under. Its own two-column
@@ -265,17 +296,32 @@ export const PROJECT_PERSON = defineLookup({
     ${lookupRefGqlFields}
   }
   person {
-    ${lookupRefGqlFields}
+    id
+    uid: id
+    firstName
+    secondName
+    thirdName
   }
 `,
   extraFields: [
     parentSelect('projectUid', 'Project', REGISTRY_PROJECT.gql.all),
-    parentSelect('personUid', 'Person', ALL_BIO_DATA),
+    {
+      key: 'personUid',
+      label: 'Person',
+      type: FieldType.select,
+      optionsVariables: {
+        valueKey: 'id',
+        fetchParameter: { query: ALL_BIO_DATA },
+        mapFunction: (option: any) => ({ ...option, label: personName(option), value: option.id }),
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
     parentSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
   ],
   extraColumns: [
     { field: 'project', valueFn: (row) => row?.project?.name },
-    { field: 'person', header: 'Person', valueFn: (row) => row?.person?.name },
+    { field: 'person', header: 'Person', valueFn: (row) => personName(row?.person) },
     { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
   ],
   toModel: (data) => ({
@@ -289,6 +335,15 @@ export const PROJECT_PEOPLE_BY_PROJECT = gql`
   query projectPeopleByProject($projectUid: String) {
     projectPeopleByProject(projectUid: $projectUid) {
       ${lookupChildGqlFields}
+      person {
+        id
+        firstName
+        secondName
+        thirdName
+      }
+      subcategory {
+        ${lookupRefGqlFields}
+      }
     }
   }
 `;

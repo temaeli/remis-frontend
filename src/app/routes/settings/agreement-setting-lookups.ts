@@ -72,9 +72,13 @@ export const SUB_SUBCLAUSE = defineLookup({
   subtitle: 'The deepest level of the clause hierarchy',
   icon: 'notes',
   extraContents: (comp, record) => [
-    lookupChildPanel(comp, () => SUB_SUBCLAUSE_VALUE, SUB_SUBCLAUSE_VALUES_BY_SUB_SUBCLAUSE, {
-      subSubclauseUid: record?.id,
-    }),
+    lookupChildPanel(
+      comp,
+      () => SUB_SUBCLAUSE_VALUE,
+      SUB_SUBCLAUSE_VALUES_BY_SUB_SUBCLAUSE,
+      { subSubclauseUid: record?.id },
+      { presetModel: { subSubclauseUid: record?.id } },
+    ),
   ],
 });
 
@@ -106,9 +110,13 @@ export const SUB_CLAUSE = defineLookup({
       ],
       record?.id,
     ).concat(
-      lookupChildPanel(comp, () => SUB_CLAUSE_VALUE, SUB_CLAUSE_VALUES_BY_SUB_CLAUSE, {
-        subClauseUid: record?.id,
-      }),
+      lookupChildPanel(
+        comp,
+        () => SUB_CLAUSE_VALUE,
+        SUB_CLAUSE_VALUES_BY_SUB_CLAUSE,
+        { subClauseUid: record?.id },
+        { presetModel: { subClauseUid: record?.id } },
+      ),
     ),
 });
 
@@ -140,9 +148,13 @@ export const CLAUSE = defineLookup({
       ],
       record?.id,
     ).concat(
-      lookupChildPanel(comp, () => CLAUSE_VALUE, CLAUSE_VALUES_BY_CLAUSE, {
-        clauseUid: record?.id,
-      }),
+      lookupChildPanel(
+        comp,
+        () => CLAUSE_VALUE,
+        CLAUSE_VALUES_BY_CLAUSE,
+        { clauseUid: record?.id },
+        { presetModel: { clauseUid: record?.id } },
+      ),
     ),
 });
 
@@ -174,9 +186,13 @@ export const SECTION = defineLookup({
       ],
       record?.id,
     ).concat(
-      lookupChildPanel(comp, () => SECTION_VALUE, SECTION_VALUES_BY_SECTION, {
-        sectionUid: record?.id,
-      }),
+      lookupChildPanel(
+        comp,
+        () => SECTION_VALUE,
+        SECTION_VALUES_BY_SECTION,
+        { sectionUid: record?.id },
+        { presetModel: { sectionUid: record?.id } },
+      ),
     ),
 });
 

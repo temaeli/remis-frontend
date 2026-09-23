@@ -100,6 +100,49 @@ export const toLookupInput = (lookup: LookupModule, value: Record<string, unknow
   return id ? { ...rest, uid: id } : rest;
 };
 
+/**
+ * Opens a lookup's own form, on a record or on nothing.
+ *
+ * Shared by the row's edit button and by a child panel's Add, which seeds the
+ * model with the parent it is being added under.
+ */
+export function openLookupForm(
+  comp: BaseComponent,
+  lookup: LookupModule,
+  model: Record<string, unknown>,
+): void {
+  const formParameter: FormParameters = {
+    model,
+    title: lookup.label,
+    fields: lookupFields(lookup),
+    closeAction$: lookup.changed$,
+    formSteppers: lookup.formSteppers,
+    stepperOrientation: lookup.stepperOrientation,
+    stepperAppearance: lookup.stepperAppearance,
+
+    onSubmit: async (value: any) => {
+      await comp.fs.fetch({
+        notify: true,
+        variables: { input: toLookupInput(lookup, value) },
+        mutation: lookup.gql.save,
+        successFn: (res) => lookup.changed$.next(res?.data),
+      });
+    },
+  };
+
+  // maxWidth is passed explicitly because MatDialog caps every dialog at
+  // 80vw by default, which would silently shrink any modalWidth above it.
+  comp.vs?.openModal(
+    FormComponent,
+    formParameter,
+    lookup.modalWidth ?? '60%',
+    lookup.modalMaxHeight,
+    {
+      maxWidth: lookup.modalMaxWidth,
+    },
+  );
+}
+
 export function lookupUpsertBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
   return {
     click: (data?: Lookup) => {
@@ -252,20 +295,42 @@ export const lookupChildColumns: GridKeyColumn[] = [
  * generic code/name/description says too little — a workflow's steps read by
  * their order and the status each confers, not by their descriptions. Pass the
  * matching fields in the query too: a column selects from what was fetched.
+ *
+ * `presetModel` puts an Add button on the panel, opening the child's own form
+ * with the parent already chosen — without it the panel can only list and edit
+ * what is there, and a record has to be added from the child's own screen.
  */
 export const lookupChildPanel = (
   comp: BaseComponent,
   child: () => LookupModule,
   query: unknown,
   variables: Record<string, unknown>,
-  options: { keyColumns?: GridKeyColumn[] } = {},
+  options: { keyColumns?: GridKeyColumn[]; presetModel?: Record<string, unknown> } = {},
 ): ContentParameter => ({
   type: 'table',
   name: child().pluralLabel,
   label: child().pluralLabel,
   icon: child().icon,
   keyColumns: options.keyColumns ?? lookupChildColumns,
+  headerButtons: options.presetModel
+    ? [lookupChildAddBtn(comp, child(), options.presetModel)]
+    : undefined,
   actionButtons: lookupTableBtns(comp, child()),
   reloadActions$: [child().changed$],
   fetchParameter: { query, variables },
 });
+
+/** Add, with the parent the panel hangs off already filled in. */
+function lookupChildAddBtn(
+  comp: BaseComponent,
+  lookup: LookupModule,
+  presetModel: Record<string, unknown>,
+): ActionButton {
+  return {
+    icon: 'add',
+    label: `Add ${lookup.label}`,
+    class: 'btn-add-primary',
+    click: () => openLookupForm(comp, lookup, { ...presetModel }),
+    permissions: lookup.upsertPermissions,
+  };
+}
