@@ -1,4 +1,15 @@
-import { defineLookup, entityLinkPanels, LookupModule } from '@shared/lookup';
+import { gql } from '@apollo/client/core';
+
+import {
+  defineLookup,
+  entityLinkPanels,
+  lookupChildGqlFields,
+  lookupChildPanel,
+  lookupRefGqlFields,
+  LookupModule,
+} from '@shared/lookup';
+import { FieldType } from '@shared/components/generic-form/field.interface';
+import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 
 /**
  * The agreement text catalogues — `modules.setting.agreement` on the backend, and
@@ -15,6 +26,26 @@ import { defineLookup, entityLinkPanels, LookupModule } from '@shared/lookup';
  * and be reused across agreements. That makes each of them a panel on the parent's
  * detail page rather than a select on its form.
  */
+
+/**
+ * A select over the level a wording belongs to.
+ *
+ * The wording tables key on a parent column rather than a join table — unlike
+ * the levels themselves, which are joined to each other — so this is a field on
+ * the form rather than a panel on the parent.
+ */
+const parentSelect = (key: string, label: string, query: unknown) => ({
+  key,
+  label,
+  type: FieldType.select,
+  optionsVariables: {
+    labelKey: 'name',
+    valueKey: 'id',
+    fetchParameter: { query },
+  },
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
 
 /**
  * A named section of agreement text. Distinct from {@link SECTION}, which heads
@@ -69,6 +100,10 @@ export const SUB_CLAUSE = defineLookup({
         },
       ],
       record?.id,
+    ).concat(
+      lookupChildPanel(comp, () => SUB_CLAUSE_VALUE, SUB_CLAUSE_VALUES_BY_SUB_CLAUSE, {
+        subClauseUid: record?.id,
+      }),
     ),
 });
 
@@ -99,6 +134,10 @@ export const CLAUSE = defineLookup({
         },
       ],
       record?.id,
+    ).concat(
+      lookupChildPanel(comp, () => CLAUSE_VALUE, CLAUSE_VALUES_BY_CLAUSE, {
+        clauseUid: record?.id,
+      }),
     ),
 });
 
@@ -129,8 +168,106 @@ export const SECTION = defineLookup({
         },
       ],
       record?.id,
+    ).concat(
+      lookupChildPanel(comp, () => SECTION_VALUE, SECTION_VALUES_BY_SECTION, {
+        sectionUid: record?.id,
+      }),
     ),
 });
+
+/**
+ * The wording each level is given when it is used.
+ *
+ * A level is the heading; a value is what is said under it. One level may carry
+ * any number of them, which is why each is a table of its own rather than a
+ * column: the same clause is reused across agreements and each use may word it
+ * differently.
+ *
+ * Read from the level's own page as well as from a screen of their own, since
+ * that is where someone reading a clause expects to find its wording.
+ */
+export const SECTION_VALUE = defineLookup({
+  slug: 'section-values',
+  entity: 'SectionValue',
+  entityPlural: 'SectionValues',
+  permission: 'SECTION_VALUE',
+  label: 'Section Wording',
+  pluralLabel: 'Section Wordings',
+  subtitle: 'What is said under a section',
+  icon: 'folder',
+  extraGqlFields: `
+  section {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('sectionUid', 'Section', SECTION.gql.all)],
+  extraColumns: [{ field: 'section', valueFn: (row) => row?.section?.name }],
+  toModel: (data) => ({ sectionUid: data?.section?.id }),
+});
+
+export const CLAUSE_VALUE = defineLookup({
+  slug: 'clause-values',
+  entity: 'ClauseValue',
+  entityPlural: 'ClauseValues',
+  permission: 'CLAUSE_VALUE',
+  label: 'Clause Wording',
+  pluralLabel: 'Clause Wordings',
+  subtitle: 'What is said under a clause',
+  icon: 'notes',
+  extraGqlFields: `
+  clause {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('clauseUid', 'Clause', CLAUSE.gql.all)],
+  extraColumns: [{ field: 'clause', valueFn: (row) => row?.clause?.name }],
+  toModel: (data) => ({ clauseUid: data?.clause?.id }),
+});
+
+export const SUB_CLAUSE_VALUE = defineLookup({
+  slug: 'sub-clause-values',
+  entity: 'SubClauseValue',
+  entityPlural: 'SubClauseValues',
+  permission: 'SUB_CLAUSE_VALUE',
+  label: 'Sub-clause Wording',
+  pluralLabel: 'Sub-clause Wordings',
+  subtitle: 'What is said under a sub-clause',
+  icon: 'subject',
+  extraGqlFields: `
+  subClause {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subClauseUid', 'Sub-clause', SUB_CLAUSE.gql.all)],
+  extraColumns: [
+    { field: 'subClause', header: 'Sub-clause', valueFn: (row) => row?.subClause?.name },
+  ],
+  toModel: (data) => ({ subClauseUid: data?.subClause?.id }),
+});
+
+export const SECTION_VALUES_BY_SECTION = gql`
+  query sectionValuesBySection($sectionUid: String) {
+    sectionValuesBySection(sectionUid: $sectionUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const CLAUSE_VALUES_BY_CLAUSE = gql`
+  query clauseValuesByClause($clauseUid: String) {
+    clauseValuesByClause(clauseUid: $clauseUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const SUB_CLAUSE_VALUES_BY_SUB_CLAUSE = gql`
+  query subClauseValuesBySubClause($subClauseUid: String) {
+    subClauseValuesBySubClause(subClauseUid: $subClauseUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
 
 /**
  * Ordered as the hierarchy reads rather than alphabetically, so the menu leads
@@ -138,8 +275,11 @@ export const SECTION = defineLookup({
  */
 export const AGREEMENT_SETTING_LOOKUPS: LookupModule[] = [
   SECTION,
+  SECTION_VALUE,
   CLAUSE,
+  CLAUSE_VALUE,
   SUB_CLAUSE,
+  SUB_CLAUSE_VALUE,
   SUB_SUBCLAUSE,
   AGREEMENT_SECTION,
 ];
