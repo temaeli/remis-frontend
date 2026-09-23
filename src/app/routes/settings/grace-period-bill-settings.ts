@@ -83,10 +83,23 @@ const LINKS_OF_SETTING = gql`
   query settingLinks($uid: String) {
     penaltiesOfGracePeriodBillHeadersSetting(gracePeriodBillHeadersSettingUid: $uid) {
       uid
+      penalty {
+        id
+        name
+      }
     }
     percentagesOfGracePeriodBillHeadersSetting(gracePeriodBillHeadersSettingUid: $uid) {
       uid
       percentage {
+        id
+        name
+        taxesType
+        amount
+      }
+    }
+    flatAmountsOfGracePeriodBillHeadersSetting(gracePeriodBillHeadersSettingUid: $uid) {
+      uid
+      flatAmount {
         id
         name
         taxesType
@@ -134,6 +147,16 @@ const ALL_PERCENTAGES = gql`
     }
   }
 `;
+const ALL_FLAT_AMOUNTS = gql`
+  query allFlatAmounts {
+    allFlatAmounts {
+      id
+      name
+      taxesType
+      amount
+    }
+  }
+`;
 const ALL_FINANCIAL_YEARS = gql`query allFinancialYears { allFinancialYears { ${named} } }`;
 
 const select = (key: string, label: string, query: unknown): FieldConfig => ({
@@ -150,9 +173,9 @@ const select = (key: string, label: string, query: unknown): FieldConfig => ({
 });
 
 /**
- * Both are lists: a setting charges any number of penalties and applies any
- * number of percentages, each through its own table. Sending a list replaces
- * what is linked.
+ * All three are lists: a setting charges any number of penalties and applies any
+ * number of percentages and flat amounts, each through its own table. Sending a
+ * list replaces what is linked.
  */
 const linkField = (
   key: string,
@@ -179,6 +202,12 @@ const settingFormFields = (): FieldConfig[] => [
   // Named with the direction and the figure: two percentages called "Late" tell
   // the reader nothing, and the direction is what decides which way money moves.
   linkField('percentageUids', 'Percentages', ALL_PERCENTAGES, (option: any) => ({
+    ...option,
+    label: `${option.name} (${option.taxesType === 'DECREASE' ? '−' : '+'}${option.amount})`,
+    value: option.id,
+  })),
+  // The same, as a fixed sum rather than a rate.
+  linkField('flatAmountUids', 'Flat Amounts', ALL_FLAT_AMOUNTS, (option: any) => ({
     ...option,
     label: `${option.name} (${option.taxesType === 'DECREASE' ? '−' : '+'}${option.amount})`,
     value: option.id,
@@ -250,6 +279,9 @@ function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Loo
             ),
             percentageUids: (links?.percentagesOfGracePeriodBillHeadersSetting ?? []).map(
               (link: any) => link?.percentage?.id,
+            ),
+            flatAmountUids: (links?.flatAmountsOfGracePeriodBillHeadersSetting ?? []).map(
+              (link: any) => link?.flatAmount?.id,
             ),
           }
         : {},

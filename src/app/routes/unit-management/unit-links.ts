@@ -522,6 +522,15 @@ const ALL_VISIT = gql`
   }
 `;
 
+const ALL_SP_CODE = gql`
+  query allSpCodes {
+    allSpCodes {
+      id
+      name
+    }
+  }
+`;
+
 /** Panels for a unit's own page: everything it is linked to. */
 const UNIT_LINKS: EntityLinkConfig[] = [
   {
@@ -818,6 +827,18 @@ const UNIT_LINKS: EntityLinkConfig[] = [
     icon: 'label',
     permission: 'UNIT_GFS_CODE',
     optionsQuery: ALL_GFS_CODE,
+  },
+  {
+    entity: 'UnitSpCode',
+    byOwnerQuery: 'unitSpCodesByUnit',
+    ownerArg: 'unitUid',
+    targetArg: 'spCodeUid',
+    field: 'spCode',
+    label: 'Service Provider Code',
+    pluralLabel: 'Service Provider Codes',
+    icon: 'label',
+    permission: 'UNIT_SP_CODE',
+    optionsQuery: ALL_SP_CODE,
   },
   {
     entity: 'UnitGrade',
@@ -1463,6 +1484,32 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       pluralLabel: 'Units',
       icon: 'domain',
       permission: 'UNIT_GFS_CODE',
+      optionsQuery: ALL_UNIT,
+    },
+  ],
+  SpCode: [
+    {
+      entity: 'ProjectSpCode',
+      byOwnerQuery: 'projectSpCodesBySpCode',
+      ownerArg: 'spCodeUid',
+      targetArg: 'projectUid',
+      field: 'project',
+      label: 'Project',
+      pluralLabel: 'Projects',
+      icon: 'suitcase',
+      permission: 'PROJECT_SP_CODE',
+      optionsQuery: ALL_REGISTRY_PROJECT,
+    },
+    {
+      entity: 'UnitSpCode',
+      byOwnerQuery: 'unitSpCodesBySpCode',
+      ownerArg: 'spCodeUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'UNIT_SP_CODE',
       optionsQuery: ALL_UNIT,
     },
   ],

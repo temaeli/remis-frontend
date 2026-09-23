@@ -1173,6 +1173,9 @@ export const SP_CODE = defineLookup({
   pluralLabel: 'Service Provider Codes',
   subtitle: 'GePG service provider codes',
   icon: 'numbers',
+  // What collects under this code — read from this side too, where someone
+  // looking at the code expects it.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'SpCode', record?.id),
 });
 
 export const SP_GRP_CODE = defineLookup({
@@ -1605,6 +1608,9 @@ export const SUBCATEGORY = defineLookup({
     lookupChildPanel(comp, () => PERCENTAGE, PERCENTAGES_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
     }),
+    lookupChildPanel(comp, () => FLAT_AMOUNT, FLAT_AMOUNTS_BY_SUBCATEGORY, {
+      subcategoryUid: record?.id,
+    }),
   ],
 });
 
@@ -1779,6 +1785,61 @@ export const PERCENTAGE = defineLookup({
       label: 'Amount',
       type: FieldType.decimal,
       decimals: 4,
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    {
+      field: 'taxesType',
+      header: 'Direction',
+      valueFn: (row) => (row?.taxesType === 'DECREASE' ? 'Decrease' : 'Increase'),
+    },
+    { field: 'amount', header: 'Amount' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+/**
+ * The same as a percentage, but a fixed sum rather than a rate: a flat fee added
+ * to what a subcategory is charged, or a flat relief taken off it. Five decimal
+ * places, where a percentage has four.
+ */
+export const FLAT_AMOUNT = defineLookup({
+  slug: 'flat-amounts',
+  entity: 'FlatAmount',
+  entityPlural: 'FlatAmounts',
+  permission: 'FLAT_AMOUNT',
+  label: 'Flat Amount',
+  pluralLabel: 'Flat Amounts',
+  subtitle: 'Fixed sums that raise or lower what a subcategory is charged',
+  icon: 'money',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  taxesType
+  amount
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'taxesType',
+      label: 'Direction',
+      hint: 'Increase adds to what is owed, decrease takes away',
+      type: FieldType.select,
+      options: [
+        { value: 'INCREASE', label: 'Increase' },
+        { value: 'DECREASE', label: 'Decrease' },
+      ],
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'amount',
+      label: 'Amount',
+      type: FieldType.decimal,
+      decimals: 5,
       min: 0,
       validations: [VALIDATOR_REQUIRED],
     },
@@ -2425,6 +2486,14 @@ export const PERCENTAGES_BY_SUBCATEGORY = gql`
   }
 `;
 
+export const FLAT_AMOUNTS_BY_SUBCATEGORY = gql`
+  query flatAmountsBySubcategory($subcategoryUid: String) {
+    flatAmountsBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const GRACE_PERIODS_BY_SUBCATEGORY = gql`
   query gracePeriodsBySubcategory($subcategoryUid: String) {
     gracePeriodsBySubcategory(subcategoryUid: $subcategoryUid) {
@@ -2535,6 +2604,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   RENEW,
   GRACE_PERIOD,
   PERCENTAGE,
+  FLAT_AMOUNT,
 ];
 
 /** In hierarchy order, so the menu reads country-downwards. */

@@ -183,9 +183,113 @@ export const REGISTRY_PROJECT = defineLookup({
       parentUid: record?.id,
     }),
     projectAssetsPanel(comp, record?.id),
+    lookupChildPanel(comp, () => PROJECT_PERSON, PROJECT_PEOPLE_BY_PROJECT, {
+      projectUid: record?.id,
+    }),
     ...entityLinkPanels(comp, PROJECT_STREET_LINK, record?.id),
+    ...entityLinkPanels(comp, PROJECT_SP_CODE_LINK, record?.id),
   ],
 });
+
+const ALL_SP_CODES = gql`
+  query allSpCodes {
+    allSpCodes {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_SUBCATEGORIES = gql`
+  query allSubcategories {
+    allSubcategories {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_BIO_DATA = gql`
+  query allBioData {
+    allBioData {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * Which service provider codes a project collects under. Its own two-column
+ * join table with a link/unlink pair, unique on the pair, so it is a panel on
+ * the project rather than a column.
+ */
+const PROJECT_SP_CODE_LINK: EntityLinkConfig[] = [
+  {
+    entity: 'ProjectSpCode',
+    byOwnerQuery: 'projectSpCodesByProject',
+    ownerArg: 'projectUid',
+    targetArg: 'spCodeUid',
+    field: 'spCode',
+    label: 'Service Provider Code',
+    pluralLabel: 'Service Provider Codes',
+    icon: 'label',
+    permission: 'PROJECT_SP_CODE',
+    optionsQuery: ALL_SP_CODES,
+  },
+];
+
+/**
+ * Who a project belongs to.
+ *
+ * Not a link panel: `projects_bio_data` carries the whole audit block and a
+ * code, name and description of its own, so a person's part in a project is a
+ * record to be described rather than a line drawn between two ids. The
+ * subcategory says in what capacity.
+ */
+export const PROJECT_PERSON = defineLookup({
+  slug: 'project-people',
+  entity: 'ProjectPerson',
+  entityPlural: 'ProjectPeople',
+  permission: 'PROJECT_PERSON',
+  label: 'Project Person',
+  pluralLabel: 'Project People',
+  subtitle: 'Who a project belongs to',
+  icon: 'user',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  project {
+    ${lookupRefGqlFields}
+  }
+  person {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    parentSelect('projectUid', 'Project', REGISTRY_PROJECT.gql.all),
+    parentSelect('personUid', 'Person', ALL_BIO_DATA),
+    parentSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
+  ],
+  extraColumns: [
+    { field: 'project', valueFn: (row) => row?.project?.name },
+    { field: 'person', header: 'Person', valueFn: (row) => row?.person?.name },
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+  ],
+  toModel: (data) => ({
+    projectUid: data?.project?.id,
+    personUid: data?.person?.id,
+    subcategoryUid: data?.subcategory?.id,
+  }),
+});
+
+export const PROJECT_PEOPLE_BY_PROJECT = gql`
+  query projectPeopleByProject($projectUid: String) {
+    projectPeopleByProject(projectUid: $projectUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
 
 const ALL_STREETS = gql`
   query allStreets {
@@ -324,15 +428,6 @@ export const PROJECT_CONNECTIONS_BY_PARENT = gql`
 `;
 
 /** The operational screens, which lead the menu. */
-const ALL_SUBCATEGORIES = gql`
-  query allSubcategories {
-    allSubcategories {
-      id
-      name
-    }
-  }
-`;
-
 const ALL_TASKS_FOR_REPORTS = gql`
   query allTasks {
     allTasks {
@@ -427,6 +522,7 @@ export const PROGRESS_REPORT = defineLookup({
 
 export const PROJECT_LOOKUPS: LookupModule[] = [
   REGISTRY_PROJECT,
+  PROJECT_PERSON,
   PROJECT_CONNECTION,
   COST,
   REGISTRY_MASTER_PLAN,
