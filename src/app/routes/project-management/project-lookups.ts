@@ -3,6 +3,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { gql } from '@apollo/client/core';
 
 import { projectAssetsPanel } from './project-asset';
+import { projectPrioritiesPanel } from './priorities';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import {
   defineLookup,
@@ -186,6 +187,7 @@ export const REGISTRY_PROJECT = defineLookup({
     lookupChildPanel(comp, () => PROJECT_PERSON, PROJECT_PEOPLE_BY_PROJECT, {
       projectUid: record?.id,
     }),
+    projectPrioritiesPanel(comp, record?.id),
     ...entityLinkPanels(comp, PROJECT_STREET_LINK, record?.id),
     ...entityLinkPanels(comp, PROJECT_SP_CODE_LINK, record?.id),
   ],

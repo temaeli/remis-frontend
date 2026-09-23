@@ -15,6 +15,7 @@ import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
+import { servicePrioritiesPanel } from '@routes/project-management/priorities';
 
 /**
  * The project delivery configuration — `modules.setting.project` on the backend,
@@ -412,8 +413,12 @@ export const SERVICE_OFFERING = defineLookup({
   pluralLabel: 'Service Offerings',
   subtitle: 'What is offered on a project',
   icon: 'local_offer',
-  // The join read from this side — which units this applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'ServiceOffering', record?.id),
+  // The join read from this side — which units this applies to — and how
+  // urgent it is.
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'ServiceOffering', record?.id),
+    servicePrioritiesPanel(comp, record?.id),
+  ],
 });
 
 //  Assessment: the questions asked of a project and the parameters it scores on.
