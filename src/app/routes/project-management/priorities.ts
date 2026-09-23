@@ -59,10 +59,16 @@ const SERVICE_PRIORITIES = gql`
   }
 `;
 
+/** What comes back on either side: the row itself, inside the response wrapper. */
+const priorityRowGqlFields = `
+  uid
+  priority
+`;
+
 const RECORD_PROJECT_PRIORITY = gql`
   mutation recordProjectPriority($projectUid: String, $priority: Priority) {
     recordProjectPriority(projectUid: $projectUid, priority: $priority) {
-      ${responseGqlFields}
+      ${responseGqlFields(priorityRowGqlFields)}
     }
   }
 `;
@@ -70,7 +76,7 @@ const RECORD_PROJECT_PRIORITY = gql`
 const REMOVE_PROJECT_PRIORITY = gql`
   mutation removeProjectPriority($uid: String) {
     removeProjectPriority(uid: $uid) {
-      ${responseGqlFields}
+      ${responseGqlFields(priorityRowGqlFields)}
     }
   }
 `;
@@ -78,7 +84,7 @@ const REMOVE_PROJECT_PRIORITY = gql`
 const RECORD_SERVICE_PRIORITY = gql`
   mutation recordServicePriority($serviceUid: String, $priority: Priority) {
     recordServicePriority(serviceUid: $serviceUid, priority: $priority) {
-      ${responseGqlFields}
+      ${responseGqlFields(priorityRowGqlFields)}
     }
   }
 `;
@@ -86,7 +92,7 @@ const RECORD_SERVICE_PRIORITY = gql`
 const REMOVE_SERVICE_PRIORITY = gql`
   mutation removeServicePriority($uid: String) {
     removeServicePriority(uid: $uid) {
-      ${responseGqlFields}
+      ${responseGqlFields(priorityRowGqlFields)}
     }
   }
 `;

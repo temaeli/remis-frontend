@@ -59,7 +59,7 @@ const READINGS_BY_CHILD = gql`
 const LINK_READING = gql`
   mutation linkReading($parentUid: String, $childUid: String) {
     linkReading(parentUid: $parentUid, childUid: $childUid) {
-      ${responseGqlFields}
+      ${responseGqlFields(billFields)}
     }
   }
 `;
@@ -67,7 +67,7 @@ const LINK_READING = gql`
 const UNLINK_READING = gql`
   mutation unlinkReading($uid: String) {
     unlinkReading(uid: $uid) {
-      ${responseGqlFields}
+      ${responseGqlFields(billFields)}
     }
   }
 `;
