@@ -71,6 +71,11 @@ export const SUB_SUBCLAUSE = defineLookup({
   pluralLabel: 'Sub-subclauses',
   subtitle: 'The deepest level of the clause hierarchy',
   icon: 'notes',
+  extraContents: (comp, record) => [
+    lookupChildPanel(comp, () => SUB_SUBCLAUSE_VALUE, SUB_SUBCLAUSE_VALUES_BY_SUB_SUBCLAUSE, {
+      subSubclauseUid: record?.id,
+    }),
+  ],
 });
 
 export const SUB_CLAUSE = defineLookup({
@@ -245,6 +250,39 @@ export const SUB_CLAUSE_VALUE = defineLookup({
   toModel: (data) => ({ subClauseUid: data?.subClause?.id }),
 });
 
+export const SUB_SUBCLAUSE_VALUE = defineLookup({
+  slug: 'sub-subclause-values',
+  entity: 'SubSubclauseValue',
+  entityPlural: 'SubSubclauseValues',
+  permission: 'SUB_SUBCLAUSE_VALUE',
+  label: 'Sub-subclause Wording',
+  pluralLabel: 'Sub-subclause Wordings',
+  subtitle: 'What is said under a sub-subclause',
+  icon: 'notes',
+  extraGqlFields: `
+  subSubclause {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subSubclauseUid', 'Sub-subclause', SUB_SUBCLAUSE.gql.all)],
+  extraColumns: [
+    {
+      field: 'subSubclause',
+      header: 'Sub-subclause',
+      valueFn: (row) => row?.subSubclause?.name,
+    },
+  ],
+  toModel: (data) => ({ subSubclauseUid: data?.subSubclause?.id }),
+});
+
+export const SUB_SUBCLAUSE_VALUES_BY_SUB_SUBCLAUSE = gql`
+  query subSubclauseValuesBySubSubclause($subSubclauseUid: String) {
+    subSubclauseValuesBySubSubclause(subSubclauseUid: $subSubclauseUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const SECTION_VALUES_BY_SECTION = gql`
   query sectionValuesBySection($sectionUid: String) {
     sectionValuesBySection(sectionUid: $sectionUid) {
@@ -281,5 +319,6 @@ export const AGREEMENT_SETTING_LOOKUPS: LookupModule[] = [
   SUB_CLAUSE,
   SUB_CLAUSE_VALUE,
   SUB_SUBCLAUSE,
+  SUB_SUBCLAUSE_VALUE,
   AGREEMENT_SECTION,
 ];

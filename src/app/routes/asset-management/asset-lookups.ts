@@ -669,8 +669,17 @@ const allQuantitativeParameterValues = gql`
   }
 `;
 
+const allMasterPlans = gql`
+  query allRegistryMasterPlans {
+    allRegistryMasterPlans {
+      id
+      name
+    }
+  }
+`;
+
 /**
- * What an asset links to. Eight two-column join tables, each with its own
+ * What an asset links to. Nine two-column join tables, each with its own
  * link/unlink pair, so each is a panel on the asset's detail page.
  *
  * Costs, floors, net asset values and projects are deliberately not all here.
@@ -684,6 +693,18 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
   entityLinkPanels(
     comp,
     [
+      {
+        entity: 'AssetMasterPlan',
+        byOwnerQuery: 'assetMasterPlansByAsset',
+        ownerArg: 'assetUid',
+        targetArg: 'masterPlanUid',
+        field: 'masterPlan',
+        label: 'Master Plan',
+        pluralLabel: 'Master Plans',
+        icon: 'map',
+        permission: 'ASSET_MASTER_PLAN',
+        optionsQuery: allMasterPlans,
+      },
       {
         entity: 'AssetCost',
         byOwnerQuery: 'assetCostsByAsset',

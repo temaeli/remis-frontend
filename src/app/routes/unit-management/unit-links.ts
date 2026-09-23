@@ -1892,6 +1892,18 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   ],
   RegistryMasterPlan: [
     {
+      entity: 'AssetMasterPlan',
+      byOwnerQuery: 'assetMasterPlansByMasterPlan',
+      ownerArg: 'masterPlanUid',
+      targetArg: 'assetUid',
+      field: 'asset',
+      label: 'Asset',
+      pluralLabel: 'Assets',
+      icon: 'suitcase',
+      permission: 'ASSET_MASTER_PLAN',
+      optionsQuery: ALL_ASSET,
+    },
+    {
       entity: 'UnitMasterPlan',
       byOwnerQuery: 'unitMasterPlansByMasterPlan',
       ownerArg: 'masterPlanUid',
