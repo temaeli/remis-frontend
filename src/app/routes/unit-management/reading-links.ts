@@ -12,38 +12,52 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 
 /**
- * One bill read against another — `readings_readings`.
+ * One reading read against another — `readings_readings`.
  *
- * Both ends are bill headers, not readings: the table is named after readings
- * but its two foreign keys point at `bill_headers`, and the constraints are
- * what the database enforces. A metered bill is read against the one before
- * it, which is what a parent and a child of this shape says.
+ * A meter is read against its last reading: the consumption is the difference
+ * between the two. The chain is a table rather than a `previous_id` column
+ * because the same reading can be the starting point of more than one
+ * calculation.
  *
- * Shown from both ends of the same bill's page: what it was read from, and what
- * has been read against it.
+ * Shown from both ends of the same reading's page: what it was read from, and
+ * what has been read against it.
  */
 
 /** Notifies both panels that a link was made or removed. */
 export const readingLink$ = new Subject<unknown>();
 
-const billFields = `
+/**
+ * A reading has no name of its own worth showing — it is a figure and a date —
+ * so both sides are listed by what was read, when, and on which connection.
+ */
+const readingFields = `
   uid
   parent {
     id
     assignedNumber
-    name
+    readings
+    readAt
+    connection {
+      id
+      name
+    }
   }
   child {
     id
     assignedNumber
-    name
+    readings
+    readAt
+    connection {
+      id
+      name
+    }
   }
 `;
 
 const READINGS_BY_PARENT = gql`
   query readingsByParent($parentUid: String) {
     readingsByParent(parentUid: $parentUid) {
-      ${billFields}
+      ${readingFields}
     }
   }
 `;
@@ -51,7 +65,7 @@ const READINGS_BY_PARENT = gql`
 const READINGS_BY_CHILD = gql`
   query readingsByChild($childUid: String) {
     readingsByChild(childUid: $childUid) {
-      ${billFields}
+      ${readingFields}
     }
   }
 `;
@@ -59,7 +73,7 @@ const READINGS_BY_CHILD = gql`
 const LINK_READING = gql`
   mutation linkReading($parentUid: String, $childUid: String) {
     linkReading(parentUid: $parentUid, childUid: $childUid) {
-      ${responseGqlFields(billFields)}
+      ${responseGqlFields(readingFields)}
     }
   }
 `;
@@ -67,17 +81,22 @@ const LINK_READING = gql`
 const UNLINK_READING = gql`
   mutation unlinkReading($uid: String) {
     unlinkReading(uid: $uid) {
-      ${responseGqlFields(billFields)}
+      ${responseGqlFields(readingFields)}
     }
   }
 `;
 
-const ALL_BILL_HEADERS = gql`
-  query allBillHeaders {
-    allBillHeaders {
+const ALL_READINGS = gql`
+  query allReadings {
+    allReadings {
       id
       assignedNumber
-      name
+      readings
+      readAt
+      connection {
+        id
+        name
+      }
     }
   }
 `;
@@ -86,8 +105,13 @@ const VIEW_PERMISSIONS = ['ROLE_VIEW_ALL_READING_LINK', 'ROLE_VIEW_READING_LINK'
 const WRITE_PERMISSIONS = ['ROLE_CREATE_READING_LINK', 'ROLE_UPDATE_READING_LINK'];
 const DELETE_PERMISSIONS = ['ROLE_DELETE_READING_LINK'];
 
-/** The bill's number, falling back to its name when it has none. */
-const billLabel = (bill: any): string => bill?.assignedNumber ?? bill?.name ?? '';
+/** What was read and when, which is how one reading is told from another. */
+const readingLabel = (reading: any): string => {
+  if (!reading) return '';
+  const on = reading.connection?.name;
+  const at = reading.readAt ? ` on ${String(reading.readAt).slice(0, 16).replace('T', ' ')}` : '';
+  return `${on ? on + ' — ' : ''}${reading.readings ?? ''}${at}`.trim();
+};
 
 /**
  * One button for both ends.
@@ -96,28 +120,31 @@ const billLabel = (bill: any): string => bill?.assignedNumber ?? bill?.name ?? '
  * parent; on "Read Against" it is the other way round. Whichever end the panel
  * is on comes from the page and is never asked for.
  */
-function linkBtn(comp: BaseComponent, fixed: { parentUid?: string; childUid?: string }): ActionButton {
+function linkBtn(
+  comp: BaseComponent,
+  fixed: { parentUid?: string; childUid?: string },
+): ActionButton {
   const choosingChild = !!fixed.parentUid;
   return {
     icon: 'add',
-    label: choosingChild ? 'Read Another Bill Against This' : 'Read This From Another Bill',
+    label: choosingChild ? 'Read Another Against This' : 'Read This From Another',
     class: 'btn-add-primary',
     click: () => {
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
         model: {},
-        title: choosingChild ? 'Read Against This Bill' : 'Read From Another Bill',
+        title: choosingChild ? 'Read Against This Reading' : 'Read From Another Reading',
         fields: [
           {
             key: choosingChild ? 'childUid' : 'parentUid',
-            label: choosingChild ? 'Bill To Read Against This' : 'Bill This Is Read From',
+            label: choosingChild ? 'Reading To Read Against This' : 'Reading This Is Read From',
             type: FieldType.select,
             optionsVariables: {
               valueKey: 'id',
-              fetchParameter: { query: ALL_BILL_HEADERS },
+              fetchParameter: { query: ALL_READINGS },
               mapFunction: (option: any) => ({
                 ...option,
-                label: billLabel(option),
+                label: readingLabel(option),
                 value: option.id,
               }),
             },
@@ -155,9 +182,9 @@ function unlinkBtn(comp: BaseComponent): ActionButton {
       title: 'Remove Reading Link',
       confirmText: 'REMOVE',
       confirmButtonColor: 'red',
-      message: `Stop reading <b class='text-danger'>${billLabel(
+      message: `Stop reading <b class='text-danger'>${readingLabel(
         row?.child,
-      )}</b> against <b class='text-danger'>${billLabel(row?.parent)}</b>?`,
+      )}</b> against <b class='text-danger'>${readingLabel(row?.parent)}</b>?`,
     }),
     click: async (row: any) => {
       await comp.fs.fetch({
@@ -172,43 +199,38 @@ function unlinkBtn(comp: BaseComponent): ActionButton {
   };
 }
 
-/** The bills read against this one, and the bills this one was read from. */
-export const readingLinkPanels = (
-  comp: BaseComponent,
-  billHeaderUid?: string,
-): ContentParameter[] => [
+/** The readings read against this one, and the readings it was read from. */
+export const readingLinkPanels = (comp: BaseComponent, readingUid?: string): ContentParameter[] => [
   {
     type: 'table',
     name: 'Read Against This',
     label: 'Read Against This',
-    icon: 'meter',
+    icon: 'shutter_speed',
     permissions: VIEW_PERMISSIONS,
     keyColumns: [
       'index',
-      { field: 'child', header: 'Bill', valueFn: (row: any) => billLabel(row?.child) },
-      { field: 'childName', header: 'Name', valueFn: (row: any) => row?.child?.name },
+      { field: 'child', header: 'Reading', valueFn: (row: any) => readingLabel(row?.child) },
       'actions',
     ],
-    headerButtons: [linkBtn(comp, { parentUid: billHeaderUid })],
+    headerButtons: [linkBtn(comp, { parentUid: readingUid })],
     actionButtons: [{ ...MORE_BTN, buttons: [unlinkBtn(comp)] }],
     reloadActions$: [readingLink$],
-    fetchParameter: { query: READINGS_BY_PARENT, variables: { parentUid: billHeaderUid } },
+    fetchParameter: { query: READINGS_BY_PARENT, variables: { parentUid: readingUid } },
   },
   {
     type: 'table',
     name: 'Read From',
     label: 'Read From',
-    icon: 'meter',
+    icon: 'shutter_speed',
     permissions: VIEW_PERMISSIONS,
     keyColumns: [
       'index',
-      { field: 'parent', header: 'Bill', valueFn: (row: any) => billLabel(row?.parent) },
-      { field: 'parentName', header: 'Name', valueFn: (row: any) => row?.parent?.name },
+      { field: 'parent', header: 'Reading', valueFn: (row: any) => readingLabel(row?.parent) },
       'actions',
     ],
-    headerButtons: [linkBtn(comp, { childUid: billHeaderUid })],
+    headerButtons: [linkBtn(comp, { childUid: readingUid })],
     actionButtons: [{ ...MORE_BTN, buttons: [unlinkBtn(comp)] }],
     reloadActions$: [readingLink$],
-    fetchParameter: { query: READINGS_BY_CHILD, variables: { childUid: billHeaderUid } },
+    fetchParameter: { query: READINGS_BY_CHILD, variables: { childUid: readingUid } },
   },
 ];

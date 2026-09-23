@@ -11,6 +11,7 @@ import {
 } from '@shared/lookup';
 
 import { recordLinkPanels } from './unit-links';
+import { readingLinkPanels } from './reading-links';
 
 /** Declared here rather than imported: the inventory registry sits in settings. */
 const ALL_INVENTORIES = gql`
@@ -656,6 +657,8 @@ export const READING = defineLookup({
     'readBy.name as Read by',
   ],
   toModel: (data) => ({ connectionUid: data?.connection?.id, readByUid: data?.readBy?.id }),
+  // What this reading was read from, and what has been read against it.
+  extraContents: (comp, record) => readingLinkPanels(comp, record?.id),
 });
 
 export const RESERVATION = defineLookup({
