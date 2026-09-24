@@ -74,6 +74,17 @@ const allProgressReports = gql`
   }
 `;
 
+// The backend publishes `allActivitys`, not `allActivities`. The plural has to
+// match what it named, not what English would.
+const allActivities = gql`
+  query allActivitys {
+    allActivitys {
+      id
+      name
+    }
+  }
+`;
+
 const allDeliverables = gql`
   query allDeliverables {
     allDeliverables {
@@ -193,6 +204,16 @@ const allUnits = gql`
 
 /** In the order they read on the task's page: what it produces, then where it sits. */
 const TASK_LINKS: TaskLinkConfig[] = [
+  // What the task is made of, so it leads.
+  {
+    entity: 'TaskActivity',
+    field: 'activity',
+    label: 'Activity',
+    pluralLabel: 'Activities',
+    icon: 'work',
+    permission: 'TASK_ACTIVITY',
+    optionsQuery: allActivities,
+  },
   {
     entity: 'TaskDeliverable',
     field: 'deliverable',
