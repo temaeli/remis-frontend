@@ -125,6 +125,9 @@ const personField = (label: string): EntityLinkField => ({
 /** How many were moved, on either leg. Both CHECK it is above zero. */
 const quantityField: EntityLinkField = {
   arg: 'quantity',
+  // numeric(50,6) on both tables, which SPQR publishes as BigDecimal. Declared
+  // as String it is refused at variable coercion, before the call is made.
+  gqlType: 'BigDecimal',
   rowField: 'quantity',
   column: 'quantity as Quantity',
   field: {

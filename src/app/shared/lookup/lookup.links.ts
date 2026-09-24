@@ -57,6 +57,18 @@ export interface EntityLinkField {
 
   /** Where it belongs in the grid. Left out, it is not shown as a column. */
   column?: GridKeyColumn;
+
+  /**
+   * The GraphQL type to declare the variable as. Defaults to `String`, which is
+   * what every uid argument is.
+   *
+   * A numeric argument has to say so: the backend takes
+   * `linkInventoryEntry(quantity: BigDecimal)`, and declaring `$quantity:
+   * String` is rejected before the call is made —
+   * `Variable 'quantity' of type 'String' used in position expecting type
+   * 'BigDecimal'`.
+   */
+  gqlType?: string;
 }
 
 export interface EntityLinkConfig {
@@ -123,11 +135,15 @@ const buildGql = (config: EntityLinkConfig) => {
   ${extraSelection(extras)}
 `;
 
-  //  Every argument the backend takes is a String, the owner and the target
-  //  included, so the two lists are built from one set of names.
-  const args = [ownerArg, targetArg, ...extras.map((extra) => extra.arg)];
-  const declared = args.map((arg) => `$${arg}: String`).join(', ');
-  const passed = args.map((arg) => `${arg}: $${arg}`).join(', ');
+  //  The owner and the target are always uids, so always String; an extra
+  //  column says its own type, since the backend types those after the column.
+  const args: { name: string; type: string }[] = [
+    { name: ownerArg, type: 'String' },
+    { name: targetArg, type: 'String' },
+    ...extras.map((extra) => ({ name: extra.arg, type: extra.gqlType ?? 'String' })),
+  ];
+  const declared = args.map((arg) => `$${arg.name}: ${arg.type}`).join(', ');
+  const passed = args.map((arg) => `${arg.name}: $${arg.name}`).join(', ');
 
   return {
     byOwner: gql`
