@@ -665,17 +665,40 @@ export const NET_ASSET_VALUE = defineLookup({
   icon: 'assessment',
   extraGqlFields: `
   netAssetValue
-  ${coordinateGqlFields}
+  maximum
+  minimum
+  valuationDate
   asset {
     ${lookupRefGqlFields}
   }
 `,
   extraFields: [
     numberField('netAssetValue', 'Net Asset Value'),
-    ...coordinateFields(),
+    // These were latitude and longitude until the DBA renamed them. The CHECKs
+    // came across unchanged, so the database still refuses a maximum outside
+    // -90..90 and a minimum outside -180..180 — a coordinate's range, not a
+    // valuation's. The hints say so rather than letting the save fail unexplained.
+    {
+      ...numberField('maximum', 'Maximum'),
+      hint: 'The database still limits this to -90 … 90',
+    },
+    {
+      ...numberField('minimum', 'Minimum'),
+      hint: 'The database still limits this to -180 … 180',
+    },
+    {
+      key: 'valuationDate',
+      label: 'Valuation Date',
+      hint: 'Left empty, this is set to today',
+      type: FieldType.dateTime,
+    },
     refSelect('assetUid', 'Asset', ASSET.gql.all),
   ],
-  extraColumns: ['netAssetValue as Value', 'asset.name as Asset'],
+  extraColumns: [
+    'netAssetValue as Value',
+    'asset.name as Asset',
+    { field: 'valuationDate', header: 'Valued On' },
+  ],
   toModel: (data) => ({ assetUid: data?.asset?.id }),
 });
 
