@@ -167,6 +167,15 @@ const allRisks = gql`
   }
 `;
 
+const allBooleanParameters = gql`
+  query allBooleanParameters {
+    allBooleanParameters {
+      id
+      name
+    }
+  }
+`;
+
 const allQualitativeParameters = gql`
   query allQualitativeParameters {
     allQualitativeParameters {
@@ -311,6 +320,15 @@ const TASK_LINKS: TaskLinkConfig[] = [
     icon: 'layers',
     permission: 'TASK_FLOOR',
     optionsQuery: allFloors,
+  },
+  {
+    entity: 'TaskBooleanParameter',
+    field: 'booleanParameter',
+    label: 'Boolean Parameter',
+    pluralLabel: 'Boolean Parameters',
+    icon: 'rule',
+    permission: 'TASK_BOOLEAN_PARAMETER',
+    optionsQuery: allBooleanParameters,
   },
   {
     entity: 'TaskQualitativeParameter',
