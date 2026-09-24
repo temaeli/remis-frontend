@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
-import { FieldType } from '@shared/components/generic-form/field.interface';
+import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
@@ -34,6 +34,30 @@ const sideGqlFields = `
   assignedNumber
   name
 `;
+
+/**
+ * A column the join table carries beyond the two sides it joins.
+ *
+ * `inventories_entries` is the first of these to hold any: the DBA added a
+ * person, an organisation and two reference numbers, all NOT NULL, so the link
+ * form has to ask for them and the mutation has to pass them.
+ */
+export interface EntityLinkField {
+  /** What the link mutation calls it, e.g. `personUid`. Also the form field's key. */
+  arg: string;
+
+  /** The field to ask for it with. Its `key` is set from `arg`. */
+  field: Omit<FieldConfig, 'key'>;
+
+  /** What the value comes back as on a row — the scalar, or the reference holding it. */
+  rowField?: string;
+
+  /** Selection inside `rowField` where it is a reference rather than a scalar. */
+  rowGqlFields?: string;
+
+  /** Where it belongs in the grid. Left out, it is not shown as a column. */
+  column?: GridKeyColumn;
+}
 
 export interface EntityLinkConfig {
   /** The backend entity name — `link…`, `unlink…`. */
@@ -74,16 +98,36 @@ export interface EntityLinkConfig {
 
   /** Columns for the other side. Defaults to match `targetGqlFields`. */
   columns?: GridKeyColumn[];
+
+  /** Columns the join table carries of its own, asked for alongside the link. */
+  extraFields?: EntityLinkField[];
 }
+
+/** One line of selection per extra column: a scalar, or a reference and what to read off it. */
+const extraSelection = (extras: EntityLinkField[]): string =>
+  extras
+    .filter((extra) => !!extra.rowField)
+    .map((extra) =>
+      extra.rowGqlFields ? `${extra.rowField} {\n${extra.rowGqlFields}\n}` : `${extra.rowField}`,
+    )
+    .join('\n');
 
 const buildGql = (config: EntityLinkConfig) => {
   const { entity, field, byOwnerQuery, ownerArg, targetArg } = config;
+  const extras = config.extraFields ?? [];
   const rowFields = `
   uid
   ${field} {
     ${config.targetGqlFields ?? sideGqlFields}
   }
+  ${extraSelection(extras)}
 `;
+
+  //  Every argument the backend takes is a String, the owner and the target
+  //  included, so the two lists are built from one set of names.
+  const args = [ownerArg, targetArg, ...extras.map((extra) => extra.arg)];
+  const declared = args.map((arg) => `$${arg}: String`).join(', ');
+  const passed = args.map((arg) => `${arg}: $${arg}`).join(', ');
 
   return {
     byOwner: gql`
@@ -94,8 +138,8 @@ const buildGql = (config: EntityLinkConfig) => {
       }
     `,
     link: gql`
-      mutation link${entity}($${ownerArg}: String, $${targetArg}: String) {
-        link${entity}(${ownerArg}: $${ownerArg}, ${targetArg}: $${targetArg}) {
+      mutation link${entity}(${declared}) {
+        link${entity}(${passed}) {
           ${responseGqlFields(rowFields)}
         }
       }
@@ -138,6 +182,9 @@ function linkBtn(
             validations: [VALIDATOR_REQUIRED],
             class: 'col-span-full',
           },
+          ...(config.extraFields ?? []).map(
+            (extra) => ({ ...extra.field, key: extra.arg }) as FieldConfig,
+          ),
         ],
         closeAction$: close$,
 
@@ -190,10 +237,11 @@ function unlinkBtn(
   };
 }
 
-const defaultColumns = (field: string): GridKeyColumn[] => [
+const defaultColumns = (config: EntityLinkConfig): GridKeyColumn[] => [
   'index',
-  `${field}.assignedNumber as Assigned Number`,
-  `${field}.name as Name`,
+  `${config.field}.assignedNumber as Assigned Number`,
+  `${config.field}.name as Name`,
+  ...(config.extraFields ?? []).flatMap((extra) => (extra.column ? [extra.column] : [])),
   'actions',
 ];
 
@@ -211,7 +259,7 @@ export const entityLinkPanels = (
       label: config.pluralLabel,
       icon: config.icon,
       permissions: [`ROLE_VIEW_ALL_${config.permission}`, `ROLE_VIEW_${config.permission}`],
-      keyColumns: config.columns ?? defaultColumns(config.field),
+      keyColumns: config.columns ?? defaultColumns(config),
       headerButtons: [linkBtn(comp, config, documents, ownerUid)],
       actionButtons: [{ ...MORE_BTN, buttons: [unlinkBtn(comp, config, documents)] }],
       reloadActions$: [entityLink$],

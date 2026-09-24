@@ -11,6 +11,7 @@ import {
 } from '@shared/lookup';
 
 import { recordLinkPanels } from './unit-links';
+import { MOVE_IN_FIELDS, MOVE_OUT_FIELDS } from '@routes/settings/inventory-lookups';
 import { readingLinkPanels } from './reading-links';
 
 /** Declared here rather than imported: the inventory registry sits in settings. */
@@ -23,7 +24,13 @@ const ALL_INVENTORIES = gql`
   }
 `;
 
-/** The inventory items handed over at a move-in, or checked at a move-out. */
+/**
+ * The inventory items handed over at a move-in, or checked at a move-out.
+ *
+ * The same rows the inventory's own page shows, read from this end. They carry
+ * the person, the reference and the quantity either way -- every one of those
+ * is NOT NULL, so this side has to ask for them too or the link is refused.
+ */
 const inventoryLink = (entity: 'InventoryEntry' | 'InventoryExit'): EntityLinkConfig => {
   const isEntry = entity === 'InventoryEntry';
   return {
@@ -37,6 +44,7 @@ const inventoryLink = (entity: 'InventoryEntry' | 'InventoryExit'): EntityLinkCo
     icon: 'store',
     permission: isEntry ? 'INVENTORY_ENTRY' : 'INVENTORY_EXIT',
     optionsQuery: ALL_INVENTORIES,
+    extraFields: isEntry ? MOVE_IN_FIELDS : MOVE_OUT_FIELDS,
   };
 };
 

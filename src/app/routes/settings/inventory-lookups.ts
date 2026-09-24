@@ -5,6 +5,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import {
   defineLookup,
   EntityLinkConfig,
+  EntityLinkField,
   entityLinkPanels,
   lookupChildGqlFields,
   lookupChildPanel,
@@ -88,6 +89,130 @@ const ALL_EXITS = gql`
   }
 `;
 
+/**
+ * The people and organisation registers. They have no lookup screen here — they
+ * are party records, not inventory configuration — but a move-in link names
+ * both, so its form has to offer them.
+ */
+const ALL_PEOPLE = gql`
+  query allBioData {
+    allBioData {
+      id
+      name
+    }
+  }
+`;
+
+/** The person who handed the items over, or took them back. */
+const personField = (label: string): EntityLinkField => ({
+  arg: 'personUid',
+  rowField: 'person',
+  rowGqlFields: 'id\nname',
+  column: { field: 'person', header: label, valueFn: (row: any) => row?.person?.name },
+  field: {
+    label,
+    type: FieldType.select,
+    optionsVariables: {
+      labelKey: 'name',
+      valueKey: 'id',
+      fetchParameter: { query: ALL_PEOPLE },
+    },
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+});
+
+/** How many were moved, on either leg. Both CHECK it is above zero. */
+const quantityField: EntityLinkField = {
+  arg: 'quantity',
+  rowField: 'quantity',
+  column: 'quantity as Quantity',
+  field: {
+    label: 'Quantity',
+    hint: 'Greater than zero, up to six decimal places',
+    type: FieldType.decimal,
+    decimals: 6,
+    min: 0,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+};
+
+/** What the move was recorded under. */
+const referenceField = (hint: string): EntityLinkField => ({
+  arg: 'referenceNumber',
+  rowField: 'referenceNumber',
+  column: 'referenceNumber as Reference',
+  field: {
+    label: 'Reference Number',
+    hint,
+    type: FieldType.input,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+});
+
+const ALL_BUSINESS_NAMES = gql`
+  query allBusinessNames {
+    allBusinessNames {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * What a move-in link carries beyond the two sides. All five are NOT NULL in
+ * `inventories_entries`, so the form asks for all five; the reference columns
+ * are `character varying(100)` and the quantity CHECKs above zero, both of
+ * which the backend enforces.
+ */
+export const MOVE_IN_FIELDS: EntityLinkField[] = [
+  personField('Received By'),
+  {
+    arg: 'businessNameUid',
+    rowField: 'businessName',
+    rowGqlFields: 'id\nname',
+    column: 'businessName.name as Organisation',
+    field: {
+      label: 'Organisation',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: ALL_BUSINESS_NAMES },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  },
+  referenceField('What the hand-over was recorded under, up to 100 characters'),
+  {
+    arg: 'agreementReferenceNumber',
+    rowField: 'agreementReferenceNumber',
+    column: 'agreementReferenceNumber as Agreement Reference',
+    field: {
+      label: 'Agreement Reference Number',
+      hint: "The agreement it was made under, by that agreement's own reference",
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  },
+  quantityField,
+];
+
+/**
+ * What a move-out link carries. The DBA gave `inventories_exits` the same
+ * shape, less the organisation: who handed the items back, under what
+ * reference, and how many.
+ */
+export const MOVE_OUT_FIELDS: EntityLinkField[] = [
+  personField('Handed Back By'),
+  referenceField('What the hand-back was recorded under, up to 100 characters'),
+  quantityField,
+];
+
 const INVENTORY_LINKS: EntityLinkConfig[] = [
   {
     entity: 'InventoryAsset',
@@ -102,6 +227,7 @@ const INVENTORY_LINKS: EntityLinkConfig[] = [
     optionsQuery: ALL_ASSETS,
   },
   // Move-ins and move-outs: the items a tenant received, and handed back.
+  // The move-in also records who received them and under what paperwork.
   {
     entity: 'InventoryEntry',
     byOwnerQuery: 'inventoryEntriesByInventory',
@@ -113,6 +239,7 @@ const INVENTORY_LINKS: EntityLinkConfig[] = [
     icon: 'login',
     permission: 'INVENTORY_ENTRY',
     optionsQuery: ALL_ENTRIES,
+    extraFields: MOVE_IN_FIELDS,
   },
   {
     entity: 'InventoryExit',
@@ -125,6 +252,7 @@ const INVENTORY_LINKS: EntityLinkConfig[] = [
     icon: 'logout',
     permission: 'INVENTORY_EXIT',
     optionsQuery: ALL_EXITS,
+    extraFields: MOVE_OUT_FIELDS,
   },
 ];
 
