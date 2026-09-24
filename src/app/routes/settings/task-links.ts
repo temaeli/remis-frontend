@@ -54,6 +54,16 @@ interface TaskLinkConfig {
   permission: string;
   /** The read the link form's select is filled from. */
   optionsQuery: unknown;
+  /**
+   * What to select on the other side, and how to label it, when that side is
+   * not code-and-name shaped.
+   *
+   * `bio_data` is the one that is not: it carries no `name` and no
+   * `assigned_number`, only three name columns, so asking for the usual fields
+   * on it is a validation error rather than an empty column.
+   */
+  sideFields?: string;
+  sideLabel?: (row: any) => string;
 }
 
 const allBusinessNames = gql`
@@ -76,6 +86,24 @@ const allProgressReports = gql`
 
 // The backend publishes `allActivitys`, not `allActivities`. The plural has to
 // match what it named, not what English would.
+/**
+ * First, middle and last, skipping whichever are absent — `bio_data` has no
+ * single name column to read.
+ */
+const personName = (person: any): string =>
+  [person?.firstName, person?.secondName, person?.thirdName].filter(Boolean).join(' ').trim();
+
+const allPeople = gql`
+  query allBioData {
+    allBioData {
+      id
+      firstName
+      secondName
+      thirdName
+    }
+  }
+`;
+
 const allActivities = gql`
   query allActivitys {
     allActivitys {
@@ -204,7 +232,23 @@ const allUnits = gql`
 
 /** In the order they read on the task's page: what it produces, then where it sits. */
 const TASK_LINKS: TaskLinkConfig[] = [
-  // What the task is made of, so it leads.
+  // Who does it and what it is made of, so they lead.
+  {
+    entity: 'TaskAssignment',
+    field: 'person',
+    label: 'Person',
+    pluralLabel: 'Assigned To',
+    icon: 'users',
+    permission: 'TASK_ASSIGNMENT',
+    optionsQuery: allPeople,
+    sideFields: `
+      id
+      firstName
+      secondName
+      thirdName
+    `,
+    sideLabel: personName,
+  },
   {
     entity: 'TaskActivity',
     field: 'activity',
@@ -359,7 +403,7 @@ const buildGql = (config: TaskLinkConfig) => {
   const rowFields = `
   uid
   ${field} {
-    ${sideGqlFields}
+    ${config.sideFields ?? sideGqlFields}
   }
 `;
 
@@ -412,6 +456,15 @@ function linkBtn(
               labelKey: 'name',
               valueKey: 'id',
               fetchParameter: { query: config.optionsQuery },
+              ...(config.sideLabel
+                ? {
+                    mapFunction: (option: any) => ({
+                      ...option,
+                      label: config.sideLabel!(option),
+                      value: option.id,
+                    }),
+                  }
+                : {}),
             },
             validations: [VALIDATOR_REQUIRED],
             class: 'col-span-full',
@@ -468,12 +521,23 @@ function unlinkBtn(
   };
 }
 
-const linkColumns = (field: string): GridKeyColumn[] => [
-  'index',
-  `${field}.assignedNumber as Assigned Number`,
-  `${field}.name as Name`,
-  'actions',
-];
+const linkColumns = (config: TaskLinkConfig): GridKeyColumn[] =>
+  config.sideLabel
+    ? [
+        'index',
+        {
+          field: config.field,
+          header: config.label,
+          valueFn: (row: any) => config.sideLabel!(row?.[config.field]),
+        },
+        'actions',
+      ]
+    : [
+        'index',
+        `${config.field}.assignedNumber as Assigned Number`,
+        `${config.field}.name as Name`,
+        'actions',
+      ];
 
 /** One panel per link, for the task's detail page. */
 export const taskLinkPanels = (comp: BaseComponent, taskUid?: string): ContentParameter[] =>
@@ -485,7 +549,7 @@ export const taskLinkPanels = (comp: BaseComponent, taskUid?: string): ContentPa
       label: config.pluralLabel,
       icon: config.icon,
       permissions: [`ROLE_VIEW_ALL_${config.permission}`, `ROLE_VIEW_${config.permission}`],
-      keyColumns: linkColumns(config.field),
+      keyColumns: linkColumns(config),
       headerButtons: [linkBtn(comp, config, documents, taskUid)],
       actionButtons: [{ ...MORE_BTN, buttons: [unlinkBtn(comp, config, documents)] }],
       reloadActions$: [taskLink$],
