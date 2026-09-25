@@ -724,14 +724,49 @@ const ALL_VALUATIONS_FOR_LINK = gql`
 `;
 
 /**
- * What a net asset value hangs off.
+ * What a net asset value hangs off: the valuations it was arrived at from, and
+ * who approved it.
  *
- * Only the approvals are here. `net_asset_values_valuations` carries a third
- * key — the asset — and the shared panel links two sides, not three, so it
- * cannot ask for it. That link is on the API (`linkNetAssetValueValuation`)
- * and has no screen yet; it needs a form of its own rather than a panel.
+ * `net_asset_values_valuations` carries a third key — the asset the valuation
+ * was of — so the link form asks for the valuation and the asset together and
+ * the grid shows both. It is the same `extraFields` the move-in panel uses for
+ * the columns `inventories_entries` carries of its own.
  */
 const NET_ASSET_VALUE_LINKS: EntityLinkConfig[] = [
+  {
+    entity: 'NetAssetValueValuation',
+    byOwnerQuery: 'netAssetValueValuationsByNetAssetValue',
+    ownerArg: 'netAssetValueUid',
+    targetArg: 'valuationUid',
+    field: 'valuation',
+    label: 'Valuation',
+    pluralLabel: 'Valuations',
+    icon: 'calculate',
+    permission: 'NET_ASSET_VALUE_VALUATION',
+    optionsQuery: ALL_VALUATIONS_FOR_LINK,
+    // assets_id is NOT NULL, so the form asks for it and the mutation passes
+    // it; leaving it out would be refused by the database, not by the form.
+    extraFields: [
+      {
+        arg: 'assetUid',
+        rowField: 'asset',
+        rowGqlFields: 'id\nname',
+        column: 'asset.name as Asset',
+        field: {
+          label: 'Asset',
+          hint: 'What this valuation was of',
+          type: FieldType.select,
+          optionsVariables: {
+            labelKey: 'name',
+            valueKey: 'id',
+            fetchParameter: { query: ASSET.gql.all },
+          },
+          validations: [VALIDATOR_REQUIRED],
+          class: 'col-span-full',
+        },
+      },
+    ],
+  },
   {
     entity: 'NetAssetValueApprove',
     byOwnerQuery: 'netAssetValueApprovesByNetAssetValue',
