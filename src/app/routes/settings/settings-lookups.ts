@@ -13,6 +13,7 @@ import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import {
   defineLookup,
   entityLinkPanels,
+  EntityLinkConfig,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
@@ -2025,6 +2026,110 @@ export const MATERIAL = defineLookup({
 });
 
 /**
+ * A budget: what is set aside, and which version of it this is.
+ *
+ * `flags` says whether it is the one in force, a superseded one, the main one
+ * or an additional one. The amount defaults to zero in the database — a budget
+ * of nothing is a real state, unlike a down payment of nothing — so the form
+ * leaves it optional.
+ */
+export const BUDGET = defineLookup({
+  slug: 'budgets',
+  entity: 'Budget',
+  entityPlural: 'Budgets',
+  permission: 'BUDGET',
+  label: 'Budget',
+  pluralLabel: 'Budgets',
+  subtitle: 'What is set aside, and which version it is',
+  icon: 'wallet',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  amount
+  flag
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'amount',
+      label: 'Amount',
+      hint: 'Zero when left empty',
+      type: FieldType.decimal,
+      decimals: 6,
+      min: 0,
+    },
+    {
+      key: 'flag',
+      label: 'Flag',
+      type: FieldType.select,
+      options: [
+        { value: 'LATEST', label: 'Latest' },
+        { value: 'OLD', label: 'Old' },
+        { value: 'MAIN', label: 'Main' },
+        { value: 'ADDITIONAL', label: 'Additional' },
+      ],
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'amount', header: 'Amount' },
+    { field: 'flag', header: 'Flag' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  // What this budget is broken into, and what draws on it.
+  extraContents: (comp, record) => entityLinkPanels(comp, BUDGET_LINKS, record?.id),
+});
+
+const ALL_BUDGETS = gql`
+  query allBudgets {
+    allBudgets {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_CONTRACT_AMOUNTS_FOR_LINK = gql`
+  query allContractAmounts {
+    allContractAmounts {
+      id
+      name
+    }
+  }
+`;
+
+/** What a budget is broken into, and what is charged to it. */
+const BUDGET_LINKS: EntityLinkConfig[] = [
+  {
+    entity: 'BudgetBudget',
+    byOwnerQuery: 'budgetBudgetsByParent',
+    ownerArg: 'parentUid',
+    targetArg: 'childUid',
+    field: 'child',
+    label: 'Child Budget',
+    pluralLabel: 'Child Budgets',
+    icon: 'wallet',
+    permission: 'BUDGET_BUDGET',
+    optionsQuery: ALL_BUDGETS,
+  },
+  {
+    entity: 'ContractAmountBudget',
+    byOwnerQuery: 'contractAmountBudgetsByBudget',
+    ownerArg: 'budgetUid',
+    targetArg: 'contractAmountUid',
+    field: 'contractAmount',
+    label: 'Contract Amount',
+    pluralLabel: 'Contract Amounts',
+    icon: 'money',
+    permission: 'CONTRACT_AMOUNT_BUDGET',
+    optionsQuery: ALL_CONTRACT_AMOUNTS_FOR_LINK,
+  },
+];
+
+/**
  * One approval on its own: who gave it, when, and the status it conferred.
  *
  * Nothing here says what was approved — the join tables pointing at it do that,
@@ -2844,6 +2949,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   CONTRACT_AMOUNT,
   DOWN_PAYMENT,
   MATERIAL,
+  BUDGET,
   APPROVE,
 ];
 

@@ -74,8 +74,29 @@ const refSelect = (key: string, label: string, lookup: LookupModule): FieldConfi
   validations: [VALIDATOR_REQUIRED],
 });
 
-/** In the order a reader asks: where the money went, on what work, for whom. */
+const ALL_BUDGETS_FOR_EXPENSE = gql`
+  query allBudgets {
+    allBudgets {
+      id
+      name
+    }
+  }
+`;
+
+/** In the order a reader asks: what it came out of, where it went, on what work. */
 const EXPENSE_LINKS: EntityLinkConfig[] = [
+  {
+    entity: 'ExpenseBudget',
+    byOwnerQuery: 'expenseBudgetsByExpense',
+    ownerArg: 'expenseUid',
+    targetArg: 'budgetUid',
+    field: 'budget',
+    label: 'Budget',
+    pluralLabel: 'Budgets',
+    icon: 'wallet',
+    permission: 'EXPENSE_BUDGET',
+    optionsQuery: ALL_BUDGETS_FOR_EXPENSE,
+  },
   {
     entity: 'UnitExpense',
     byOwnerQuery: 'unitExpensesByExpense',

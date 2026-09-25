@@ -167,6 +167,15 @@ const allRisks = gql`
   }
 `;
 
+const allBudgets = gql`
+  query allBudgets {
+    allBudgets {
+      id
+      name
+    }
+  }
+`;
+
 const allContractAmounts = gql`
   query allContractAmounts {
     allContractAmounts {
@@ -275,6 +284,15 @@ const TASK_LINKS: TaskLinkConfig[] = [
       thirdName
     `,
     sideLabel: personName,
+  },
+  {
+    entity: 'TaskBudget',
+    field: 'budget',
+    label: 'Budget',
+    pluralLabel: 'Budgets',
+    icon: 'wallet',
+    permission: 'TASK_BUDGET',
+    optionsQuery: allBudgets,
   },
   {
     entity: 'TaskContractAmount',
