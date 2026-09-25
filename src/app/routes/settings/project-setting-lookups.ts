@@ -6,6 +6,7 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import {
   defineLookup,
   entityLinkPanels,
+  EntityLinkConfig,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
@@ -700,7 +701,50 @@ export const NET_ASSET_VALUE = defineLookup({
     { field: 'valuationDate', header: 'Valued On' },
   ],
   toModel: (data) => ({ assetUid: data?.asset?.id }),
+  // What the figure was arrived at from, and who signed it off.
+  extraContents: (comp, record) => entityLinkPanels(comp, NET_ASSET_VALUE_LINKS, record?.id),
 });
+
+const ALL_APPROVALS = gql`
+  query allApproves {
+    allApproves {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_VALUATIONS_FOR_LINK = gql`
+  query allValuations {
+    allValuations {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * What a net asset value hangs off.
+ *
+ * Only the approvals are here. `net_asset_values_valuations` carries a third
+ * key — the asset — and the shared panel links two sides, not three, so it
+ * cannot ask for it. That link is on the API (`linkNetAssetValueValuation`)
+ * and has no screen yet; it needs a form of its own rather than a panel.
+ */
+const NET_ASSET_VALUE_LINKS: EntityLinkConfig[] = [
+  {
+    entity: 'NetAssetValueApprove',
+    byOwnerQuery: 'netAssetValueApprovesByNetAssetValue',
+    ownerArg: 'netAssetValueUid',
+    targetArg: 'approveUid',
+    field: 'approve',
+    label: 'Approval',
+    pluralLabel: 'Approvals',
+    icon: 'check',
+    permission: 'NET_ASSET_VALUE_APPROVE',
+    optionsQuery: ALL_APPROVALS,
+  },
+];
 
 //  The graphs: what depends on what.
 

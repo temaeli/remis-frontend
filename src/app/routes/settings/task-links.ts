@@ -167,6 +167,24 @@ const allRisks = gql`
   }
 `;
 
+const allContractAmounts = gql`
+  query allContractAmounts {
+    allContractAmounts {
+      id
+      name
+    }
+  }
+`;
+
+const allMaterials = gql`
+  query allMaterials {
+    allMaterials {
+      id
+      name
+    }
+  }
+`;
+
 const allBooleanParameters = gql`
   query allBooleanParameters {
     allBooleanParameters {
@@ -257,6 +275,24 @@ const TASK_LINKS: TaskLinkConfig[] = [
       thirdName
     `,
     sideLabel: personName,
+  },
+  {
+    entity: 'TaskContractAmount',
+    field: 'contractAmount',
+    label: 'Contract Amount',
+    pluralLabel: 'Contract Amounts',
+    icon: 'money',
+    permission: 'TASK_CONTRACT_AMOUNT',
+    optionsQuery: allContractAmounts,
+  },
+  {
+    entity: 'TaskMaterial',
+    field: 'material',
+    label: 'Material',
+    pluralLabel: 'Materials',
+    icon: 'package',
+    permission: 'TASK_MATERIAL',
+    optionsQuery: allMaterials,
   },
   {
     entity: 'TaskActivity',

@@ -70,6 +70,35 @@ const ALL_BIO_DATA_NAMES = gql`
   }
 `;
 
+/** The units a material is counted in. */
+const ALL_UNIT_OF_MEASURES = gql`
+  query allUnitOfMeasures {
+    allUnitOfMeasures {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * What an approval leaves a thing in.
+ *
+ * A static list rather than a read: `statuses` is a database enum, and SPQR
+ * publishes it as a GraphQL enum, so there is no table to fetch it from. These
+ * are the labels an approval plausibly confers; the column itself accepts every
+ * label the type declares.
+ */
+const APPROVAL_STATUS_OPTIONS = [
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'SUBMITTED', label: 'Submitted' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'FORWARDED', label: 'Forwarded' },
+  { value: 'PASSED', label: 'Passed' },
+  { value: 'FAILED', label: 'Failed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+];
+
 /** A required amount, the shape the numeric columns on these tables take. */
 const amountField = (key: string, label: string, hint?: string): FieldConfig => ({
   key,
@@ -1857,6 +1886,213 @@ export const FLAT_AMOUNT = defineLookup({
 });
 
 /**
+ * What a contract is worth, what is paid up front, and what a material costs.
+ *
+ * Three tables of the same shape, each hanging off a subcategory, each holding
+ * a figure in `numeric(50,6)`. The database CHECKs a contract amount at zero or
+ * above and the other two strictly above zero, which is the difference between
+ * a contract that happens to be free and a payment that never happened.
+ */
+export const CONTRACT_AMOUNT = defineLookup({
+  slug: 'contract-amounts',
+  entity: 'ContractAmount',
+  entityPlural: 'ContractAmounts',
+  permission: 'CONTRACT_AMOUNT',
+  label: 'Contract Amount',
+  pluralLabel: 'Contract Amounts',
+  subtitle: 'What a contract is worth',
+  icon: 'money',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  amount
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'amount',
+      label: 'Amount',
+      type: FieldType.decimal,
+      decimals: 6,
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'amount', header: 'Amount' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+export const DOWN_PAYMENT = defineLookup({
+  slug: 'down-payments',
+  entity: 'DownPayment',
+  entityPlural: 'DownPayments',
+  permission: 'DOWN_PAYMENT',
+  label: 'Down Payment',
+  pluralLabel: 'Down Payments',
+  subtitle: 'What is paid up front',
+  icon: 'money',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  amount
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'amount',
+      label: 'Amount',
+      hint: 'Greater than zero',
+      type: FieldType.decimal,
+      decimals: 6,
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'amount', header: 'Amount' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+export const MATERIAL = defineLookup({
+  slug: 'materials',
+  entity: 'Material',
+  entityPlural: 'Materials',
+  permission: 'MATERIAL',
+  label: 'Material',
+  pluralLabel: 'Materials',
+  subtitle: 'What a material costs, and how much there is',
+  icon: 'package',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  price
+  quantity
+  unitOfMeasure {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'price',
+      label: 'Price',
+      hint: 'Greater than zero',
+      type: FieldType.decimal,
+      decimals: 6,
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'quantity',
+      label: 'Quantity',
+      hint: 'Greater than zero',
+      type: FieldType.decimal,
+      decimals: 6,
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'unitOfMeasureUid',
+      label: 'Unit of Measure',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: ALL_UNIT_OF_MEASURES },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'price', header: 'Price' },
+    { field: 'quantity', header: 'Quantity' },
+    { field: 'unitOfMeasure', header: 'Unit', valueFn: (row) => row?.unitOfMeasure?.name },
+  ],
+  toModel: (data) => ({
+    subcategoryUid: data?.subcategory?.id,
+    unitOfMeasureUid: data?.unitOfMeasure?.id,
+  }),
+});
+
+/**
+ * One approval on its own: who gave it, when, and the status it conferred.
+ *
+ * Nothing here says what was approved — the join tables pointing at it do that,
+ * so the same decision can be attached wherever it applies.
+ */
+export const APPROVE = defineLookup({
+  slug: 'approvals',
+  entity: 'Approve',
+  entityPlural: 'Approves',
+  permission: 'APPROVE',
+  label: 'Approval',
+  pluralLabel: 'Approvals',
+  subtitle: 'Who approved something, when, and to what status',
+  icon: 'check',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  approvedAt
+  approvedBy {
+    id
+    uid: id
+    name
+  }
+  status
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'approvedByUid',
+      label: 'Approved By',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: ALL_BIO_DATA_NAMES },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'approvedAt',
+      label: 'Approved At',
+      hint: 'Left empty, this is set to now',
+      type: FieldType.dateTime,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      type: FieldType.select,
+      options: APPROVAL_STATUS_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'approvedBy', header: 'Approved By', valueFn: (row) => row?.approvedBy?.name },
+    { field: 'approvedAt', header: 'Approved At' },
+    { field: 'status', header: 'Status' },
+  ],
+  toModel: (data) => ({
+    subcategoryUid: data?.subcategory?.id,
+    approvedByUid: data?.approvedBy?.id,
+  }),
+});
+
+/**
  * The rates a bill item is priced with. Both hold a multiplier rather than a
  * percentage — 0.18, not 18 — because the billing formula multiplies the bill
  * item amount by them directly. The column is numeric(15,2), so a rate finer
@@ -2605,6 +2841,10 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   GRACE_PERIOD,
   PERCENTAGE,
   FLAT_AMOUNT,
+  CONTRACT_AMOUNT,
+  DOWN_PAYMENT,
+  MATERIAL,
+  APPROVE,
 ];
 
 /** In hierarchy order, so the menu reads country-downwards. */
