@@ -41,13 +41,6 @@ const numberField = (key: string, label: string): FieldConfig => ({
 const UNIT_AREA_DECIMALS = 4;
 
 /**
- * How many fractional digits a unit share keeps. The backend computes the
- * expected share to this many places and compares what was sent against it, so
- * the form has to send the same precision it will be judged on.
- */
-const UNIT_SHARE_DECIMALS = 10;
-
-/**
  * A required decimal, keeping `decimals` fractional digits.
  *
  * The input component rounds to two when `decimals` is not given, which is
@@ -60,7 +53,12 @@ const UNIT_SHARE_DECIMALS = 10;
  * share, and the backend rejects it against the share it computed. Ten digits
  * is what that check expects, so ten is what the form keeps.
  */
-const decimalField = (key: string, label: string, hint?: string, decimals?: number): FieldConfig => ({
+const decimalField = (
+  key: string,
+  label: string,
+  hint?: string,
+  decimals?: number,
+): FieldConfig => ({
   key,
   label,
   hint,
@@ -107,7 +105,6 @@ export const UNIT = defineLookup({
   area
   netArea
   grossArea
-  unitShares
   status
   ${coordinateGqlFields}
   floor {
@@ -125,7 +122,6 @@ export const UNIT = defineLookup({
       UNIT_AREA_DECIMALS,
     ),
     decimalField('grossArea', 'Gross Area', 'Not less than the net area', UNIT_AREA_DECIMALS),
-    decimalField('unitShares', 'Unit Shares', 'Share of the common property', UNIT_SHARE_DECIMALS),
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
     {
@@ -155,6 +151,38 @@ export const UNIT = defineLookup({
     ...unitLinkPanels(comp, record?.id),
     ...coreAttachmentPanels(comp, 'unit', record?.id),
   ],
+});
+
+/**
+ * A unit's share of the common property.
+ *
+ * A screen of its own because the share is a table of its own —
+ * `remis_core_schema.unit_shares`, keyed by `units_id`. It is not a column on
+ * the unit, and mapping it as one stopped the backend booting.
+ *
+ * The share is left off the form on purpose. The database accepts exactly one
+ * figure, `unit.net_area` over the floor hierarchy's denominator to four
+ * places, and refuses anything else; the backend fills that figure in when the
+ * field is empty. It is shown as a column so it can be read.
+ */
+export const UNIT_SHARE = defineLookup({
+  slug: 'unit-shares',
+  entity: 'UnitShare',
+  entityPlural: 'UnitShares',
+  permission: 'UNIT_SHARE',
+  label: 'Unit Share',
+  pluralLabel: 'Unit Shares',
+  subtitle: 'What each unit holds of the common property',
+  icon: 'pie_chart',
+  extraGqlFields: `
+  unitShares
+  unit {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [refSelect('unitUid', 'Unit', UNIT.gql.all)],
+  extraColumns: ['unit.name as Unit', 'unitShares as Share'],
+  toModel: (data) => ({ unitUid: data?.unit?.id }),
 });
 
 /*
@@ -363,6 +391,7 @@ export const RESERVATION_MINUTE = defineLookup({
 /** The unit first, then what it is charged and judged against. */
 export const UNIT_SETTING_LOOKUPS: LookupModule[] = [
   UNIT,
+  UNIT_SHARE,
   RENT,
   COMMISSION,
   PENALTY,
