@@ -2,7 +2,13 @@ import { gql } from '@apollo/client/core';
 
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { defineLookup, lookupRefGqlFields, LookupModule } from '@shared/lookup';
+import {
+  defineLookup,
+  lookupChildGqlFields,
+  lookupChildPanel,
+  lookupRefGqlFields,
+  LookupModule,
+} from '@shared/lookup';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
@@ -148,6 +154,19 @@ export const UNIT = defineLookup({
   // link/unlink pair. One panel each, declared in the unit module so this file
   // does not have to know them.
   extraContents: (comp, record) => [
+    // The share of the common property, which is a row in its own table rather
+    // than a field on the unit. Shown here so it can be read where it is asked
+    // about, with Add filling the unit in already.
+    lookupChildPanel(
+      comp,
+      () => UNIT_SHARE,
+      UNIT_SHARES_BY_UNIT,
+      { unitUid: record?.id },
+      {
+        keyColumns: ['index', 'assignedNumber', 'name', 'unitShares as Share', 'actions'],
+        presetModel: { unitUid: record?.id },
+      },
+    ),
     ...unitLinkPanels(comp, record?.id),
     ...coreAttachmentPanels(comp, 'unit', record?.id),
   ],
@@ -184,6 +203,16 @@ export const UNIT_SHARE = defineLookup({
   extraColumns: ['unit.name as Unit', 'unitShares as Share'],
   toModel: (data) => ({ unitUid: data?.unit?.id }),
 });
+
+/** One unit's share, for the panel on the unit's own page. */
+const UNIT_SHARES_BY_UNIT = gql`
+  query unitSharesByUnit($unitUid: String) {
+    unitSharesByUnit(unitUid: $unitUid) {
+      ${lookupChildGqlFields}
+      unitShares
+    }
+  }
+`;
 
 /*
  * What a unit is charged and judged against. Rates and catalogues, not records:
