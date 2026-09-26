@@ -199,7 +199,16 @@ export const UNIT_SHARE = defineLookup({
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [refSelect('unitUid', 'Unit', UNIT.gql.all)],
+  extraFields: [
+    refSelect('unitUid', 'Unit', UNIT.gql.all),
+    {
+      key: 'unitShares',
+      label: 'Unit Shares',
+      hint: 'Leave empty to use the share the floor hierarchy gives: net area over the hierarchy total. Any other figure is refused.',
+      decimals: 6,
+      type: FieldType.decimal,
+    },
+  ],
   extraColumns: ['unit.name as Unit', 'unitShares as Share'],
   toModel: (data) => ({ unitUid: data?.unit?.id }),
 });
