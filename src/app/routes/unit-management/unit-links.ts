@@ -533,6 +533,33 @@ const ALL_SP_CODE = gql`
 
 /** Panels for a unit's own page: everything it is linked to. */
 const UNIT_LINKS: EntityLinkConfig[] = [
+  // The chain first: what this unit leads to, and what leads to it. Both are
+  // one row at most -- units_units12 and units_units13 are UNIQUE on each
+  // column on its own -- so these two grids never hold more than a single line.
+  {
+    entity: 'UnitUnit',
+    byOwnerQuery: 'unitUnitsByParent',
+    ownerArg: 'parentUid',
+    targetArg: 'childUid',
+    field: 'child',
+    label: 'Next Unit',
+    pluralLabel: 'Leads To',
+    icon: 'arrow_forward',
+    permission: 'UNIT_UNIT',
+    optionsQuery: ALL_UNIT,
+  },
+  {
+    entity: 'UnitUnit',
+    byOwnerQuery: 'unitUnitsByChild',
+    ownerArg: 'childUid',
+    targetArg: 'parentUid',
+    field: 'parent',
+    label: 'Previous Unit',
+    pluralLabel: 'Follows',
+    icon: 'arrow_back',
+    permission: 'UNIT_UNIT',
+    optionsQuery: ALL_UNIT,
+  },
   {
     entity: 'SecurityDepositUnit',
     byOwnerQuery: 'securityDepositUnitsByUnit',
