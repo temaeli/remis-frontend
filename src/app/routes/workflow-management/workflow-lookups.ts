@@ -21,6 +21,7 @@ import {
 } from '@shared/lookup';
 import { ATTACHMENT_TYPE_OPTIONS, coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import { BILL_HEADERS_SETTING } from '@routes/settings/settings-lookups';
+import { PROCESS_LINKS } from '@routes/settings/grade-process-links';
 import { WorkflowDiagramComponent } from './workflow-diagram.component';
 
 /**
@@ -1211,6 +1212,9 @@ export const PROCESS = defineLookup({
     lookupChildPanel(comp, () => WORKFLOW_STEP_EXECUTION, WORKFLOW_STEP_EXECUTIONS_BY_PROCESS, {
       processUid: record?.id,
     }),
+    // Who, which units and which tasks the case concerns. The case can not be
+    // deleted while any of these are linked.
+    ...entityLinkPanels(comp, PROCESS_LINKS, record?.id),
     ...coreAttachmentPanels(comp, 'process', record?.id),
   ],
 });

@@ -32,6 +32,11 @@ import { runRenewalsForDayBtn } from './renewal-run';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import {
+  BIO_DATA_PROCESS_LINK,
+  MATERIAL_GRADE_LINK,
+  OBJECTS_ID_GRADE_LINK,
+} from './grade-process-links';
 
 /**
  * Every lookup table in the settings module: the general configuration, the GePG
@@ -387,6 +392,8 @@ export const PERSON = defineLookup({
           permission: 'BIO_DATA_STREET',
           optionsQuery: STREET.gql.all,
         },
+        // The cases this person is the subject of (bio_data_processes).
+        BIO_DATA_PROCESS_LINK,
       ],
       record?.id,
     ),
@@ -2023,6 +2030,38 @@ export const MATERIAL = defineLookup({
     subcategoryUid: data?.subcategory?.id,
     unitOfMeasureUid: data?.unitOfMeasure?.id,
   }),
+  // The grades a material comes in (materials_grades).
+  extraContents: (comp, record) => entityLinkPanels(comp, [MATERIAL_GRADE_LINK], record?.id),
+});
+
+/**
+ * An object, filed under one subcategory — `remis_core_schema.objectsid`, one
+ * word, as the DBA named it. The backend builds its reads from `ObjectsId`, so
+ * `allObjectsIds`, `saveObjectsId` and the rest.
+ *
+ * Code, name and description are each UNIQUE, and soft-deleted rows still hold
+ * theirs.
+ */
+export const OBJECTS_ID = defineLookup({
+  slug: 'objects',
+  entity: 'ObjectsId',
+  entityPlural: 'ObjectsIds',
+  permission: 'OBJECTS_ID',
+  label: 'Object',
+  pluralLabel: 'Objects',
+  subtitle: 'Objects under a subcategory, and the grades each carries',
+  icon: 'category',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  // The grades an object carries (objectsid_grades). Deleting the object is
+  // refused while any are linked.
+  extraContents: (comp, record) => entityLinkPanels(comp, [OBJECTS_ID_GRADE_LINK], record?.id),
 });
 
 /**
@@ -2949,6 +2988,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   CONTRACT_AMOUNT,
   DOWN_PAYMENT,
   MATERIAL,
+  OBJECTS_ID,
   BUDGET,
   APPROVE,
 ];

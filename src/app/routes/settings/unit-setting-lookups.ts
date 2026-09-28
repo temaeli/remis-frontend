@@ -4,6 +4,7 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import {
   defineLookup,
+  entityLinkPanels,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
@@ -12,6 +13,7 @@ import {
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
+import { UNIT_PROCESS_LINK } from './grade-process-links';
 
 /**
  * The unit's own configuration — `modules.setting.unit` on the backend, paired
@@ -168,6 +170,8 @@ export const UNIT = defineLookup({
       },
     ),
     ...unitLinkPanels(comp, record?.id),
+    // The cases this unit is the subject of (units_processes).
+    ...entityLinkPanels(comp, [UNIT_PROCESS_LINK], record?.id),
     ...coreAttachmentPanels(comp, 'unit', record?.id),
   ],
 });

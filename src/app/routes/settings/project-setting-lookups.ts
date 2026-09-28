@@ -14,6 +14,7 @@ import {
 } from '@shared/lookup';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
+import { GRADE_LINKS, TASK_PROCESS_LINK } from './grade-process-links';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 import { servicePrioritiesPanel } from '@routes/project-management/priorities';
@@ -151,6 +152,10 @@ export const TASK = defineLookup({
   // hangs off a join table with its own link/unlink pair. One panel each.
   extraContents: (comp, record) => [
     ...taskLinkPanels(comp, record?.id),
+    // The cases the task is carried out under (tasks_processes). Not in
+    // taskLinkPanels, which derives `taskProcesssByTask` where the backend
+    // named it `taskProcessesByTask`.
+    ...entityLinkPanels(comp, [TASK_PROCESS_LINK], record?.id),
     ...coreAttachmentPanels(comp, 'task', record?.id),
   ],
 });
@@ -344,8 +349,12 @@ export const GRADE = defineLookup({
     numberField('maximum', 'Maximum'),
   ],
   extraColumns: ['weight', 'minimum', 'maximum'],
-  // The join read from this side — which units this applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'Grade', record?.id),
+  // The join reads from this side — which units this applies to, and which
+  // objects and materials carry it.
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'Grade', record?.id),
+    ...entityLinkPanels(comp, GRADE_LINKS, record?.id),
+  ],
 });
 
 export const RISK = defineLookup({
