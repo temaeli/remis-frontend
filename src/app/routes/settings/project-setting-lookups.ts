@@ -15,6 +15,12 @@ import {
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
 import { GRADE_LINKS, TASK_PROCESS_LINK } from './grade-process-links';
+import {
+  MONTH_TYPE_OPTIONS,
+  monthRowFields,
+  monthRowGqlFields,
+  monthRowSteppers,
+} from './calendar-fields';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 import { servicePrioritiesPanel } from '@routes/project-management/priorities';
@@ -319,14 +325,24 @@ export const MONTH = defineLookup({
   permission: 'MONTH',
   label: 'Month',
   pluralLabel: 'Months',
-  subtitle: 'The calendar the reporting periods are counted in',
+  subtitle: 'The calendar, and the dates a bill raised in each month keys off',
   icon: 'date_range',
   extraGqlFields: `
   order
   days
+  ${monthRowGqlFields}
 `,
-  extraFields: [numberField('order', 'Order'), numberField('days', 'Days')],
-  extraColumns: ['order', 'days'],
+  extraFields: [numberField('order', 'Order'), numberField('days', 'Days'), ...monthRowFields()],
+  formSteppers: monthRowSteppers,
+  extraColumns: [
+    'order',
+    'days',
+    {
+      field: 'monthType',
+      header: 'Month Type',
+      valueFn: (row) => MONTH_TYPE_OPTIONS.find((o) => o.value === row?.monthType)?.label ?? '',
+    },
+  ],
 });
 
 export const GRADE = defineLookup({

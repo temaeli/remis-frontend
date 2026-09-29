@@ -33,6 +33,15 @@ import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import {
+  dayField,
+  graceMonthFields,
+  graceMonthGqlFields,
+  graceMonthKeys,
+  graceMonthsToModel,
+  monthField,
+  monthName,
+} from './calendar-fields';
+import {
   BIO_DATA_PROCESS_LINK,
   MATERIAL_GRADE_LINK,
   OBJECTS_ID_GRADE_LINK,
@@ -161,48 +170,6 @@ const parentSelect = (key: string, label: string, parent: () => LookupModule): F
  * both store the number, and "month 9" on a form is a worse way of saying
  * September than September is.
  */
-const MONTH_OPTIONS: Option[] = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-].map((label, index) => ({ value: index + 1, label }));
-
-const monthField = (key: string, label: string): FieldConfig => ({
-  key,
-  label,
-  type: FieldType.select,
-  options: MONTH_OPTIONS,
-  validations: [VALIDATOR_REQUIRED],
-});
-
-/**
- * A day of the month, with no month to measure it against — the tables store the
- * two apart. The ceiling is 31 here and the backend refuses the days the chosen
- * month does not have, which is the only place both numbers are known.
- */
-const dayField = (key: string, label: string): FieldConfig => ({
-  key,
-  label,
-  type: FieldType.input,
-  inputType: 'number',
-  min: 1,
-  max: 31,
-  validations: [VALIDATOR_REQUIRED],
-});
-
-/** The month's name, for a column showing a stored month number. */
-const monthName = (month?: number): string =>
-  MONTH_OPTIONS.find((option) => option.value === month)?.label ?? '';
-
 /**
  * One of `grace_periods`' three steps: how many minutes of grace, and the window
  * of the year it applies in. The column names are the step's name followed by
@@ -1826,12 +1793,14 @@ export const GRACE_PERIOD = defineLookup({
   thirdGracePeriodStartedMonth
   thirdGracePeriodEndedDay
   thirdGracePeriodEndedMonth
+${graceMonthGqlFields}
 `,
   extraFields: [
     parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
     ...graceStepFields('first', 'First'),
     ...graceStepFields('second', 'Second'),
     ...graceStepFields('third', 'Third'),
+    ...graceMonthFields(),
   ],
   // Grouped step by step, which is the only grouping these fifteen have. A field
   // in no step still submits but renders nowhere, so every key appears once.
@@ -1844,6 +1813,8 @@ export const GRACE_PERIOD = defineLookup({
     { name: 'First Step', icon: 'looks_one', keys: graceStepKeys('first') },
     { name: 'Second Step', icon: 'looks_two', keys: graceStepKeys('second') },
     { name: 'Third Step', icon: 'looks_3', keys: graceStepKeys('third') },
+    // The months row each month of the year keys off, February twice.
+    { name: 'Months', icon: 'date_range', keys: graceMonthKeys },
   ],
   extraColumns: [
     { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
@@ -1851,7 +1822,7 @@ export const GRACE_PERIOD = defineLookup({
     { field: 'secondGracePeriodMinutes', header: 'Second (min)' },
     { field: 'thirdGracePeriodMinutes', header: 'Third (min)' },
   ],
-  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id, ...graceMonthsToModel(data) }),
   // What it bills once it has run out. Its own table, with no name and no flags,
   // so it is a panel with a form of its own rather than a lookup screen.
   extraContents: (comp, record) => [gracePeriodBillSettingsPanel(comp, record?.id)],
