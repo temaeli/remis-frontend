@@ -2113,6 +2113,118 @@ export const OBJECTS_ID = defineLookup({
   extraContents: (comp, record) => entityLinkPanels(comp, [OBJECTS_ID_GRADE_LINK], record?.id),
 });
 
+/** A moment on the certificate. All five are timestamps in the table. */
+const certificateMoment = (key: string, label: string, hint?: string): FieldConfig => ({
+  key,
+  label,
+  hint,
+  type: FieldType.dateTime,
+  validations: [VALIDATOR_REQUIRED],
+});
+
+/**
+ * A certificate under a subcategory: who issued it and when, the period it is
+ * valid for, and the days a penalty falls and it is renewed.
+ *
+ * The table checks valid from < valid to < renew day; the backend says so
+ * before the constraint does. Left empty, the issuer is the person saving it
+ * and a new certificate is issued now.
+ *
+ * One certificate can sit under another (certificates_certificates), read from
+ * both ends on the certificate's page.
+ */
+export const CERTIFICATE: LookupModule = defineLookup({
+  slug: 'certificates',
+  entity: 'Certificate',
+  entityPlural: 'Certificates',
+  permission: 'CERTIFICATE',
+  label: 'Certificate',
+  pluralLabel: 'Certificates',
+  subtitle: 'Certificates issued under a subcategory, and when each runs out',
+  icon: 'verified_user',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  issuedAt
+  issuedBy {
+    id
+    name
+  }
+  validFrom
+  validTo
+  penaltyDay
+  renewDay
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'issuedByUid',
+      label: 'Issued By',
+      hint: 'Left empty, you are recorded as the issuer',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: ALL_BIO_DATA_NAMES },
+      },
+    },
+    {
+      key: 'issuedAt',
+      label: 'Issued At',
+      hint: 'Left empty, a new certificate is issued now',
+      type: FieldType.dateTime,
+    },
+    certificateMoment('validFrom', 'Valid From'),
+    certificateMoment('validTo', 'Valid To', 'After valid from'),
+    certificateMoment('penaltyDay', 'Penalty Day'),
+    certificateMoment('renewDay', 'Renew Day', 'After valid to'),
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'validFrom', header: 'Valid From' },
+    { field: 'validTo', header: 'Valid To' },
+    { field: 'renewDay', header: 'Renews' },
+  ],
+  toModel: (data) => ({
+    subcategoryUid: data?.subcategory?.id,
+    issuedByUid: data?.issuedBy?.id,
+  }),
+  // The certificates under this one, and those it sits under. Deleting it is
+  // refused while either list has anything in it.
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'CertificateCertificate',
+          byOwnerQuery: 'certificateCertificatesByParent',
+          ownerArg: 'parentUid',
+          targetArg: 'childUid',
+          field: 'child',
+          label: 'Certificate',
+          pluralLabel: 'Certificates Under This One',
+          icon: 'verified_user',
+          permission: 'CERTIFICATE_CERTIFICATE',
+          optionsQuery: CERTIFICATE.gql.all,
+        },
+        {
+          entity: 'CertificateCertificate',
+          byOwnerQuery: 'certificateCertificatesByChild',
+          ownerArg: 'childUid',
+          targetArg: 'parentUid',
+          field: 'parent',
+          label: 'Certificate',
+          pluralLabel: 'Sits Under',
+          icon: 'verified_user',
+          permission: 'CERTIFICATE_CERTIFICATE',
+          optionsQuery: CERTIFICATE.gql.all,
+        },
+      ],
+      record?.id,
+    ),
+});
+
 /**
  * A budget: what is set aside, and which version of it this is.
  *
@@ -3057,6 +3169,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   DOWN_PAYMENT,
   MATERIAL,
   OBJECTS_ID,
+  CERTIFICATE,
   BUDGET,
   APPROVE,
 ];
