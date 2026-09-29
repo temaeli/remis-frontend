@@ -1648,6 +1648,18 @@ export const SUBCATEGORY = defineLookup({
     lookupChildPanel(comp, () => FLAT_AMOUNT, FLAT_AMOUNTS_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
     }),
+    lookupChildPanel(
+      comp,
+      () => FIRST_WINDOW_BILLING_CYCLE,
+      FIRST_WINDOW_BILLING_CYCLES_BY_SUBCATEGORY,
+      { subcategoryUid: record?.id },
+    ),
+    lookupChildPanel(
+      comp,
+      () => SECOND_WINDOW_BILLING_CYCLE,
+      SECOND_WINDOW_BILLING_CYCLES_BY_SUBCATEGORY,
+      { subcategoryUid: record?.id },
+    ),
   ],
 });
 
@@ -1710,6 +1722,72 @@ export const RENEW = defineLookup({
   // maintained. Shown here because a renewal is what decides when it comes round.
   extraContents: (_comp, record) => [renewBillSettingsPanel(record?.id)],
 });
+
+/**
+ * One of the two tables a renewal-run bill takes its expiry from. A bill's
+ * `expired_date` is the `expiredAt` of the window holding the moment it is
+ * raised: the first-window table for a person's first bill, the second for every
+ * renewal after it.
+ *
+ * Windows in one table may not overlap, for any subcategory, and a deleted
+ * window still holds its dates; the backend says which window is in the way.
+ */
+const billingWindowLookup = (
+  which: 'First' | 'Second',
+  subtitle: string,
+  icon: string,
+): LookupModule =>
+  defineLookup({
+    slug: `${which.toLowerCase()}-window-billing-cycles`,
+    entity: `${which}WindowBillingCycle`,
+    entityPlural: `${which}WindowBillingCycles`,
+    permission: `${which.toUpperCase()}_WINDOW_BILLING_CYCLE`,
+    label: `${which} Billing Window`,
+    pluralLabel: `${which} Billing Windows`,
+    subtitle,
+    icon,
+    extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  startedAt
+  expiredAt
+`,
+    extraFields: [
+      parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+      {
+        key: 'startedAt',
+        label: 'Starts At',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+      {
+        key: 'expiredAt',
+        label: 'Ends At',
+        hint: 'Every bill raised inside this window expires at this moment',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+    ],
+    extraColumns: [
+      { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+      { field: 'startedAt', header: 'Starts' },
+      { field: 'expiredAt', header: 'Bills Expire' },
+    ],
+    toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  });
+
+export const FIRST_WINDOW_BILLING_CYCLE = billingWindowLookup(
+  'First',
+  "When a person's first renewal-run bill expires",
+  'event',
+);
+
+export const SECOND_WINDOW_BILLING_CYCLE = billingWindowLookup(
+  'Second',
+  'When every renewal bill after the first expires',
+  'date_range',
+);
 
 /**
  * How long a subcategory is given before it counts as late, in three steps. Each
@@ -2882,6 +2960,22 @@ export const GRACE_PERIODS_BY_SUBCATEGORY = gql`
   }
 `;
 
+export const FIRST_WINDOW_BILLING_CYCLES_BY_SUBCATEGORY = gql`
+  query firstWindowBillingCyclesBySubcategory($subcategoryUid: String) {
+    firstWindowBillingCyclesBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
+export const SECOND_WINDOW_BILLING_CYCLES_BY_SUBCATEGORY = gql`
+  query secondWindowBillingCyclesBySubcategory($subcategoryUid: String) {
+    secondWindowBillingCyclesBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const EXCHANGE_RATES_BY_CURRENCY = gql`
   query exchangeRatesByCurrency($currencyUid: String) {
     exchangeRatesByCurrency(currencyUid: $currencyUid) {
@@ -2967,6 +3061,9 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   USE_ITEM_REF_ON_PAY,
   FEE,
   BILL_HEADERS_SETTING,
+  // Where a renewal-run bill's expiry comes from: first bill, then renewals.
+  FIRST_WINDOW_BILLING_CYCLE,
+  SECOND_WINDOW_BILLING_CYCLE,
 ];
 
 export const REFERENCE_LOOKUPS: LookupModule[] = [
