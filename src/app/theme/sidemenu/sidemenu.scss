@@ -167,7 +167,10 @@
 
     &.expanded {
       > .submenu {
-        max-height: 1500px;
+        // A cap for the open animation, not a size: anything past it is clipped
+        // with no scrollbar. Settings > Billing alone is ~1650px, so keep this
+        // well above the tallest group.
+        max-height: 5000px;
         visibility: visible;
         padding: 4px 4px;
         padding-bottom: 4px;
