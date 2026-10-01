@@ -353,8 +353,9 @@ const ALL_BILL_HEADERS = gql`
 `;
 
 /**
- * The bills sitting under this one — `bill_headers_bill_headers`, which is what
- * a combined bill is at GePG: a group bill carrying others.
+ * The bills sitting under this one — `bill_headers_bill_headers`. A renewal is
+ * placed under the bill it follows by the renewal run, so a bill with nothing
+ * above it is a first bill. A link can also be made by hand.
  *
  * A plain link panel: the table holds a parent, a child and nothing else. The
  * backend refuses a bill under itself and a child already under another parent,

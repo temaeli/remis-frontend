@@ -1615,6 +1615,9 @@ export const SUBCATEGORY = defineLookup({
     lookupChildPanel(comp, () => FLAT_AMOUNT, FLAT_AMOUNTS_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
     }),
+    lookupChildPanel(comp, () => BILL_DETAILS_TEMPLATE, BILL_DETAILS_TEMPLATES_BY_SUBCATEGORY, {
+      subcategoryUid: record?.id,
+    }),
     lookupChildPanel(
       comp,
       () => FIRST_WINDOW_BILLING_CYCLE,
@@ -2576,7 +2579,7 @@ export const FEE = defineLookup({
     {
       key: 'renewable',
       label: 'Renewable',
-      hint: "Off: billed on a person's first bill only, and left out of renewals",
+      hint: 'Off: billed to a person once, then left out of their renewals',
       type: FieldType.toggle,
       value: true,
       class: 'col-span-full',
@@ -2596,7 +2599,7 @@ export const FEE = defineLookup({
 });
 
 /**
- * The select each of a bill template's twenty-two relations uses.
+ * The select each of a bill template's twenty-three relations uses.
  *
  * Declared here rather than beside `parentSelect` because it takes the lookup
  * itself rather than a thunk: every one of these is declared above this point,
@@ -2623,6 +2626,29 @@ const templatePerson = (key: string, label: string, hint: string): FieldConfig =
   class: 'col-span-full',
 });
 
+/**
+ * What an automatic bill setting belongs to: a named group of them under one
+ * subcategory. Every setting names one.
+ */
+export const BILL_DETAILS_TEMPLATE = defineLookup({
+  slug: 'bill-details-templates',
+  entity: 'BillDetailsTemplate',
+  entityPlural: 'BillDetailsTemplates',
+  permission: 'BILL_DETAILS_TEMPLATE',
+  label: 'Bill Details Template',
+  pluralLabel: 'Bill Details Templates',
+  subtitle: 'What automatic bill settings are grouped under, by subcategory',
+  icon: 'bill',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
 const templateSelect = (key: string, label: string, lookup: LookupModule): FieldConfig => ({
   key,
   label,
@@ -2640,7 +2666,7 @@ const templateSelect = (key: string, label: string, lookup: LookupModule): Field
  * The template a bill is raised from without anyone filling a form — an
  * application fee, say.
  *
- * Configuration, not a bill. The twenty-two relations are the union of what the
+ * Configuration, not a bill. The twenty-three relations are the union of what the
  * three operational tables need: the codes a `bill_header` is raised under, the
  * currency and payer codes of a `bill_detail`, and one `bill_item`'s worth of
  * fee, quantity and rates. Whatever generates the bill reads one row here and
@@ -2679,6 +2705,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
   billHeadersDescription
   billItemsName
   billItemsDescription
+  billDetailsTemplate { ${lookupRefGqlFields} }
   generatedBy { id name }
   approvedBy { id name }
   requestedBy { id name }
@@ -2738,6 +2765,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
+    templateSelect('billDetailsTemplateUid', 'Bill Details Template', BILL_DETAILS_TEMPLATE),
     templateSelect('systemCodeUid', 'System Code', SYSTEM_CODE),
     templateSelect('spGrpCodeUid', 'SP Group Code', SP_GRP_CODE),
     templateSelect('billPayOptionUid', 'Bill Pay Option', BILL_PAY_OPTION),
@@ -2816,13 +2844,21 @@ export const BILL_HEADERS_SETTING = defineLookup({
     },
   ],
   // Grouped by the record each field becomes, which is the only grouping these
-  // thirty have. A field in no step still submits but renders nowhere, so
+  // thirty-one have. A field in no step still submits but renders nowhere, so
   // every key above appears exactly once below.
   formSteppers: [
     {
       name: 'Template',
       icon: 'settings',
-      keys: ['id', 'name', 'assignedNumber', 'description', 'appliedDate', 'expiredDate'],
+      keys: [
+        'id',
+        'name',
+        'assignedNumber',
+        'description',
+        'billDetailsTemplateUid',
+        'appliedDate',
+        'expiredDate',
+      ],
     },
     {
       name: 'Bill Header',
@@ -2884,8 +2920,9 @@ export const BILL_HEADERS_SETTING = defineLookup({
     { field: 'appliedDate', header: 'In Force From' },
     { field: 'expiredDate', header: 'In Force Until' },
   ],
-  /** The record comes back with all twenty-two nested; the form edits their ids. */
+  /** The record comes back with all twenty-six nested; the form edits their ids. */
   toModel: (data) => ({
+    billDetailsTemplateUid: data?.billDetailsTemplate?.id,
     systemCodeUid: data?.systemCode?.id,
     spGrpCodeUid: data?.spGrpCode?.id,
     billPayOptionUid: data?.billPayOption?.id,
@@ -3139,6 +3176,14 @@ export const GRACE_PERIODS_BY_SUBCATEGORY = gql`
   }
 `;
 
+export const BILL_DETAILS_TEMPLATES_BY_SUBCATEGORY = gql`
+  query billDetailsTemplatesBySubcategory($subcategoryUid: String) {
+    billDetailsTemplatesBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const FIRST_WINDOW_BILLING_CYCLES_BY_SUBCATEGORY = gql`
   query firstWindowBillingCyclesBySubcategory($subcategoryUid: String) {
     firstWindowBillingCyclesBySubcategory(subcategoryUid: $subcategoryUid) {
@@ -3239,6 +3284,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   WITHHOLDING_TAX,
   USE_ITEM_REF_ON_PAY,
   FEE,
+  BILL_DETAILS_TEMPLATE,
   BILL_HEADERS_SETTING,
   // Where a renewal-run bill's expiry comes from: first bill, then renewals.
   FIRST_WINDOW_BILLING_CYCLE,
