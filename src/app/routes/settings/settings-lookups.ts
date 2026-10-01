@@ -1651,6 +1651,10 @@ export const RENEW = defineLookup({
   startedAt
   renewsDay
   renewsMonth
+  billHeadersName
+  billHeadersDescription
+  billDetailsName
+  billDetailsDescription
 `,
   extraFields: [
     parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
@@ -1669,6 +1673,43 @@ export const RENEW = defineLookup({
       label: 'Last Renewed On',
       hint: 'Left empty, this is set to today',
       type: FieldType.date,
+    },
+    // Apart from the schedule's own name and description, which identify the
+    // schedule and must be unique. The renewal run writes these onto the bill
+    // and its detail, followed by the moment of the run and the person billed.
+    {
+      key: 'billHeadersName',
+      label: 'Bill Name',
+      hint: 'What a bill raised by this renewal is called. Up to 100 characters',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'billHeadersDescription',
+      label: 'Bill Description',
+      hint: 'The description a bill raised by this renewal carries',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'billDetailsName',
+      label: 'Bill Detail Name',
+      hint: 'What the detail under that bill is called. Up to 100 characters',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'billDetailsDescription',
+      label: 'Bill Detail Description',
+      hint: 'The description the detail under that bill carries',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
     },
   ],
   extraColumns: [
@@ -2496,6 +2537,7 @@ export const FEE = defineLookup({
   icon: 'coins',
   extraGqlFields: `
   amount
+  renewable
   minimumPayment {
     id
     uid: id
@@ -2531,10 +2573,19 @@ export const FEE = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
+    {
+      key: 'renewable',
+      label: 'Renewable',
+      hint: "Off: billed on a person's first bill only, and left out of renewals",
+      type: FieldType.toggle,
+      value: true,
+      class: 'col-span-full',
+    },
   ],
   extraColumns: [
     'amount',
     { field: 'minimumPayment', valueFn: (row) => row?.minimumPayment?.name },
+    { field: 'renewable', header: 'Renewable', valueFn: (row) => (row?.renewable ? 'Yes' : 'No') },
   ],
   toModel: (data) => ({
     minimumPaymentUid: data?.minimumPayment?.id,
@@ -2624,6 +2675,10 @@ export const BILL_HEADERS_SETTING = defineLookup({
   expiredDate
   ttlSeconds
   quantities
+  billHeadersName
+  billHeadersDescription
+  billItemsName
+  billItemsDescription
   generatedBy { id name }
   approvedBy { id name }
   requestedBy { id name }
@@ -2722,9 +2777,46 @@ export const BILL_HEADERS_SETTING = defineLookup({
       'Kept for the record. A raised bill always files its generator as its approver too',
     ),
     templatePerson('requestedByUid', 'Requested By', 'Who the renewal is raised on behalf of'),
+    // Apart from the template's own name and description, which identify the
+    // template and must be unique. The renewal run names each line from the
+    // bill line pair; the bill itself is named from the renewal.
+    {
+      key: 'billHeadersName',
+      label: 'Bill Name',
+      hint: 'For a bill raised from this template alone. A renewal bill is named by its renewal. Up to 100 characters',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'billHeadersDescription',
+      label: 'Bill Description',
+      hint: 'For a bill raised from this template alone. A renewal bill is described by its renewal',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'billItemsName',
+      label: 'Bill Line Name',
+      hint: 'What the line this template puts on a bill is called. Up to 100 characters',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'billItemsDescription',
+      label: 'Bill Line Description',
+      hint: 'The description the line this template puts on a bill carries',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
   ],
   // Grouped by the record each field becomes, which is the only grouping these
-  // twenty-six have. A field in no step still submits but renders nowhere, so
+  // thirty have. A field in no step still submits but renders nowhere, so
   // every key above appears exactly once below.
   formSteppers: [
     {
@@ -2742,6 +2834,8 @@ export const BILL_HEADERS_SETTING = defineLookup({
         'billPaymentPlanUid',
         'financialYearUid',
         'ttlSeconds',
+        'billHeadersName',
+        'billHeadersDescription',
       ],
     },
     {
@@ -2772,6 +2866,8 @@ export const BILL_HEADERS_SETTING = defineLookup({
         'withholdingTaxUid',
         'discountUid',
         'collspUid',
+        'billItemsName',
+        'billItemsDescription',
       ],
     },
     // A renewal has no operator behind it, and bill_details needs all three.

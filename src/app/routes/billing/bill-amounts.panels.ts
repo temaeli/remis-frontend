@@ -359,6 +359,10 @@ const ALL_BILL_HEADERS = gql`
  * A plain link panel: the table holds a parent, a child and nothing else. The
  * backend refuses a bill under itself and a child already under another parent,
  * neither of which the table forbids.
+ *
+ * Beside it, the bills this one carries as a bulk bill —
+ * `bulk_bills_connections`, the same shape in a table of its own. There the
+ * backend refuses a bill under itself and a loop.
  */
 const CHILD_BILL_LINKS: EntityLinkConfig[] = [
   {
@@ -371,6 +375,18 @@ const CHILD_BILL_LINKS: EntityLinkConfig[] = [
     pluralLabel: 'Child Bills',
     icon: 'bill',
     permission: 'BILL_HEADER_CONNECTION',
+    optionsQuery: ALL_BILL_HEADERS,
+  },
+  {
+    entity: 'BulkBillConnection',
+    byOwnerQuery: 'bulkBillConnectionsByParent',
+    ownerArg: 'parentUid',
+    targetArg: 'childUid',
+    field: 'child',
+    label: 'Bulk Bill Member',
+    pluralLabel: 'Bulk Bill Members',
+    icon: 'bill',
+    permission: 'BULK_BILL_CONNECTION',
     optionsQuery: ALL_BILL_HEADERS,
   },
 ];
