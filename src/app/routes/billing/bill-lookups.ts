@@ -13,6 +13,7 @@ import {
   sendReuseToGepgBtn,
 } from './bill-gepg.actions';
 import {
+  BILL_HEADERS_DESCRIPTION,
   BILL_HEADERS_SETTING,
   BILL_PAY_OPTION,
   BILL_PAYMENT_PLAN,
@@ -192,6 +193,24 @@ export const BILL_HEADER = defineLookup({
           icon: 'settings',
           permission: 'BILL_HEADER_BILL_HEADERS_SETTING',
           optionsQuery: BILL_HEADERS_SETTING.gql.all,
+        },
+        /**
+         * Which description this header was named from. The renewal run records
+         * one for every bill it raises, and a bill raised by hand from a
+         * description gets one too. A join, since one description names many
+         * headers.
+         */
+        {
+          entity: 'BillHeaderBillHeadersDescription',
+          byOwnerQuery: 'billHeaderBillHeadersDescriptionsByBillHeader',
+          ownerArg: 'billHeaderUid',
+          targetArg: 'billHeadersDescriptionUid',
+          field: 'billHeadersDescription',
+          label: 'Bill Header Description',
+          pluralLabel: 'Bill Header Descriptions',
+          icon: 'bill',
+          permission: 'BILL_HEADER_BILL_HEADERS_DESCRIPTION',
+          optionsQuery: BILL_HEADERS_DESCRIPTION.gql.all,
         },
         /**
          * The units billed under this header. A join rather than a column, so a

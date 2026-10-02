@@ -32,6 +32,9 @@ export const BILL_OPTION_QUERIES: Record<string, DocumentNode> = {
   currencies: gql`query allCurrencies { allCurrencies { ${named} } }`,
   identityTypes: gql`query allIdentityTypes { allIdentityTypes { ${named} } }`,
   tinDatas: gql`query allTinDatas { allTinDatas { ${named} assignedNumber } }`,
+  // What a header can be started from. Its description is carried too, since
+  // choosing one fills the header's name and description in.
+  billHeadersDescriptions: gql`query allBillHeadersDescriptions { allBillHeadersDescriptions { ${named} description } }`,
   // The payer. bio_data had no list query until this form needed one.
   people: gql`query allBioData { allBioData { ${named} } }`,
 
@@ -46,6 +49,7 @@ export const BILL_OPTION_QUERIES: Record<string, DocumentNode> = {
 export interface NamedOption {
   id: string;
   name: string;
+  description?: string;
   assignedNumber?: string;
   amount?: number;
   vat?: number;

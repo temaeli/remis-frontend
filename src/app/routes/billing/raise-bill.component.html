@@ -11,6 +11,22 @@
         <app-icon icon="bill" /> Bill Header
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <mat-form-field appearance="outline" class="md:col-span-3">
+          <mat-label>Start From Bill Header Description (optional)</mat-label>
+          <mat-select
+            formControlName="billHeadersDescriptionUid"
+            (selectionChange)="useHeaderDescription($event.value)"
+          >
+            <mat-option value="">None</mat-option>
+            @for (o of options().billHeadersDescriptions; track o.id) {
+              <mat-option [value]="o.id">{{ o.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint
+            >Fills in the name and description below, and records where the bill came from. Make
+            both this bill's own before saving: no two bills may share them</mat-hint
+          >
+        </mat-form-field>
         <mat-form-field appearance="outline"
           ><mat-label>Name</mat-label> <input matInput formControlName="name"
         /></mat-form-field>
