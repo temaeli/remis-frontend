@@ -1615,6 +1615,12 @@ export const SUBCATEGORY = defineLookup({
     lookupChildPanel(comp, () => FLAT_AMOUNT, FLAT_AMOUNTS_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
     }),
+    lookupChildPanel(
+      comp,
+      () => BILL_HEADERS_DESCRIPTION,
+      BILL_HEADERS_DESCRIPTIONS_BY_SUBCATEGORY,
+      { subcategoryUid: record?.id },
+    ),
     lookupChildPanel(comp, () => BILL_DETAILS_TEMPLATE, BILL_DETAILS_TEMPLATES_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
     }),
@@ -2627,8 +2633,32 @@ const templatePerson = (key: string, label: string, hint: string): FieldConfig =
 });
 
 /**
+ * What a bill details template is described by: a named record under one
+ * subcategory. Every template names one.
+ */
+export const BILL_HEADERS_DESCRIPTION = defineLookup({
+  slug: 'bill-headers-descriptions',
+  entity: 'BillHeadersDescription',
+  entityPlural: 'BillHeadersDescriptions',
+  permission: 'BILL_HEADERS_DESCRIPTION',
+  label: 'Bill Header Description',
+  pluralLabel: 'Bill Header Descriptions',
+  subtitle: 'What bill details templates are described by, by subcategory',
+  icon: 'bill',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+/**
  * What an automatic bill setting belongs to: a named group of them under one
- * subcategory. Every setting names one.
+ * subcategory. Every setting names one, and each names the bill header
+ * description it is described by.
  */
 export const BILL_DETAILS_TEMPLATE = defineLookup({
   slug: 'bill-details-templates',
@@ -2643,10 +2673,30 @@ export const BILL_DETAILS_TEMPLATE = defineLookup({
   subcategory {
     ${lookupRefGqlFields}
   }
+  billHeadersDescription {
+    ${lookupRefGqlFields}
+  }
 `,
-  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
-  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
-  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    parentSelect(
+      'billHeadersDescriptionUid',
+      'Bill Header Description',
+      () => BILL_HEADERS_DESCRIPTION,
+    ),
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    {
+      field: 'billHeadersDescription',
+      header: 'Bill Header Description',
+      valueFn: (row) => row?.billHeadersDescription?.name,
+    },
+  ],
+  toModel: (data) => ({
+    subcategoryUid: data?.subcategory?.id,
+    billHeadersDescriptionUid: data?.billHeadersDescription?.id,
+  }),
 });
 
 const templateSelect = (key: string, label: string, lookup: LookupModule): FieldConfig => ({
@@ -3176,6 +3226,14 @@ export const GRACE_PERIODS_BY_SUBCATEGORY = gql`
   }
 `;
 
+export const BILL_HEADERS_DESCRIPTIONS_BY_SUBCATEGORY = gql`
+  query billHeadersDescriptionsBySubcategory($subcategoryUid: String) {
+    billHeadersDescriptionsBySubcategory(subcategoryUid: $subcategoryUid) {
+      ${lookupChildGqlFields}
+    }
+  }
+`;
+
 export const BILL_DETAILS_TEMPLATES_BY_SUBCATEGORY = gql`
   query billDetailsTemplatesBySubcategory($subcategoryUid: String) {
     billDetailsTemplatesBySubcategory(subcategoryUid: $subcategoryUid) {
@@ -3284,6 +3342,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   WITHHOLDING_TAX,
   USE_ITEM_REF_ON_PAY,
   FEE,
+  BILL_HEADERS_DESCRIPTION,
   BILL_DETAILS_TEMPLATE,
   BILL_HEADERS_SETTING,
   // Where a renewal-run bill's expiry comes from: first bill, then renewals.

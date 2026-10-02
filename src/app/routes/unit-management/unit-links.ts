@@ -1457,6 +1457,19 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       permission: 'UNIT_ENTRY',
       optionsQuery: ALL_UNIT,
     },
+    // Which exit this entry ended with (entries_exits).
+    {
+      entity: 'EntryExit',
+      byOwnerQuery: 'entryExitsByEntry',
+      ownerArg: 'entryUid',
+      targetArg: 'exitUid',
+      field: 'exit',
+      label: 'Exit',
+      pluralLabel: 'Exits',
+      icon: 'logout',
+      permission: 'ENTRY_EXIT',
+      optionsQuery: ALL_EXIT,
+    },
   ],
   Eviction: [
     {
@@ -1484,6 +1497,19 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_EXIT',
       optionsQuery: ALL_UNIT,
+    },
+    // Which entry this exit ended (entries_exits).
+    {
+      entity: 'EntryExit',
+      byOwnerQuery: 'entryExitsByExit',
+      ownerArg: 'exitUid',
+      targetArg: 'entryUid',
+      field: 'entry',
+      label: 'Entry',
+      pluralLabel: 'Entries',
+      icon: 'login',
+      permission: 'ENTRY_EXIT',
+      optionsQuery: ALL_ENTRY,
     },
   ],
   Fee: [
