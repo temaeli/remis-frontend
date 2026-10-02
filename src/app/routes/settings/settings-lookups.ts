@@ -1684,12 +1684,13 @@ export const RENEW = defineLookup({
       type: FieldType.date,
     },
     // Apart from the schedule's own name and description, which identify the
-    // schedule and must be unique. The renewal run writes these onto the bill
-    // and its detail, followed by the moment of the run and the person billed.
+    // schedule and must be unique. Stored only: the renewal run names a bill
+    // from its bill header description and its detail from its bill details
+    // template.
     {
       key: 'billHeadersName',
       label: 'Bill Name',
-      hint: 'What a bill raised by this renewal is called. Up to 100 characters',
+      hint: 'Kept on record. A renewal bill is named from its bill header description. Up to 100 characters',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
@@ -1697,7 +1698,7 @@ export const RENEW = defineLookup({
     {
       key: 'billHeadersDescription',
       label: 'Bill Description',
-      hint: 'The description a bill raised by this renewal carries',
+      hint: 'Kept on record. A renewal bill is described by its bill header description',
       type: FieldType.textarea,
       rows: 3,
       validations: [VALIDATOR_REQUIRED],
@@ -1706,7 +1707,7 @@ export const RENEW = defineLookup({
     {
       key: 'billDetailsName',
       label: 'Bill Detail Name',
-      hint: 'What the detail under that bill is called. Up to 100 characters',
+      hint: 'Kept on record. A renewal bill detail is named from its bill details template. Up to 100 characters',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
@@ -1714,7 +1715,7 @@ export const RENEW = defineLookup({
     {
       key: 'billDetailsDescription',
       label: 'Bill Detail Description',
-      hint: 'The description the detail under that bill carries',
+      hint: 'Kept on record. A renewal bill detail is described by its bill details template',
       type: FieldType.textarea,
       rows: 3,
       validations: [VALIDATOR_REQUIRED],
@@ -2643,7 +2644,7 @@ export const BILL_HEADERS_DESCRIPTION = defineLookup({
   permission: 'BILL_HEADERS_DESCRIPTION',
   label: 'Bill Header Description',
   pluralLabel: 'Bill Header Descriptions',
-  subtitle: 'What bill details templates are described by, by subcategory',
+  subtitle: 'What a renewal bill is named and described by',
   icon: 'bill',
   extraGqlFields: `
   subcategory {
@@ -2667,7 +2668,7 @@ export const BILL_DETAILS_TEMPLATE = defineLookup({
   permission: 'BILL_DETAILS_TEMPLATE',
   label: 'Bill Details Template',
   pluralLabel: 'Bill Details Templates',
-  subtitle: 'What automatic bill settings are grouped under, by subcategory',
+  subtitle: 'What a renewal bill detail is named and described by',
   icon: 'bill',
   extraGqlFields: `
   subcategory {
@@ -2856,12 +2857,13 @@ export const BILL_HEADERS_SETTING = defineLookup({
     ),
     templatePerson('requestedByUid', 'Requested By', 'Who the renewal is raised on behalf of'),
     // Apart from the template's own name and description, which identify the
-    // template and must be unique. The renewal run names each line from the
-    // bill line pair; the bill itself is named from the renewal.
+    // template and must be unique. Stored only: the renewal run names a line
+    // from the setting's own name, and the bill from the setting's bill details
+    // template and that template's bill header description.
     {
       key: 'billHeadersName',
       label: 'Bill Name',
-      hint: 'For a bill raised from this template alone. A renewal bill is named by its renewal. Up to 100 characters',
+      hint: 'Kept on record. A renewal bill is named from its bill header description. Up to 100 characters',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
@@ -2869,7 +2871,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
     {
       key: 'billHeadersDescription',
       label: 'Bill Description',
-      hint: 'For a bill raised from this template alone. A renewal bill is described by its renewal',
+      hint: 'Kept on record. A renewal bill is described by its bill header description',
       type: FieldType.textarea,
       rows: 3,
       validations: [VALIDATOR_REQUIRED],
@@ -2878,7 +2880,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
     {
       key: 'billItemsName',
       label: 'Bill Line Name',
-      hint: 'What the line this template puts on a bill is called. Up to 100 characters',
+      hint: "Kept on record. A renewal bill line takes this setting's own name. Up to 100 characters",
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
@@ -2886,7 +2888,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
     {
       key: 'billItemsDescription',
       label: 'Bill Line Description',
-      hint: 'The description the line this template puts on a bill carries',
+      hint: "Kept on record. A renewal bill line takes this setting's own description",
       type: FieldType.textarea,
       rows: 3,
       validations: [VALIDATOR_REQUIRED],
