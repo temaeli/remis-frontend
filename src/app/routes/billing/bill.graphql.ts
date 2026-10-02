@@ -119,6 +119,34 @@ export const BILL_ITEM_CONNECTIONS_OF_BILL = gql`
   }
 `;
 
+/** Every bill line, for choosing the one a line follows: its reference and name. */
+export const ALL_BILL_ITEMS_TO_FOLLOW = gql`
+  query allBillItems {
+    allBillItems {
+      id
+      assignedNumber
+      name
+    }
+  }
+`;
+
+/** Places one bill line under the line it follows. */
+export const LINK_BILL_ITEM_CONNECTION = gql`
+  mutation linkBillItemConnection($parentUid: String, $childUid: String) {
+    linkBillItemConnection(parentUid: $parentUid, childUid: $childUid) {
+      ${responseGqlFields('uid')}
+    }
+  }
+`;
+
+export const UNLINK_BILL_ITEM_CONNECTION = gql`
+  mutation unlinkBillItemConnection($uid: String) {
+    unlinkBillItemConnection(uid: $uid) {
+      ${responseGqlFields('uid')}
+    }
+  }
+`;
+
 /** What one bill comes to. Absent until the bill has at least one line. */
 export const BILL_AMOUNT_OF_BILL = gql`
   query billAmountOfBill($billDetailUid: String) {

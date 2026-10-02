@@ -7,11 +7,20 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
+import { Subject } from 'rxjs';
+import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
+import { FormComponent } from '@shared/components/generic-form/form.component';
+import { FormParameters } from '@shared/components/generic-form/form.interface';
+import { FieldType } from '@shared/components/generic-form/field.interface';
+import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import {
+  ALL_BILL_ITEMS_TO_FOLLOW,
   BILL_AMOUNT_OF_BILL,
   BILL_ITEM_CONNECTIONS_OF_BILL,
   BILL_ITEMS_OF_BILL,
   FIND_BILL,
+  LINK_BILL_ITEM_CONNECTION,
+  UNLINK_BILL_ITEM_CONNECTION,
 } from './bill.graphql';
 import { gepgFlowPanels } from './bill-gepg.panels';
 import { childBillPanels } from './bill-amounts.panels';
@@ -88,11 +97,86 @@ export class BillComponent extends BaseComponent implements OnInit {
   ];
 
   /**
-   * The earlier line each of this bill's lines follows, by the line's id. Read
-   * once beside the lines rather than per row. A line missing from it is a
-   * first line.
+   * The earlier line each of this bill's lines follows, by the line's id: the
+   * link's own uid, to unlink it by, and the earlier line's reference. Read once
+   * beside the lines rather than per row. A line missing from it is a first
+   * line.
    */
-  private follows = new Map<string, string>();
+  private follows = new Map<string, { uid: string; reference: string }>();
+
+  /**
+   * Places a line under the line it follows — `bill_items_bill_items`. The
+   * renewal run does this by itself; this is for a line it could not place, or
+   * a bill raised by hand. Offered only on a line that follows nothing yet: the
+   * backend refuses a second parent, and a line under itself or a loop.
+   */
+  private setFollowsBtn: ActionButton = {
+    icon: 'add',
+    label: 'Set Follows',
+    showFunction: (row: any) => !this.follows.has(row?.id),
+    click: (row: any) => {
+      const close$ = new Subject<void>();
+      const formParameter: FormParameters = {
+        model: {},
+        title: `Line ${row?.assignedNumber ?? ''} follows`,
+        fields: [
+          {
+            key: 'parentUid',
+            label: 'Earlier Bill Line',
+            hint: 'The line this one follows, by its reference',
+            type: FieldType.select,
+            optionsVariables: {
+              labelKey: 'assignedNumber',
+              valueKey: 'id',
+              fetchParameter: { query: ALL_BILL_ITEMS_TO_FOLLOW },
+            },
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+        ],
+        closeAction$: close$,
+        onSubmit: async (value: any) => {
+          await this.fs.fetch({
+            notify: true,
+            variables: { parentUid: value?.parentUid, childUid: row?.id },
+            mutation: LINK_BILL_ITEM_CONNECTION,
+            successFn: () => {
+              close$.next();
+              this.reload();
+            },
+          });
+        },
+      };
+      this.vs?.openModal(FormComponent, formParameter, '40%');
+    },
+    permissions: ['ROLE_CREATE_BILL_ITEM_CONNECTION', 'ROLE_UPDATE_BILL_ITEM_CONNECTION'],
+  };
+
+  /** Removes the link outright, which makes the line a first line again. */
+  private removeFollowsBtn: ActionButton = {
+    icon: 'block',
+    label: 'Remove Follows',
+    class: 'text-danger',
+    showFunction: (row: any) => this.follows.has(row?.id),
+    confirmDataMapper: (row: any) => ({
+      title: 'UNLINK',
+      confirmText: 'UNLINK',
+      confirmButtonColor: 'red',
+      message: `Stop this line following <b class='text-danger'>${
+        this.follows.get(row?.id)?.reference ?? ''
+      }</b> ?`,
+    }),
+    click: async (row: any) => {
+      await this.fs.fetch({
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: this.follows.get(row?.id)?.uid },
+        mutation: UNLINK_BILL_ITEM_CONNECTION,
+        successFn: () => this.reload(),
+      });
+    },
+    permissions: ['ROLE_DELETE_BILL_ITEM_CONNECTION'],
+  };
 
   itemColumns: GridKeyColumn[] = [
     'index',
@@ -100,7 +184,7 @@ export class BillComponent extends BaseComponent implements OnInit {
     {
       field: 'follows',
       header: 'Follows',
-      valueFn: (row) => this.follows.get(row?.id) ?? 'First line',
+      valueFn: (row) => this.follows.get(row?.id)?.reference ?? 'First line',
     },
     'fee.name as Fee',
     'quantities as Qty',
@@ -110,6 +194,7 @@ export class BillComponent extends BaseComponent implements OnInit {
     'withholdingTax.withholdingTax as WHT Rate',
     { field: 'finalBillItemAmt', header: 'Final Amount' },
     { field: 'finalBillItemEqvAmt', header: 'Final Equivalent' },
+    'actions',
   ];
 
   /** Re-reads the bill after a GePG action, which changes its status but not its fields. */
@@ -139,7 +224,7 @@ export class BillComponent extends BaseComponent implements OnInit {
     this.follows = new Map(
       linkRows
         .filter((link) => link?.child?.id && link?.parent?.assignedNumber)
-        .map((link) => [link.child.id, link.parent.assignedNumber]),
+        .map((link) => [link.child.id, { uid: link.uid, reference: link.parent.assignedNumber }]),
     );
 
     this.contents = [
@@ -158,6 +243,7 @@ export class BillComponent extends BaseComponent implements OnInit {
         label: 'Bill Items',
         icon: 'list',
         keyColumns: this.itemColumns,
+        actionButtons: [this.setFollowsBtn, this.removeFollowsBtn],
         fetchParameter: {
           query: BILL_ITEMS_OF_BILL,
           variables: { billDetailUid: this.billUid },
