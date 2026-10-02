@@ -7,7 +7,12 @@ import { ContentParameter } from '@shared/components/view-component/view-interfa
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { FetchParameter } from '@shared/fetch/fetch.interface';
 
-import { BILL_AMOUNT_OF_BILL, BILL_ITEMS_OF_BILL, FIND_BILL } from './bill.graphql';
+import {
+  BILL_AMOUNT_OF_BILL,
+  BILL_ITEM_CONNECTIONS_OF_BILL,
+  BILL_ITEMS_OF_BILL,
+  FIND_BILL,
+} from './bill.graphql';
 import { gepgFlowPanels } from './bill-gepg.panels';
 import { childBillPanels } from './bill-amounts.panels';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
@@ -82,9 +87,21 @@ export class BillComponent extends BaseComponent implements OnInit {
     'actions',
   ];
 
+  /**
+   * The earlier line each of this bill's lines follows, by the line's id. Read
+   * once beside the lines rather than per row. A line missing from it is a
+   * first line.
+   */
+  private follows = new Map<string, string>();
+
   itemColumns: GridKeyColumn[] = [
     'index',
     'name',
+    {
+      field: 'follows',
+      header: 'Follows',
+      valueFn: (row) => this.follows.get(row?.id) ?? 'First line',
+    },
     'fee.name as Fee',
     'quantities as Qty',
     { field: 'billItemAmt', header: 'Amount' },
@@ -110,6 +127,20 @@ export class BillComponent extends BaseComponent implements OnInit {
       showLoading: false,
       variables: { billDetailUid: this.billUid },
     });
+
+    // What each line follows. Filled before the table is built, since its
+    // column reads from it.
+    const links = await this.fs.fetch({
+      query: BILL_ITEM_CONNECTIONS_OF_BILL,
+      showLoading: false,
+      variables: { billDetailUid: this.billUid },
+    });
+    const linkRows: any[] = Array.isArray(links) ? links : (links?.data ?? []);
+    this.follows = new Map(
+      linkRows
+        .filter((link) => link?.child?.id && link?.parent?.assignedNumber)
+        .map((link) => [link.child.id, link.parent.assignedNumber]),
+    );
 
     this.contents = [
       {

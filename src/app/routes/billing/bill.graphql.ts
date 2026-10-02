@@ -99,6 +99,26 @@ export const BILL_ITEMS_OF_BILL = gql`
   }
 `;
 
+/**
+ * What each line of one bill follows — `bill_items_bill_items`. A renewal's
+ * line sits under the earlier line for the same fee; a line with no row here is
+ * a first line.
+ */
+export const BILL_ITEM_CONNECTIONS_OF_BILL = gql`
+  query billItemConnectionsOfBill($billDetailUid: String) {
+    billItemConnectionsOfBill(billDetailUid: $billDetailUid) {
+      uid
+      parent {
+        id
+        assignedNumber
+      }
+      child {
+        id
+      }
+    }
+  }
+`;
+
 /** What one bill comes to. Absent until the bill has at least one line. */
 export const BILL_AMOUNT_OF_BILL = gql`
   query billAmountOfBill($billDetailUid: String) {
