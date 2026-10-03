@@ -15,107 +15,78 @@ import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { Lookup } from '@shared/lookup/lookup.interface';
 
 /**
- * What a bill owes before any penalty, and the penalty charged on top of it —
- * `principal_amounts` and `penalty_amounts`.
+ * What each line of a bill owes before any penalty, and the penalties charged on
+ * its lines — `bill_items_principal_amounts` and `bill_items_penalty_amounts`.
  *
- * Two panels on the bill's own page rather than two lookup screens: both hang off
- * one bill, and a principal read out of a global list says nothing. A penalty
- * keys on the principal it grew from, not on the bill, so its form picks from
- * this bill's principals.
+ * Two panels on the bill's own page. The principal is read only: the backend
+ * records it as what the line comes to whenever the line is saved, so there is
+ * nothing here to type. A penalty is entered by hand against one of this bill's
+ * lines, and a line can carry several.
  *
- * Both tables carry the usual code/name/description triple, all three UNIQUE, so
- * the forms ask for a name and a description and the backend says which one
- * clashed.
+ * Neither table has a code, a name or a description: a row is a line and an
+ * amount.
  */
 
-const principalReloaded$ = new Subject<unknown>();
 const penaltyReloaded$ = new Subject<unknown>();
 
-const principalFields = `
-  id
-  uid: id
-  assignedNumber
-  name
-  description
-  principalAmount
-  gracePeriodBillHeadersSetting { id }
+const lineFields = `
+  billItem {
+    id
+    assignedNumber
+    name
+  }
 `;
 
 const penaltyFields = `
-  id
-  uid: id
-  assignedNumber
-  name
-  description
+  uid
   penaltyAmount
-  principalAmount { id name principalAmount }
+  ${lineFields}
 `;
 
-const PRINCIPALS_OF_OBLIGATION = gql`
-  query principalAmountsByGracePeriodBillSetting($obligationUid: String) {
-    principalAmountsByGracePeriodBillSetting(gracePeriodBillHeadersSettingUid: $obligationUid) {
-      ${principalFields}
+const PRINCIPALS_OF_BILL = gql`
+  query billItemPrincipalAmountsOfBill($billDetailUid: String) {
+    billItemPrincipalAmountsOfBill(billDetailUid: $billDetailUid) {
+      uid
+      principalAmount
+      ${lineFields}
     }
   }
 `;
 
-const PENALTIES_OF_OBLIGATION = gql`
-  query penaltyAmountsByGracePeriodBillSetting($obligationUid: String) {
-    penaltyAmountsByGracePeriodBillSetting(gracePeriodBillHeadersSettingUid: $obligationUid) {
+const PENALTIES_OF_BILL = gql`
+  query billItemPenaltyAmountsOfBill($billDetailUid: String) {
+    billItemPenaltyAmountsOfBill(billDetailUid: $billDetailUid) {
       ${penaltyFields}
     }
   }
 `;
 
-const SAVE_PRINCIPAL = gql`
-  mutation savePrincipalAmount($input: PrincipalAmountDtoInput) {
-    savePrincipalAmount(input: $input) {
-      ${responseGqlFields(principalFields)}
-    }
-  }
-`;
-
-const DELETE_PRINCIPAL = gql`
-  mutation deletePrincipalAmount($uid: String) {
-    deletePrincipalAmount(uid: $uid) {
-      ${responseGqlFields(principalFields)}
+/** This bill's lines, for choosing the one a penalty is charged on. */
+const LINES_OF_BILL = gql`
+  query billItemsOfBill($billDetailUid: String) {
+    billItemsOfBill(billDetailUid: $billDetailUid) {
+      id
+      assignedNumber
+      name
     }
   }
 `;
 
 const SAVE_PENALTY = gql`
-  mutation savePenaltyAmount($input: PenaltyAmountDtoInput) {
-    savePenaltyAmount(input: $input) {
+  mutation saveBillItemPenaltyAmount($input: BillItemPenaltyAmountDtoInput) {
+    saveBillItemPenaltyAmount(input: $input) {
       ${responseGqlFields(penaltyFields)}
     }
   }
 `;
 
 const DELETE_PENALTY = gql`
-  mutation deletePenaltyAmount($uid: String) {
-    deletePenaltyAmount(uid: $uid) {
-      ${responseGqlFields(penaltyFields)}
+  mutation deleteBillItemPenaltyAmount($uid: String) {
+    deleteBillItemPenaltyAmount(uid: $uid) {
+      ${responseGqlFields('uid')}
     }
   }
 `;
-
-/** The code, name and description every one of these tables keeps unique. */
-const describedFields = (): FieldConfig[] => [
-  {
-    key: 'assignedNumber',
-    label: 'Assigned Code',
-    hint: 'Left empty, one is generated',
-    type: FieldType.input,
-  },
-  { key: 'name', label: 'Name', type: FieldType.input, validations: [VALIDATOR_REQUIRED] },
-  {
-    key: 'description',
-    label: 'Description',
-    type: FieldType.textarea,
-    validations: [VALIDATOR_REQUIRED],
-    class: 'col-span-full',
-  },
-];
 
 const amountField = (key: string, label: string): FieldConfig => ({
   key,
@@ -128,71 +99,34 @@ const amountField = (key: string, label: string): FieldConfig => ({
   class: 'col-span-full',
 });
 
-function openPrincipalForm(comp: BaseComponent, obligationUid?: string, row?: Lookup) {
+function openPenaltyForm(comp: BaseComponent, billUid?: string, row?: Lookup) {
   return async () => {
     const close$ = new Subject<void>();
     const formParameter: FormParameters = {
-      title: row?.['id'] ? 'Change Principal' : 'Add Principal',
-      model: row?.['id']
+      title: row?.['uid'] ? 'Change Penalty' : 'Add Penalty',
+      model: row?.['uid']
         ? {
-            uid: row['id'],
-            assignedNumber: row['assignedNumber'],
-            name: row['name'],
-            description: row['description'],
-            principalAmount: row['principalAmount'],
-          }
-        : {},
-      fields: [...describedFields(), amountField('principalAmount', 'Principal Amount')],
-      closeAction$: close$,
-
-      onSubmit: async (value: any) => {
-        await comp.fs.fetch({
-          notify: true,
-          variables: { input: { ...value, gracePeriodBillHeadersSettingUid: obligationUid } },
-          mutation: SAVE_PRINCIPAL,
-          successFn: (res) => {
-            principalReloaded$.next(res?.data);
-            close$.next();
-          },
-        });
-      },
-    };
-
-    comp.vs?.openModal(FormComponent, formParameter, '45%');
-  };
-}
-
-function openPenaltyForm(comp: BaseComponent, obligationUid?: string, row?: Lookup) {
-  return async () => {
-    const close$ = new Subject<void>();
-    const formParameter: FormParameters = {
-      title: row?.['id'] ? 'Change Penalty' : 'Add Penalty',
-      model: row?.['id']
-        ? {
-            uid: row['id'],
-            assignedNumber: row['assignedNumber'],
-            name: row['name'],
-            description: row['description'],
-            principalAmountUid: row['principalAmount']?.id,
+            uid: row['uid'],
+            billItemUid: (row['billItem'] as Lookup)?.['id'],
             penaltyAmount: row['penaltyAmount'],
           }
         : {},
       fields: [
-        // This bill's principals only: a penalty belongs to the amount it grew
-        // from, and one from another bill would be unreadable here.
+        // This bill's lines only: a penalty belongs to the line it is charged
+        // on, and one from another bill would be unreadable here.
         {
-          key: 'principalAmountUid',
-          label: 'Principal',
+          key: 'billItemUid',
+          label: 'Bill Line',
+          hint: 'The line the penalty is charged on, by its reference',
           type: FieldType.select,
           optionsVariables: {
-            labelKey: 'name',
+            labelKey: 'assignedNumber',
             valueKey: 'id',
-            fetchParameter: { query: PRINCIPALS_OF_OBLIGATION, variables: { obligationUid } },
+            fetchParameter: { query: LINES_OF_BILL, variables: { billDetailUid: billUid } },
           },
           validations: [VALIDATOR_REQUIRED],
           class: 'col-span-full',
         },
-        ...describedFields(),
         amountField('penaltyAmount', 'Penalty Amount'),
       ],
       closeAction$: close$,
@@ -216,28 +150,20 @@ function openPenaltyForm(comp: BaseComponent, obligationUid?: string, row?: Look
 
 const principalColumns: GridKeyColumn[] = [
   'index',
-  'assignedNumber as Code',
-  'name as Name',
+  'billItem.assignedNumber as Line',
+  'billItem.name as Name',
   { field: 'principalAmount', header: 'Principal' },
-  'actions',
 ];
 
 const penaltyColumns: GridKeyColumn[] = [
   'index',
-  'assignedNumber as Code',
-  'name as Name',
-  'principalAmount.name as Principal',
+  'billItem.assignedNumber as Line',
+  'billItem.name as Name',
   { field: 'penaltyAmount', header: 'Penalty' },
   'actions',
 ];
 
-const removeBtn = (
-  comp: BaseComponent,
-  what: string,
-  mutation: unknown,
-  reloaded$: Subject<unknown>,
-  permission: string,
-): ActionButton => ({
+const removePenaltyBtn = (comp: BaseComponent): ActionButton => ({
   ...MORE_BTN,
   buttons: [
     {
@@ -246,8 +172,8 @@ const removeBtn = (
       class: 'text-danger',
       click: async (row: Lookup) => {
         const confirmed = await comp.notify.confirm({
-          title: `Remove ${what}`,
-          message: `Remove ${row?.['name'] ?? `this ${what.toLowerCase()}`} from the bill?`,
+          title: 'Remove Penalty',
+          message: `Remove this penalty of ${row?.['penaltyAmount'] ?? ''} from the line?`,
           confirmText: 'REMOVE',
           confirmButtonColor: 'red',
         });
@@ -257,87 +183,60 @@ const removeBtn = (
         await comp.fs.fetch({
           notify: true,
           loadingOn: 'content',
-          variables: { uid: row?.['id'] },
-          mutation,
-          successFn: (res) => reloaded$.next(res?.data),
+          variables: { uid: row?.['uid'] },
+          mutation: DELETE_PENALTY,
+          successFn: (res) => penaltyReloaded$.next(res?.data),
         });
       },
-      permissions: [`ROLE_DELETE_${permission}`],
+      permissions: ['ROLE_DELETE_BILL_ITEM_PENALTY_AMOUNT'],
     },
   ],
 });
 
-/** The principal owed on this bill, and the penalties charged on it. */
-/**
- * The principal owed under one renewal obligation, and the penalties on it.
- *
- * Keyed on a `grace_periods_bill_headers_settings` row — the person, the
- * setting and the fee — not on a bill. A principal outlives any one bill:
- * the same obligation is billed again next year.
- *
- * Not mounted anywhere yet. It hung off the bill's own screen while
- * `principal_amounts` keyed on `bill_headers`, and there is no path from a bill
- * to an obligation now. It needs a home on whatever screen knows one.
- */
-export const obligationAmountPanels = (
-  comp: BaseComponent,
-  obligationUid?: string,
-): ContentParameter[] => [
+/** What each line of this bill owes, and the penalties charged on its lines. */
+export const lineAmountPanels = (comp: BaseComponent, billUid?: string): ContentParameter[] => [
   {
     type: 'table',
     name: 'Principal Amounts',
     label: 'Principal Amounts',
     icon: 'coins',
-    permissions: ['ROLE_VIEW_ALL_PRINCIPAL_AMOUNT', 'ROLE_VIEW_PRINCIPAL_AMOUNT'],
+    permissions: [
+      'ROLE_VIEW_ALL_BILL_ITEM_PRINCIPAL_AMOUNT',
+      'ROLE_VIEW_BILL_ITEM_PRINCIPAL_AMOUNT',
+    ],
     keyColumns: principalColumns,
-    headerButtons: [
-      {
-        icon: 'add',
-        label: 'Add Principal',
-        class: 'btn-add-primary',
-        click: openPrincipalForm(comp, obligationUid),
-        permissions: ['ROLE_CREATE_PRINCIPAL_AMOUNT', 'ROLE_UPDATE_PRINCIPAL_AMOUNT'],
-      } as ActionButton,
-    ],
-    actionButtons: [
-      {
-        icon: 'edit',
-        label: 'Edit',
-        click: (row: Lookup) => openPrincipalForm(comp, obligationUid, row)(),
-        permissions: ['ROLE_UPDATE_PRINCIPAL_AMOUNT'],
-      },
-      removeBtn(comp, 'Principal', DELETE_PRINCIPAL, principalReloaded$, 'PRINCIPAL_AMOUNT'),
-    ],
-    reloadActions$: [principalReloaded$, penaltyReloaded$],
-    fetchParameter: { query: PRINCIPALS_OF_OBLIGATION, variables: { obligationUid } },
+    fetchParameter: { query: PRINCIPALS_OF_BILL, variables: { billDetailUid: billUid } },
   },
   {
     type: 'table',
     name: 'Penalties',
     label: 'Penalties',
     icon: 'warning',
-    permissions: ['ROLE_VIEW_ALL_PENALTY_AMOUNT', 'ROLE_VIEW_PENALTY_AMOUNT'],
+    permissions: ['ROLE_VIEW_ALL_BILL_ITEM_PENALTY_AMOUNT', 'ROLE_VIEW_BILL_ITEM_PENALTY_AMOUNT'],
     keyColumns: penaltyColumns,
     headerButtons: [
       {
         icon: 'add',
         label: 'Add Penalty',
         class: 'btn-add-primary',
-        click: openPenaltyForm(comp, obligationUid),
-        permissions: ['ROLE_CREATE_PENALTY_AMOUNT', 'ROLE_UPDATE_PENALTY_AMOUNT'],
+        click: openPenaltyForm(comp, billUid),
+        permissions: [
+          'ROLE_CREATE_BILL_ITEM_PENALTY_AMOUNT',
+          'ROLE_UPDATE_BILL_ITEM_PENALTY_AMOUNT',
+        ],
       } as ActionButton,
     ],
     actionButtons: [
       {
         icon: 'edit',
         label: 'Edit',
-        click: (row: Lookup) => openPenaltyForm(comp, obligationUid, row)(),
-        permissions: ['ROLE_UPDATE_PENALTY_AMOUNT'],
+        click: (row: Lookup) => openPenaltyForm(comp, billUid, row)(),
+        permissions: ['ROLE_UPDATE_BILL_ITEM_PENALTY_AMOUNT'],
       },
-      removeBtn(comp, 'Penalty', DELETE_PENALTY, penaltyReloaded$, 'PENALTY_AMOUNT'),
+      removePenaltyBtn(comp),
     ],
     reloadActions$: [penaltyReloaded$],
-    fetchParameter: { query: PENALTIES_OF_OBLIGATION, variables: { obligationUid } },
+    fetchParameter: { query: PENALTIES_OF_BILL, variables: { billDetailUid: billUid } },
   },
 ];
 

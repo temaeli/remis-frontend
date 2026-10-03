@@ -310,13 +310,35 @@ export const PENALTY = defineLookup({
   penalties
   minimum
   maximum
+  taxesType
 `,
   extraFields: [
     numberField('penalties', 'Penalties'),
     numberField('minimum', 'Minimum'),
     numberField('maximum', 'Maximum'),
+    // The eight `taxes_types`. Increase and decrease say which way a figure
+    // moves what is owed; the six after them are held for calculations the DBA
+    // has yet to describe. A penalty adds, so that is what a new one starts as.
+    {
+      key: 'taxesType',
+      label: 'Type',
+      hint: 'How the penalty is applied. Increase adds it to what is owed',
+      type: FieldType.select,
+      value: 'INCREASE',
+      options: [
+        { value: 'INCREASE', label: 'Increase' },
+        { value: 'DECREASE', label: 'Decrease' },
+        { value: 'ADDITION', label: 'Addition' },
+        { value: 'SUBTRACTION', label: 'Subtraction' },
+        { value: 'MULTIPLICATION', label: 'Multiplication' },
+        { value: 'DIVISION', label: 'Division' },
+        { value: 'MODULUS', label: 'Modulus' },
+        { value: 'EXPONENTIATION', label: 'Exponentiation' },
+      ],
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
-  extraColumns: ['penalties', 'minimum', 'maximum'],
+  extraColumns: ['penalties', 'minimum', 'maximum', { field: 'taxesType', header: 'Type' }],
   // The join read from this side — which units this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'Penalty', record?.id),
 });

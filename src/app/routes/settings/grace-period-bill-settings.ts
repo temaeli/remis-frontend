@@ -324,46 +324,6 @@ const settingColumns: GridKeyColumn[] = [
  * Removing a setting a unit still points at is refused by the backend rather
  * than cascading: the unit link's foreign key is ON DELETE RESTRICT.
  */
-/**
- * Opens the principal and its penalties for one bill setting.
- *
- * A modal rather than a page: `grace_periods_bill_headers_settings` is a row
- * inside the grace period's own screen and has no route of its own, while the
- * amounts key on exactly that row. The two panels are the same ones the bill
- * screen used to carry, before the principal stopped belonging to a bill.
- *
- * Both halves are imported when the button is pressed, not when this file is
- * read. This is a configuration file that the settings routes pull in eagerly,
- * and `ContentsViewComponent` reaches `DataGridComponent` and
- * `DetailsComponent` — dragging that graph into the settings chunk changed the
- * order things initialise in and produced NG0919, a metadata read failing on
- * one of the import cycles that already exist under `shared/components`. Every
- * other importer of this component is a route component, loaded lazily; this
- * keeps it that way.
- */
-async function openObligationAmounts(comp: BaseComponent, row: Lookup) {
-  const obligationUid = row?.['id'] as string | undefined;
-  const setting = (row?.['billHeadersSetting'] as Record<string, unknown>)?.['name'];
-
-  const [{ ContentsViewComponent }, { obligationAmountPanels }] = await Promise.all([
-    import('@shared/components/view-component/contents-view/contents-view.component'),
-    import('@routes/billing/bill-amounts.panels'),
-  ]);
-
-  comp.vs?.openModal(
-    ContentsViewComponent,
-    {
-      title: `Principal & Penalties — ${setting ?? 'this setting'}`,
-      icon: 'coins',
-      showContentInTabs: true,
-      contents: obligationAmountPanels(comp, obligationUid),
-    },
-    '96%',
-    'auto',
-    { maxWidth: '1100px' },
-  );
-}
-
 export const gracePeriodBillSettingsPanel = (
   comp: BaseComponent,
   gracePeriodUid?: string,
@@ -392,15 +352,6 @@ export const gracePeriodBillSettingsPanel = (
       label: 'Edit',
       click: (row: Lookup) => openSettingForm(comp, gracePeriodUid, row)(),
       permissions: ['ROLE_UPDATE_GRACE_PERIOD_BILL_SETTING'],
-    },
-    // What this person owes under this setting, and the penalties on it. The
-    // amounts key on this row, and this row has no page of its own, so they are
-    // opened over it rather than linked to.
-    {
-      icon: 'coins',
-      label: 'Principal & Penalties',
-      click: (row: Lookup) => openObligationAmounts(comp, row),
-      permissions: ['ROLE_VIEW_ALL_PRINCIPAL_AMOUNT', 'ROLE_VIEW_PRINCIPAL_AMOUNT'],
     },
     {
       ...MORE_BTN,

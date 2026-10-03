@@ -1770,6 +1770,11 @@ const billingWindowLookup = (
   }
   startedAt
   expiredAt
+  restartDay
+  penaltyDay
+  renewDay
+  runDay
+  billExpireDay
 `,
     extraFields: [
       parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
@@ -1782,7 +1787,43 @@ const billingWindowLookup = (
       {
         key: 'expiredAt',
         label: 'Ends At',
+        hint: 'When the window itself closes',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+      {
+        key: 'billExpireDay',
+        label: 'Bills Expire At',
         hint: 'Every bill raised inside this window expires at this moment',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+      {
+        key: 'restartDay',
+        label: 'Restart Day',
+        hint: 'When the cycle starts again. Not before the window ends',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+      // Kept on record: nothing in billing reads these three yet.
+      {
+        key: 'penaltyDay',
+        label: 'Penalty Day',
+        hint: 'When a penalty starts to apply',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+      {
+        key: 'renewDay',
+        label: 'Renew Day',
+        hint: 'When what was billed comes up for renewal',
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      },
+      {
+        key: 'runDay',
+        label: 'Run Day',
+        hint: 'When the billing run is due',
         type: FieldType.dateTime,
         validations: [VALIDATOR_REQUIRED],
       },
@@ -1790,7 +1831,8 @@ const billingWindowLookup = (
     extraColumns: [
       { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
       { field: 'startedAt', header: 'Starts' },
-      { field: 'expiredAt', header: 'Bills Expire' },
+      { field: 'expiredAt', header: 'Ends' },
+      { field: 'billExpireDay', header: 'Bills Expire' },
     ],
     toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
   });
@@ -2756,6 +2798,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
   billHeadersDescription
   billItemsName
   billItemsDescription
+  compound
   billDetailsTemplate { ${lookupRefGqlFields} }
   generatedBy { id name }
   approvedBy { id name }
@@ -2817,6 +2860,14 @@ export const BILL_HEADERS_SETTING = defineLookup({
       class: 'col-span-full',
     },
     templateSelect('billDetailsTemplateUid', 'Bill Details Template', BILL_DETAILS_TEMPLATE),
+    // Kept on record: the DBA has not yet said what billing does with it.
+    {
+      key: 'compound',
+      label: 'Compound',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
     templateSelect('systemCodeUid', 'System Code', SYSTEM_CODE),
     templateSelect('spGrpCodeUid', 'SP Group Code', SP_GRP_CODE),
     templateSelect('billPayOptionUid', 'Bill Pay Option', BILL_PAY_OPTION),
@@ -2908,6 +2959,7 @@ export const BILL_HEADERS_SETTING = defineLookup({
         'assignedNumber',
         'description',
         'billDetailsTemplateUid',
+        'compound',
         'appliedDate',
         'expiredDate',
       ],

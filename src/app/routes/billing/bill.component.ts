@@ -23,7 +23,7 @@ import {
   UNLINK_BILL_ITEM_CONNECTION,
 } from './bill.graphql';
 import { gepgFlowPanels } from './bill-gepg.panels';
-import { childBillPanels } from './bill-amounts.panels';
+import { childBillPanels, lineAmountPanels } from './bill-amounts.panels';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
 import { gepgActionButtons, reuseControlNumberBtn } from './bill-gepg.actions';
@@ -262,6 +262,7 @@ export class BillComponent extends BaseComponent implements OnInit {
           variables: { billHeaderUid: this.bill?.billHeader?.id },
         },
       },
+      ...lineAmountPanels(this, this.billUid ?? undefined),
       ...childBillPanels(this, this.bill?.billHeader?.id),
       ...gepgFlowPanels(this.bill?.billHeader?.id, { reuse: [reuseControlNumberBtn(this)] }),
       {
