@@ -15,8 +15,8 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
  * row already says which day it falls on.
  */
 export const RUN_BILL_RENEWALS = gql`
-  mutation runBillRenewals($day: LocalDate) {
-    runBillRenewals(day: $day) {
+  mutation runBillRenewals($day: LocalDate, $newControlNumber: Boolean) {
+    runBillRenewals(day: $day, newControlNumber: $newControlNumber) {
       status
       message
       data {
@@ -41,31 +41,61 @@ const dayOf = (row: any): string | undefined => {
 };
 
 /**
- * Runs the renewals for this row's day.
+ * Which control number the bills of a run are put on. The two buttons differ in
+ * nothing else.
+ */
+type RunControlNumber = 'new' | 'reuse';
+
+const RUN_WORDING: Record<
+  RunControlNumber,
+  { label: string; icon: string; asks: string; sent: string; unsent: string }
+> = {
+  new: {
+    label: 'Raise Bills For This Day (New Control Number Request)',
+    icon: 'send',
+    asks: 'asking GePG for a new control number for each bill',
+    sent: 'control number request(s) sent to GePG',
+    unsent: 'Control number request not sent',
+  },
+  reuse: {
+    label: 'Raise Bills For This Day (Reuse Control Number Request)',
+    icon: 'refresh',
+    asks: 'reusing the control number each payer already holds and sending each re-use to GePG',
+    sent: 're-use(s) sent to GePG',
+    unsent: 'Re-use not sent',
+  },
+};
+
+/**
+ * Runs the renewals for this row's day, on the control number asked for.
  *
  * Every renewal falling on that day is raised, not only this one — the run is
- * keyed on the date, which is how the nightly job works too. Each bill's re-use
- * goes to GePG as it is raised, so the payer's own control number carries the
- * new bill.
+ * keyed on the date, which is how the nightly job works too.
  *
- * Repeating it is safe in the sense that nothing breaks: each run raises a
- * fresh bill and sends a fresh re-use, and a payer already billed simply gets
- * another. What it will not do is skip silently — a person with no renewal
- * control number, and a bill GePG would not take, both come back named.
+ * Reusing puts each bill on the number its payer already holds, which is what
+ * the nightly run does; a payer with no number on record is not billed, and
+ * comes back named. Asking for new numbers queues each bill and requests a
+ * number of its own, as a bill raised by hand is asked for, and needs no number
+ * on record.
+ *
+ * Repeating either is safe in the sense that nothing breaks: each run raises a
+ * fresh bill and sends a fresh request, and a payer already billed simply gets
+ * another. What it will not do is skip silently — a bill that was not raised,
+ * and a bill GePG would not take, both come back named.
  */
-export function runRenewalsForDayBtn(comp: BaseComponent): ActionButton {
+function runRenewalsBtn(comp: BaseComponent, controlNumber: RunControlNumber): ActionButton {
+  const wording = RUN_WORDING[controlNumber];
   return {
-    icon: 'send',
-    label: 'Raise Bills For This Day',
+    icon: wording.icon,
+    label: wording.label,
     permissions: ['ROLE_CREATE_BILL_HEADER', 'ROLE_UPDATE_BILL_HEADER'],
     hideFunction: (row: any) => !dayOf(row),
     confirmDataMapper: (row: any) => ({
-      title: 'Raise Bills For This Day',
+      title: wording.label,
       message:
-        `Raise every renewal falling on <b>${dayOf(row)}</b>, reusing each payer's own ` +
-        'control number and sending each re-use to GePG? This normally runs by itself ' +
-        'each night — use it for a day that was missed. Running it again raises another ' +
-        'bill and sends another re-use.',
+        `Raise every renewal falling on <b>${dayOf(row)}</b>, ${wording.asks}? ` +
+        'This normally runs by itself each night, reusing control numbers — use it for a ' +
+        'day that was missed. Running it again raises another bill and sends another request.',
       confirmText: 'Raise',
     }),
     click: async (row: any) => {
@@ -73,20 +103,29 @@ export function runRenewalsForDayBtn(comp: BaseComponent): ActionButton {
         mutation: RUN_BILL_RENEWALS,
         notify: true,
         loadingOn: 'content',
-        variables: { day: dayOf(row) },
+        variables: { day: dayOf(row), newControlNumber: controlNumber === 'new' },
         successFn: (res: any) => {
           const run = res?.data;
           if (!run) return;
           // The counts alone read as a success even when nothing reached GePG,
           // so what did not go is said out loud rather than left in the log.
+          // `reusesSent` counts whichever request this run sent.
           comp.notify.info(
             `${run.billsRaised} bill(s), ${run.itemsRaised} line(s), ` +
-              `${run.reusesSent} re-use(s) sent to GePG.`,
+              `${run.reusesSent} ${wording.sent}.`,
           );
-          for (const why of run.unsent ?? []) comp.notify.warn(`Re-use not sent — ${why}`);
+          for (const why of run.unsent ?? []) comp.notify.warn(`${wording.unsent} — ${why}`);
           for (const why of run.skipped ?? []) comp.notify.warn(`Bill not raised — ${why}`);
         },
       });
     },
   };
 }
+
+/** Raises the day's bills and asks GePG for a new control number for each. */
+export const runRenewalsForNewNumberBtn = (comp: BaseComponent): ActionButton =>
+  runRenewalsBtn(comp, 'new');
+
+/** Raises the day's bills on the control number each payer already holds. */
+export const runRenewalsForReuseBtn = (comp: BaseComponent): ActionButton =>
+  runRenewalsBtn(comp, 'reuse');

@@ -28,7 +28,7 @@ import {
 } from './person-identifications';
 import { businessNameTinsPanel, personTinsPanel } from './tin-links';
 import { billSettingPeoplePanel, personBillSettingsPanel } from './bill-setting-people';
-import { runRenewalsForDayBtn } from './renewal-run';
+import { runRenewalsForNewNumberBtn, runRenewalsForReuseBtn } from './renewal-run';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
@@ -1735,7 +1735,7 @@ export const RENEW = defineLookup({
   ],
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
   // The nightly run raises these by itself; this is for a day that was missed.
-  rowActions: (comp) => [runRenewalsForDayBtn(comp)],
+  rowActions: (comp) => [runRenewalsForNewNumberBtn(comp), runRenewalsForReuseBtn(comp)],
   // Read-only: a bill setting belongs to a grace period, and that is where it is
   // maintained. Shown here because a renewal is what decides when it comes round.
   extraContents: (_comp, record) => [renewBillSettingsPanel(record?.id)],
