@@ -313,9 +313,34 @@ export const PENALTY = defineLookup({
   taxesType
 `,
   extraFields: [
-    numberField('penalties', 'Penalties'),
-    numberField('minimum', 'Minimum'),
-    numberField('maximum', 'Maximum'),
+    // Decimals, not whole numbers: the columns are `numeric(15,2)` and
+    // `numeric(9,6)`. A whole-number input refused 0.31 outright. Each control
+    // keeps as many places as its column does, so what is typed is what is
+    // stored rather than something the database rounds afterwards.
+    {
+      key: 'penalties',
+      label: 'Penalties',
+      hint: 'Decimals allowed, to 2 places',
+      type: FieldType.decimal,
+      decimals: 2,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'minimum',
+      label: 'Minimum',
+      hint: 'Decimals allowed, to 6 places. Between -90 and 90',
+      type: FieldType.decimal,
+      decimals: 6,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'maximum',
+      label: 'Maximum',
+      hint: 'Decimals allowed, to 6 places. Between -180 and 180',
+      type: FieldType.decimal,
+      decimals: 6,
+      validations: [VALIDATOR_REQUIRED],
+    },
     // The eight `taxes_types`. Increase and decrease say which way a figure
     // moves what is owed; the six after them are held for calculations the DBA
     // has yet to describe. A penalty adds, so that is what a new one starts as.
