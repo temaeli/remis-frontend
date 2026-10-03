@@ -215,7 +215,12 @@ const settingFormFields = (): FieldConfig[] => [
   // Every year, switched on or off: a setting for next year is written while
   // that year is still switched off, since only one is in force at a time.
   select('financialYearUid', 'Financial Year', ALL_FINANCIAL_YEARS),
-  select('bioDataUid', 'Charged To', ALL_BIO_DATA),
+  // Not the person the bill setting is generated, approved and requested by:
+  // the table's trigger refuses that, and the backend says so first.
+  {
+    ...select('bioDataUid', 'Charged To', ALL_BIO_DATA),
+    hint: 'Cannot be the person the bill setting is generated, approved and requested by',
+  },
   {
     key: 'quantities',
     label: 'Quantity',
