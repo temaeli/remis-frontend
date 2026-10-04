@@ -596,6 +596,7 @@ export const BANK_ACCOUNT = defineLookup({
   accountNumber
   accountName
   swiftCode
+  internal
   currency {
     ${lookupRefGqlFields}
   }
@@ -638,6 +639,14 @@ export const BANK_ACCOUNT = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
+    {
+      key: 'internal',
+      label: 'Internal',
+      hint: 'Whether this is an internal account. On unless changed',
+      type: FieldType.toggle,
+      value: true,
+      class: 'col-span-full',
+    },
     // The query is written out rather than read off CURRENCY: that lookup is
     // declared further down this file, after this one has been evaluated.
     {
@@ -667,6 +676,7 @@ export const BANK_ACCOUNT = defineLookup({
     { field: 'accountNumber', header: 'Account Number' },
     { field: 'swiftCode', header: 'SWIFT Code' },
     { field: 'currency', header: 'Currency', valueFn: (row) => row?.currency?.name },
+    { field: 'internal', header: 'Internal', valueFn: (row) => (row?.internal ? 'Yes' : 'No') },
   ],
   toModel: (data) => ({ issuerUid: data?.issuer?.id, currencyUid: data?.currency?.id }),
   // The join read from this side — which units this applies to.

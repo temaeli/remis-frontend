@@ -1288,6 +1288,38 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       permission: 'UNIT_BANK_ACCOUNT',
       optionsQuery: ALL_UNIT,
     },
+    // The people and the organisations on the account
+    // (bank_accounts_bio_data, bank_accounts_business_names).
+    {
+      entity: 'BankAccountBioData',
+      byOwnerQuery: 'bankAccountBioDataByBankAccount',
+      ownerArg: 'bankAccountUid',
+      targetArg: 'bioDataUid',
+      field: 'bioData',
+      label: 'Person',
+      pluralLabel: 'People',
+      icon: 'person',
+      permission: 'BANK_ACCOUNT_BIO_DATA',
+      optionsQuery: ALL_BIO_DATA,
+      targetGqlFields: `
+    id
+    uid: id
+    name
+  `,
+      columns: ['index', 'bioData.name as Person', 'actions'],
+    },
+    {
+      entity: 'BankAccountBusinessName',
+      byOwnerQuery: 'bankAccountBusinessNamesByBankAccount',
+      ownerArg: 'bankAccountUid',
+      targetArg: 'businessNameUid',
+      field: 'businessName',
+      label: 'Organisation',
+      pluralLabel: 'Organisations',
+      icon: 'business',
+      permission: 'BANK_ACCOUNT_BUSINESS_NAME',
+      optionsQuery: ALL_BUSINESS_NAME,
+    },
   ],
   BillPayOption: [
     {
