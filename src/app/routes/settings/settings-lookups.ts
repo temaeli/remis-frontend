@@ -593,6 +593,12 @@ export const BANK_ACCOUNT = defineLookup({
   issuer {
     ${lookupRefGqlFields}
   }
+  accountNumber
+  accountName
+  swiftCode
+  currency {
+    ${lookupRefGqlFields}
+  }
 `,
   extraFields: [
     {
@@ -607,9 +613,62 @@ export const BANK_ACCOUNT = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
+    // What a transfer needs to reach the account.
+    {
+      key: 'accountNumber',
+      label: 'Account Number',
+      hint: 'Up to 34 characters. No two accounts may share one',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'accountName',
+      label: 'Account Name',
+      hint: 'The name the account is held in. Up to 100 characters',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'swiftCode',
+      label: 'SWIFT Code',
+      hint: '8 or 11 characters, such as NMIBTZTZ',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    // The query is written out rather than read off CURRENCY: that lookup is
+    // declared further down this file, after this one has been evaluated.
+    {
+      key: 'currencyUid',
+      label: 'Currency',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: {
+          query: gql`
+            query allCurrencies {
+              allCurrencies {
+                id
+                name
+              }
+            }
+          `,
+        },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
   ],
-  extraColumns: [{ field: 'issuer', valueFn: (row) => row?.issuer?.name }],
-  toModel: (data) => ({ issuerUid: data?.issuer?.id }),
+  extraColumns: [
+    { field: 'issuer', valueFn: (row) => row?.issuer?.name },
+    { field: 'accountNumber', header: 'Account Number' },
+    { field: 'swiftCode', header: 'SWIFT Code' },
+    { field: 'currency', header: 'Currency', valueFn: (row) => row?.currency?.name },
+  ],
+  toModel: (data) => ({ issuerUid: data?.issuer?.id, currencyUid: data?.currency?.id }),
   // The join read from this side — which units this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'BankAccount', record?.id),
 });
