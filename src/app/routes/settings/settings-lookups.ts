@@ -2780,6 +2780,33 @@ const templateSelect = (key: string, label: string, lookup: LookupModule): Field
  * There is no operator behind a renewal run and `bill_details` needs all three,
  * so the template names them.
  */
+/**
+ * The penalties billed from a bill setting — `bill_headers_settings_penalties`.
+ *
+ * A penalty that falls due has to become a bill line, and a line is assembled
+ * from a setting. The link says which setting that is; nothing raises a penalty
+ * line from it yet. The same link is offered from the penalty's own page.
+ */
+const BILL_SETTING_PENALTY_LINK: EntityLinkConfig = {
+  entity: 'BillHeadersSettingPenalty',
+  byOwnerQuery: 'billHeadersSettingPenaltiesBySetting',
+  ownerArg: 'billHeadersSettingUid',
+  targetArg: 'penaltyUid',
+  field: 'penalty',
+  label: 'Penalty',
+  pluralLabel: 'Penalties',
+  icon: 'warning',
+  permission: 'BILL_HEADERS_SETTING_PENALTY',
+  optionsQuery: gql`
+    query allPenalties {
+      allPenalties {
+        id
+        name
+      }
+    }
+  `,
+};
+
 export const BILL_HEADERS_SETTING = defineLookup({
   slug: 'bill-headers-settings',
   entity: 'BillHeadersSetting',
@@ -3049,8 +3076,11 @@ export const BILL_HEADERS_SETTING = defineLookup({
     approvedByUid: data?.approvedBy?.id,
     requestedByUid: data?.requestedBy?.id,
   }),
-  // Whom this setting raises bills for.
-  extraContents: (comp, record) => [billSettingPeoplePanel(comp, record?.id)],
+  // Whom this setting raises bills for, and the penalties billed from it.
+  extraContents: (comp, record) => [
+    billSettingPeoplePanel(comp, record?.id),
+    ...entityLinkPanels(comp, [BILL_SETTING_PENALTY_LINK], record?.id),
+  ],
 });
 
 //  Location — the administrative hierarchy, under `modules.setting.location`.

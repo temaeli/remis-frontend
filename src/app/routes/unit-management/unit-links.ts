@@ -495,6 +495,16 @@ const ALL_TITLE_DEED = gql`
   }
 `;
 
+/** Every automatic bill setting, for choosing the one a penalty is billed from. */
+const ALL_BILL_HEADERS_SETTING = gql`
+  query allBillHeadersSettings {
+    allBillHeadersSettings {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_UNIT = gql`
   query allUnits {
     allUnits {
@@ -1819,6 +1829,20 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_PENALTY',
       optionsQuery: ALL_UNIT,
+    },
+    // The bill setting a penalty line is to be raised from
+    // (bill_headers_settings_penalties). Nothing raises one yet.
+    {
+      entity: 'BillHeadersSettingPenalty',
+      byOwnerQuery: 'billHeadersSettingPenaltiesByPenalty',
+      ownerArg: 'penaltyUid',
+      targetArg: 'billHeadersSettingUid',
+      field: 'billHeadersSetting',
+      label: 'Bill Setting',
+      pluralLabel: 'Bill Settings',
+      icon: 'bill',
+      permission: 'BILL_HEADERS_SETTING_PENALTY',
+      optionsQuery: ALL_BILL_HEADERS_SETTING,
     },
   ],
   Problem: [
