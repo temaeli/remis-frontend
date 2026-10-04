@@ -158,6 +158,54 @@ export const BILL_AMOUNT_OF_BILL = gql`
   }
 `;
 
+/**
+ * What the printed bill needs beyond what the screen shows: the payer's phone,
+ * the service provider's code and the currency's three-letter code. Asked for
+ * apart from `FIND_BILL` so the details panel does not grow fields nobody reads
+ * there.
+ */
+export const BILL_PAPER = gql`
+  query findBillDetail($uid: String) {
+    findBillDetail(uid: $uid) {
+      ${responseGqlFields(`
+        id
+        assignedNumber
+        name
+        description
+        expiredAt
+        bioData { id name mobileNumber }
+        currency { id name assignedNumber }
+        collectionCenter { id name }
+        spCode { id name assignedNumber }
+      `)}
+    }
+  }
+`;
+
+/** The control number a bill is paid on: the newest issued, else the one it reuses. */
+export const CONTROL_NUMBER_OF_BILL = gql`
+  query controlNumberOfBill($billDetailUid: String) {
+    controlNumberOfBill(billDetailUid: $billDetailUid)
+  }
+`;
+
+/**
+ * Where a bill is paid into: the institution's internal bank accounts kept in
+ * the bill's currency. These are the beneficiary on a transfer form.
+ */
+export const COLLECTION_ACCOUNTS_OF_BILL = gql`
+  query collectionAccountsOfBill($billDetailUid: String) {
+    collectionAccountsOfBill(billDetailUid: $billDetailUid) {
+      id
+      name
+      accountName
+      accountNumber
+      swiftCode
+      issuer { id name }
+    }
+  }
+`;
+
 //  Mutations
 
 /**

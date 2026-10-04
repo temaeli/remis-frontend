@@ -18,6 +18,9 @@ import {
   BILL_AMOUNT_OF_BILL,
   BILL_ITEM_CONNECTIONS_OF_BILL,
   BILL_ITEMS_OF_BILL,
+  BILL_PAPER,
+  COLLECTION_ACCOUNTS_OF_BILL,
+  CONTROL_NUMBER_OF_BILL,
   FIND_BILL,
   LINK_BILL_ITEM_CONNECTION,
   UNLINK_BILL_ITEM_CONNECTION,
@@ -27,6 +30,16 @@ import { childBillPanels, lineAmountPanels } from './bill-amounts.panels';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
 import { gepgActionButtons, reuseControlNumberBtn } from './bill-gepg.actions';
+import {
+  BillPaper,
+  CollectionAccount,
+  howToPayHtml,
+  printGovernmentBill,
+  printTransferForm,
+} from './bill-documents';
+
+/** Printing a bill shows nothing the screen does not, so it is gated like viewing one. */
+const BILL_PRINT_PERMISSIONS = ['ROLE_VIEW_ALL_BILL_DETAIL', 'ROLE_VIEW_BILL_DETAIL'];
 
 /**
  * One bill: its own fields, the lines it is made of, and what it comes to.
@@ -67,7 +80,16 @@ export class BillComponent extends BaseComponent implements OnInit {
    * closes over this component, and the header re-reads the array on every
    * change detection pass.
    */
-  gepgActions = gepgActionButtons(this);
+  gepgActions: ActionButton[] = [...gepgActionButtons(this), ...this.paperButtons()];
+
+  /** The control number this bill is paid on, once GePG has issued one. */
+  private controlNumber: string | null = null;
+
+  /** The institution's internal accounts in this bill's currency: where it is paid into. */
+  private accounts: CollectionAccount[] = [];
+
+  /** What the bill comes to, as its total record has it. */
+  private billedAmount: number | null = null;
 
   override contents: ContentParameter[] = [];
 
@@ -197,6 +219,92 @@ export class BillComponent extends BaseComponent implements OnInit {
     'actions',
   ];
 
+  /**
+   * The two papers the GePG guide has an institution hand a payer: the
+   * government bill, and the transfer form for one paying by TISS or SWIFT.
+   * Neither is printed for a bill with no control number -- there would be
+   * nothing on it to pay against.
+   */
+  private paperButtons(): ActionButton[] {
+    return [
+      {
+        icon: 'bill',
+        label: 'Print Bill',
+        toolTip: 'Print the government bill, with how to pay it',
+        permissions: BILL_PRINT_PERMISSIONS,
+        click: async () => {
+          const paper = await this.billPaper();
+          if (paper) await printGovernmentBill(paper, this.printedBy());
+        },
+      },
+      {
+        icon: 'money_exchange',
+        label: 'Print Transfer Form',
+        toolTip: 'Print the form for paying this bill by bank transfer (TISS or SWIFT)',
+        permissions: BILL_PRINT_PERMISSIONS,
+        click: async () => {
+          const paper = await this.billPaper();
+          if (!paper) return;
+          if (!paper.accounts.length) {
+            this.notify.warn(
+              `No internal bank account is kept in ${paper.currencyName || "this bill's currency"}, so there is no beneficiary to transfer to.`,
+            );
+            return;
+          }
+          await printTransferForm(paper, this.printedBy());
+        },
+      },
+    ];
+  }
+
+  /** Printed and prepared by whoever is logged in, now. */
+  private printedBy() {
+    return { user: this.auth.user$.value?.name ?? '', at: new Date() };
+  }
+
+  /** Everything a printed bill carries, read fresh so the paper is not older than the screen. */
+  private async billPaper(): Promise<BillPaper | null> {
+    if (!this.controlNumber) {
+      this.notify.warn('This bill has no control number yet, so there is nothing to pay against.');
+      return null;
+    }
+    const response = await this.fs.fetch({
+      query: BILL_PAPER,
+      loadingOn: 'content',
+      variables: { uid: this.billUid },
+    });
+    const bill = response?.data ?? response;
+    const lines = await this.fs.fetch({
+      query: BILL_ITEMS_OF_BILL,
+      showLoading: false,
+      variables: { billDetailUid: this.billUid },
+    });
+    const items = (Array.isArray(lines) ? lines : (lines?.data ?? [])).map((line: any) => ({
+      description: [line?.gfsCode?.name, line?.name].filter(Boolean).join(' - '),
+      amount: Number(line?.finalBillItemAmt ?? 0),
+    }));
+
+    return {
+      institution: bill?.spCode?.name ?? '',
+      controlNumber: this.controlNumber,
+      paymentReference: bill?.assignedNumber ?? '',
+      serviceProviderCode: bill?.spCode?.assignedNumber ?? '',
+      payerName: bill?.bioData?.name ?? '',
+      payerPhone: bill?.bioData?.mobileNumber != null ? `${bill.bioData.mobileNumber}` : '',
+      description: bill?.description || bill?.name || '',
+      items,
+      // The bill's own total where it has one; its lines summed where it does not yet.
+      total:
+        this.billedAmount ??
+        items.reduce((sum: number, line: { amount: number }) => sum + line.amount, 0),
+      currencyCode: bill?.currency?.assignedNumber ?? '',
+      currencyName: bill?.currency?.name ?? '',
+      expiresOn: bill?.expiredAt,
+      collectionCentre: bill?.collectionCenter?.name ?? '',
+      accounts: this.accounts,
+    };
+  }
+
   /** Re-reads the bill after a GePG action, which changes its status but not its fields. */
   reload(): void {
     void this.ngOnInit();
@@ -212,6 +320,30 @@ export class BillComponent extends BaseComponent implements OnInit {
       showLoading: false,
       variables: { billDetailUid: this.billUid },
     });
+
+    this.billedAmount = total?.billAmt != null ? Number(total.billAmt) : null;
+
+    // What the bill is paid on, and into. Both can be empty: a bill waits for
+    // its control number, and a currency may have no internal account yet.
+    const controlNumber = await this.fs.fetch({
+      query: CONTROL_NUMBER_OF_BILL,
+      showLoading: false,
+      variables: { billDetailUid: this.billUid },
+    });
+    this.controlNumber = typeof controlNumber === 'string' && controlNumber ? controlNumber : null;
+    const accounts = await this.fs.fetch({
+      query: COLLECTION_ACCOUNTS_OF_BILL,
+      showLoading: false,
+      variables: { billDetailUid: this.billUid },
+    });
+    this.accounts = (Array.isArray(accounts) ? accounts : (accounts?.data ?? [])).map(
+      (account: any) => ({
+        bank: account?.issuer?.name ?? account?.name ?? '',
+        accountName: account?.accountName ?? '',
+        accountNumber: account?.accountNumber ?? '',
+        swiftCode: account?.swiftCode ?? '',
+      }),
+    );
 
     // What each line follows. Filled before the table is built, since its
     // column reads from it.
@@ -248,6 +380,13 @@ export class BillComponent extends BaseComponent implements OnInit {
           query: BILL_ITEMS_OF_BILL,
           variables: { billDetailUid: this.billUid },
         },
+      },
+      {
+        type: 'html',
+        name: 'How To Pay',
+        label: 'How To Pay',
+        icon: 'wallet',
+        content: howToPayHtml(this.controlNumber, this.accounts),
       },
       {
         type: 'table',

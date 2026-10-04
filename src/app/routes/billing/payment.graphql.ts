@@ -58,11 +58,11 @@ export const paymentTransactionGqlFields = `
   payerName
   payerEmail
   payerCellNumber
-  currency { ${refFields} }
+  currency { ${refFields} assignedNumber }
   spCode { ${refFields} }
   billPayOption { ${refFields} }
   paymentServiceProvider { ${refFields} }
-  billItem { ${refFields} finalBillItemAmt finalBillItemEqvAmt }
+  billItem { ${refFields} finalBillItemAmt finalBillItemEqvAmt gfsCode { ${refFields} } }
 `;
 
 export const paymentTotalGqlFields = `

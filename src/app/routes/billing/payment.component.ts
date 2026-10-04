@@ -18,6 +18,7 @@ import {
   PAYMENT_TRANSACTIONS_OF_PAYMENT,
 } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS } from './payment.form';
+import { printReceipt } from './bill-documents';
 
 /**
  * One payment: what GePG reported, the transactions it settled, and what it
@@ -105,6 +106,48 @@ export class PaymentComponent extends BaseComponent implements OnInit {
   }
 
   /**
+   * The receipt for one transaction, as the GePG guide lays it out. It says what
+   * GePG reported and nothing more: the amount paid, what is left, and the bill
+   * line it was paid against. Issued in the name of whoever prints it.
+   */
+  printReceiptBtn(): ActionButton {
+    return {
+      icon: 'receipt',
+      label: 'Print Receipt',
+      toolTip: 'Print the government receipt for this transaction',
+      permissions: PAYMENT_VIEW_PERMISSIONS,
+      click: async (row: any) => {
+        const line = row?.billItem;
+        await printReceipt(
+          {
+            institution: row?.spCode?.name ?? '',
+            receiptNumber: row?.paymentReferenceId || row?.transactionId || '',
+            receivedFrom: row?.payerName ?? '',
+            amount: row?.paidAmount ?? 0,
+            outstandingBalance: row?.balance ?? 0,
+            items: line
+              ? [
+                  {
+                    description: [line.gfsCode?.name, line.name].filter(Boolean).join(' - '),
+                    amount: line.finalBillItemAmt ?? row?.billAmount ?? 0,
+                  },
+                ]
+              : [],
+            totalBilled: row?.billAmount ?? 0,
+            currencyCode: row?.currency?.assignedNumber ?? '',
+            currencyName: row?.currency?.name ?? '',
+            billReference: row?.billId ?? '',
+            paymentControlNumber:
+              row?.billControlNumber || this.payment?.customerControlNumber || '',
+            paymentDate: row?.transactionDateTime,
+          },
+          { user: this.auth.user$.value?.name ?? '', at: new Date() },
+        );
+      },
+    };
+  }
+
+  /**
    * Re-runs the integrity rules against what is stored.
    *
    * Worth having as an action rather than only on write: an exchange rate
@@ -183,7 +226,7 @@ export class PaymentComponent extends BaseComponent implements OnInit {
         label: 'Transactions',
         icon: 'list',
         keyColumns: this.transactionColumns,
-        actionButtons: [this.checkTransactionBtn()],
+        actionButtons: [this.printReceiptBtn(), this.checkTransactionBtn()],
         fetchParameter: {
           query: PAYMENT_TRANSACTIONS_OF_PAYMENT,
           variables: { paymentHeaderUid: this.paymentUid },
