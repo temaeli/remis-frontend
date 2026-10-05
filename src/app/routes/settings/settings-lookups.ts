@@ -2216,6 +2216,8 @@ export const CENTER = defineLookup({
     { field: 'hierarchy', header: 'Level' },
   ],
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  // The centres under this one, and the ones it sits under (centers_centers).
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Center', record?.id),
 });
 
 export const MATERIAL = defineLookup({
