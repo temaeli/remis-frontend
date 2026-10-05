@@ -373,8 +373,9 @@ export async function printGovernmentBill(bill: BillPaper, by: PrintedBy): Promi
 }
 
 /**
- * The transfer bill, one page for each bank the institution collects into in the
- * bill's currency. The payer takes it to their own bank as it is: field 59 of
+ * The transfer bill, one page for each account on `bill.accounts`. An institution
+ * can keep a great many accounts in one currency, so the screen asks which one
+ * and hands over only that. The payer takes it to their own bank as it is: field 59 of
  * the MT103 is the beneficiary account, and field 70 the control number with
  * `/ROC/` before it, exactly as the guide gives them.
  */
@@ -513,15 +514,10 @@ export const howToPayHtml = (issued: string | null, accounts: CollectionAccount[
       .map((s) => `<li>${s}</li>`)
       .join('')}</ol>`;
   const number = `Ingiza namba ya kumbukumbu ya malipo: <b>${controlNumber}</b>`;
+  // The accounts themselves are not listed: there can be a hundred in one
+  // currency. The one to transfer to is chosen when the form is printed.
   const transfer = accounts.length
-    ? `<ul class="list-disc ml-6 mb-3">${accounts
-        .map((a) => {
-          const account = escapeHtml(a.accountNumber);
-          return `<li><b>${escapeHtml(a.bank)}</b>: akaunti <b>${account}</b> (${escapeHtml(a.accountName)}),
-             SWIFT <b>${escapeHtml(a.swiftCode)}</b>. Kipengele cha 59: <b>/${account}</b>.
-             Kipengele cha 70: <b>/ROC/${controlNumber}</b>.</li>`;
-        })
-        .join('')}</ul>`
+    ? '<p>Bonyeza <b>Print Transfer Form</b>, chagua akaunti ya benki unayotaka, na fomu itaonyesha akaunti hiyo pekee.</p>'
     : '<p>Hakuna akaunti ya ndani ya makusanyo iliyowekwa kwa sarafu ya ankara hii.</p>';
 
   return `

@@ -240,7 +240,7 @@ export class BillComponent extends BaseComponent implements OnInit {
       {
         icon: 'money_exchange',
         label: 'Print Transfer Form',
-        toolTip: 'Print the form for paying this bill by bank transfer (TISS or SWIFT)',
+        toolTip: 'Choose a bank account and print the form for paying by transfer (TISS or SWIFT)',
         permissions: BILL_PRINT_PERMISSIONS,
         click: async () => {
           const paper = await this.billPaper();
@@ -251,10 +251,51 @@ export class BillComponent extends BaseComponent implements OnInit {
             );
             return;
           }
-          await printTransferForm(paper, this.printedBy());
+          // One account needs no choosing; more than one is the user's to pick.
+          if (paper.accounts.length === 1) {
+            await printTransferForm(paper, this.printedBy());
+            return;
+          }
+          this.chooseTransferAccount(paper);
         },
       },
     ];
+  }
+
+  /**
+   * Asks which bank account the transfer form is for, then prints it with that
+   * account alone. An institution can keep a hundred accounts in one currency,
+   * and a payer transfers to one of them.
+   */
+  private chooseTransferAccount(paper: BillPaper): void {
+    const close$ = new Subject<void>();
+    const formParameter: FormParameters = {
+      model: {},
+      title: 'Transfer Form',
+      fields: [
+        {
+          key: 'account',
+          label: 'Bank Account',
+          hint: 'The account the payer will transfer to',
+          type: FieldType.select,
+          options: paper.accounts.map((account, index) => ({
+            // A string, so the first account is not read as an empty choice.
+            value: `${index}`,
+            label: `${account.bank} - ${account.accountNumber} (${account.accountName})`,
+          })),
+          validations: [VALIDATOR_REQUIRED],
+          class: 'col-span-full',
+        },
+      ],
+      closeAction$: close$,
+      onSubmit: async (value: any) => {
+        const account = paper.accounts[Number(value?.account)];
+        if (!account) return;
+        close$.next();
+        await printTransferForm({ ...paper, accounts: [account] }, this.printedBy());
+      },
+    };
+    this.vs?.openModal(FormComponent, formParameter, '40%');
   }
 
   /** Printed and prepared by whoever is logged in, now. */
