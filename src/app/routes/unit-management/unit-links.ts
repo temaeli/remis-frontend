@@ -40,6 +40,15 @@ const ALL_ASSET = gql`
   }
 `;
 
+const ALL_CENTER = gql`
+  query allCenters {
+    allCenters {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_BANK_ACCOUNT = gql`
   query allBankAccounts {
     allBankAccounts {
@@ -1235,6 +1244,63 @@ const UNIT_LINKS: EntityLinkConfig[] = [
  * solutions, so it earns two panels.
  */
 const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
+  // The centres under a centre, and the ones it sits under (centers_centers).
+  // One table read from each end: the same link mutation serves both, with the
+  // centre on screen as the parent in one panel and the child in the other.
+  Center: [
+    {
+      entity: 'CenterConnection',
+      byOwnerQuery: 'centerConnectionsByParent',
+      ownerArg: 'parentUid',
+      targetArg: 'childUid',
+      field: 'child',
+      label: 'Child Centre',
+      pluralLabel: 'Child Centres',
+      icon: 'institution',
+      permission: 'CENTER_CONNECTION',
+      optionsQuery: ALL_CENTER,
+      targetGqlFields: `
+    id
+    uid: id
+    assignedNumber
+    name
+    hierarchy
+  `,
+      columns: [
+        'index',
+        'child.assignedNumber as Assigned Number',
+        'child.name as Centre',
+        'child.hierarchy as Level',
+        'actions',
+      ],
+    },
+    {
+      entity: 'CenterConnection',
+      byOwnerQuery: 'centerConnectionsByChild',
+      ownerArg: 'childUid',
+      targetArg: 'parentUid',
+      field: 'parent',
+      label: 'Parent Centre',
+      pluralLabel: 'Parent Centres',
+      icon: 'institution',
+      permission: 'CENTER_CONNECTION',
+      optionsQuery: ALL_CENTER,
+      targetGqlFields: `
+    id
+    uid: id
+    assignedNumber
+    name
+    hierarchy
+  `,
+      columns: [
+        'index',
+        'parent.assignedNumber as Assigned Number',
+        'parent.name as Centre',
+        'parent.hierarchy as Level',
+        'actions',
+      ],
+    },
+  ],
   Agreement: [
     {
       entity: 'UnitAgreement',

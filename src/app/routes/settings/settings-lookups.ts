@@ -2179,6 +2179,45 @@ export const DOWN_PAYMENT = defineLookup({
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
 });
 
+/**
+ * Centres under a subcategory, at one of six levels (`centers`). Which centre
+ * sits under which is on the centre's own page — `centers_centers`, see
+ * `LINKS_BY_RECORD`. Not the GePG collection centre.
+ */
+export const CENTER = defineLookup({
+  slug: 'centers',
+  entity: 'Center',
+  entityPlural: 'Centers',
+  permission: 'CENTER',
+  label: 'Centre',
+  pluralLabel: 'Centres',
+  subtitle: 'Centres under a subcategory, and the level each sits at',
+  icon: 'institution',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  hierarchy
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'hierarchy',
+      label: 'Hierarchy Level',
+      hint: 'From 1 to 6',
+      type: FieldType.select,
+      // The six the table allows (`centers32`). Numbers until the levels are named.
+      options: [1, 2, 3, 4, 5, 6].map((level) => ({ value: level, label: `Level ${level}` })),
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'hierarchy', header: 'Level' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
 export const MATERIAL = defineLookup({
   slug: 'materials',
   entity: 'Material',
@@ -3517,6 +3556,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   FLAT_AMOUNT,
   CONTRACT_AMOUNT,
   DOWN_PAYMENT,
+  CENTER,
   MATERIAL,
   OBJECTS_ID,
   CERTIFICATE,
