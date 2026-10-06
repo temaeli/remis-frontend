@@ -1811,10 +1811,45 @@ export const RENEW = defineLookup({
 });
 
 /**
+ * The fifteen days both window tables gained on 2026-10-05. Every one is
+ * required by the table and kept on record; nothing in billing reads them yet,
+ * so they are labelled as the columns are named until their use is said.
+ */
+const BILLING_WINDOW_DAYS: { key: string; label: string }[] = [
+  { key: 'before', label: 'Before' },
+  { key: 'after', label: 'After' },
+  { key: 'deadline', label: 'Deadline' },
+  { key: 'startedDay', label: 'Started Day' },
+  { key: 'endedDay', label: 'Ended Day' },
+  { key: 'firstGracePeriodStartedDay', label: 'First Grace Period Started Day' },
+  { key: 'firstGracePeriodEndedDay', label: 'First Grace Period Ended Day' },
+  { key: 'secondGracePeriodStartedDay', label: 'Second Grace Period Started Day' },
+  { key: 'secondGracePeriodEndedDay', label: 'Second Grace Period Ended Day' },
+  {
+    key: 'firstBillCreatedInThisMonthExpiredDay',
+    label: 'First Bill Created In This Month Expired Day',
+  },
+  {
+    key: 'secondBillCreatedInThisMonthExpiredDay',
+    label: 'Second Bill Created In This Month Expired Day',
+  },
+  { key: 'firstPenaltyDay', label: 'First Penalty Day' },
+  { key: 'secondPenaltyDay', label: 'Second Penalty Day' },
+  {
+    key: 'firstBillCreatedInThisMonthRenewedDay',
+    label: 'First Bill Created In This Month Renewed Day',
+  },
+  {
+    key: 'secondBillCreatedInThisMonthRenewedDay',
+    label: 'Second Bill Created In This Month Renewed Day',
+  },
+];
+
+/**
  * One of the two tables a renewal-run bill takes its expiry from. A bill's
  * `expired_date` is the `expiredAt` of the window holding the moment it is
  * raised: the first-window table for a person's first bill, the second for every
- * renewal after it.
+ * renewal after it. The bill's financial year is the window's too.
  *
  * Windows in one table may not overlap, for any subcategory, and a deleted
  * window still holds its dates; the backend says which window is in the way.
@@ -1844,9 +1879,14 @@ const billingWindowLookup = (
   renewDay
   runDay
   billExpireDay
+  financialYear {
+    ${lookupRefGqlFields}
+  }
+  ${BILLING_WINDOW_DAYS.map((day) => day.key).join('\n  ')}
 `,
     extraFields: [
       parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+      parentSelect('financialYearUid', 'Financial Year', () => FINANCIAL_YEAR),
       {
         key: 'startedAt',
         label: 'Starts At',
@@ -1896,14 +1936,28 @@ const billingWindowLookup = (
         type: FieldType.dateTime,
         validations: [VALIDATOR_REQUIRED],
       },
+      ...BILLING_WINDOW_DAYS.map((day) => ({
+        key: day.key,
+        label: day.label,
+        type: FieldType.dateTime,
+        validations: [VALIDATOR_REQUIRED],
+      })),
     ],
     extraColumns: [
       { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+      {
+        field: 'financialYear',
+        header: 'Financial Year',
+        valueFn: (row) => row?.financialYear?.name,
+      },
       { field: 'startedAt', header: 'Starts' },
       { field: 'expiredAt', header: 'Ends' },
       { field: 'billExpireDay', header: 'Bills Expire' },
     ],
-    toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+    toModel: (data) => ({
+      subcategoryUid: data?.subcategory?.id,
+      financialYearUid: data?.financialYear?.id,
+    }),
   });
 
 export const FIRST_WINDOW_BILLING_CYCLE = billingWindowLookup(
