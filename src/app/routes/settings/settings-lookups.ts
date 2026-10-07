@@ -2045,6 +2045,25 @@ ${graceMonthGqlFields}
 });
 
 /**
+ * The labels of the PostgreSQL enum `taxes_types`: the two a percentage or a
+ * flat amount started with, and the six the DBA added on 2026-10-02. Nothing
+ * computes with the six yet; they are offered so a row can carry one.
+ */
+const TAXES_TYPE_OPTIONS = [
+  { value: 'INCREASE', label: 'Increase' },
+  { value: 'DECREASE', label: 'Decrease' },
+  { value: 'ADDITION', label: 'Addition' },
+  { value: 'SUBTRACTION', label: 'Subtraction' },
+  { value: 'MULTIPLICATION', label: 'Multiplication' },
+  { value: 'DIVISION', label: 'Division' },
+  { value: 'MODULUS', label: 'Modulus' },
+  { value: 'EXPONENTIATION', label: 'Exponentiation' },
+];
+
+const taxesTypeLabel = (value?: string): string =>
+  TAXES_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value ?? '';
+
+/**
  * A figure and the direction it moves an amount in — `percentages`, under a
  * subcategory like the two above.
  *
@@ -2076,10 +2095,7 @@ export const PERCENTAGE = defineLookup({
       label: 'Direction',
       hint: 'Increase adds to what is owed, decrease takes away',
       type: FieldType.select,
-      options: [
-        { value: 'INCREASE', label: 'Increase' },
-        { value: 'DECREASE', label: 'Decrease' },
-      ],
+      options: TAXES_TYPE_OPTIONS,
       validations: [VALIDATOR_REQUIRED],
     },
     {
@@ -2096,7 +2112,7 @@ export const PERCENTAGE = defineLookup({
     {
       field: 'taxesType',
       header: 'Direction',
-      valueFn: (row) => (row?.taxesType === 'DECREASE' ? 'Decrease' : 'Increase'),
+      valueFn: (row) => taxesTypeLabel(row?.taxesType),
     },
     { field: 'amount', header: 'Amount' },
   ],
@@ -2131,10 +2147,7 @@ export const FLAT_AMOUNT = defineLookup({
       label: 'Direction',
       hint: 'Increase adds to what is owed, decrease takes away',
       type: FieldType.select,
-      options: [
-        { value: 'INCREASE', label: 'Increase' },
-        { value: 'DECREASE', label: 'Decrease' },
-      ],
+      options: TAXES_TYPE_OPTIONS,
       validations: [VALIDATOR_REQUIRED],
     },
     {
@@ -2151,7 +2164,7 @@ export const FLAT_AMOUNT = defineLookup({
     {
       field: 'taxesType',
       header: 'Direction',
-      valueFn: (row) => (row?.taxesType === 'DECREASE' ? 'Decrease' : 'Increase'),
+      valueFn: (row) => taxesTypeLabel(row?.taxesType),
     },
     { field: 'amount', header: 'Amount' },
   ],
