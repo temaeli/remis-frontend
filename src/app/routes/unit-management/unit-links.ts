@@ -49,6 +49,51 @@ const ALL_CENTER = gql`
   }
 `;
 
+const ALL_ASSESSMENT = gql`
+  query allAssessments {
+    allAssessments {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_JUDGMENT = gql`
+  query allJudgments {
+    allJudgments {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_FINDING = gql`
+  query allFindings {
+    allFindings {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_TASK = gql`
+  query allTasks {
+    allTasks {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_OBJECT = gql`
+  query allObjectsIds {
+    allObjectsIds {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_BANK_ACCOUNT = gql`
   query allBankAccounts {
     allBankAccounts {
@@ -1244,6 +1289,106 @@ const UNIT_LINKS: EntityLinkConfig[] = [
  * solutions, so it earns two panels.
  */
 const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
+  // What an assessment covers, and what it came to: one panel per link table
+  // (bio_data_assessments, tasks_assessments, objectsid_assessments,
+  // judgments_assessments, findings_assessments).
+  Assessment: [
+    {
+      entity: 'BioDataAssessment',
+      byOwnerQuery: 'bioDataAssessmentsByAssessment',
+      ownerArg: 'assessmentUid',
+      targetArg: 'bioDataUid',
+      field: 'bioData',
+      label: 'Person',
+      pluralLabel: 'People',
+      icon: 'users',
+      permission: 'BIO_DATA_ASSESSMENT',
+      optionsQuery: ALL_BIO_DATA,
+      targetGqlFields: `
+    id
+    uid: id
+    name
+  `,
+      columns: ['index', 'bioData.name as Person', 'actions'],
+    },
+    {
+      entity: 'TaskAssessment',
+      byOwnerQuery: 'taskAssessmentsByAssessment',
+      ownerArg: 'assessmentUid',
+      targetArg: 'taskUid',
+      field: 'task',
+      label: 'Task',
+      pluralLabel: 'Tasks',
+      icon: 'list',
+      permission: 'TASK_ASSESSMENT',
+      optionsQuery: ALL_TASK,
+    },
+    {
+      entity: 'ObjectsIdAssessment',
+      byOwnerQuery: 'objectsIdAssessmentsByAssessment',
+      ownerArg: 'assessmentUid',
+      targetArg: 'objectsIdUid',
+      field: 'objectsId',
+      label: 'Object',
+      pluralLabel: 'Objects',
+      icon: 'institution',
+      permission: 'OBJECTS_ID_ASSESSMENT',
+      optionsQuery: ALL_OBJECT,
+    },
+    {
+      entity: 'JudgmentAssessment',
+      byOwnerQuery: 'judgmentAssessmentsByAssessment',
+      ownerArg: 'assessmentUid',
+      targetArg: 'judgmentUid',
+      field: 'judgment',
+      label: 'Judgment',
+      pluralLabel: 'Judgments',
+      icon: 'scales',
+      permission: 'JUDGMENT_ASSESSMENT',
+      optionsQuery: ALL_JUDGMENT,
+    },
+    {
+      entity: 'FindingAssessment',
+      byOwnerQuery: 'findingAssessmentsByAssessment',
+      ownerArg: 'assessmentUid',
+      targetArg: 'findingUid',
+      field: 'finding',
+      label: 'Finding',
+      pluralLabel: 'Findings',
+      icon: 'list',
+      permission: 'FINDING_ASSESSMENT',
+      optionsQuery: ALL_FINDING,
+    },
+  ],
+  // The assessments a judgment or a finding belongs to, read from its side.
+  Judgment: [
+    {
+      entity: 'JudgmentAssessment',
+      byOwnerQuery: 'judgmentAssessmentsByJudgment',
+      ownerArg: 'judgmentUid',
+      targetArg: 'assessmentUid',
+      field: 'assessment',
+      label: 'Assessment',
+      pluralLabel: 'Assessments',
+      icon: 'verified_user',
+      permission: 'JUDGMENT_ASSESSMENT',
+      optionsQuery: ALL_ASSESSMENT,
+    },
+  ],
+  Finding: [
+    {
+      entity: 'FindingAssessment',
+      byOwnerQuery: 'findingAssessmentsByFinding',
+      ownerArg: 'findingUid',
+      targetArg: 'assessmentUid',
+      field: 'assessment',
+      label: 'Assessment',
+      pluralLabel: 'Assessments',
+      icon: 'verified_user',
+      permission: 'FINDING_ASSESSMENT',
+      optionsQuery: ALL_ASSESSMENT,
+    },
+  ],
   // The centres under a centre, and the ones it sits under (centers_centers).
   // One table read from each end: the same link mutation serves both, with the
   // centre on screen as the parent in one panel and the child in the other.
@@ -1402,6 +1547,19 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   BioData: [
+    // The assessments a person is on (bio_data_assessments).
+    {
+      entity: 'BioDataAssessment',
+      byOwnerQuery: 'bioDataAssessmentsByBioData',
+      ownerArg: 'bioDataUid',
+      targetArg: 'assessmentUid',
+      field: 'assessment',
+      label: 'Assessment',
+      pluralLabel: 'Assessments',
+      icon: 'verified_user',
+      permission: 'BIO_DATA_ASSESSMENT',
+      optionsQuery: ALL_ASSESSMENT,
+    },
     {
       entity: 'UnitBioData',
       byOwnerQuery: 'unitBioDatasByBioData',

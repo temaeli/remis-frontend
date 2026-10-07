@@ -2247,6 +2247,108 @@ export const DOWN_PAYMENT = defineLookup({
 });
 
 /**
+ * Assessments, and the judgments and findings they come to. Each is a named
+ * record under a subcategory; an assessment also says the stretch of time it
+ * covers. What an assessment covers -- people, tasks, objects -- and the
+ * judgments and findings on it are panels on the assessment's own page; see
+ * `LINKS_BY_RECORD`.
+ */
+export const ASSESSMENT = defineLookup({
+  slug: 'assessments',
+  entity: 'Assessment',
+  entityPlural: 'Assessments',
+  permission: 'ASSESSMENT',
+  label: 'Assessment',
+  pluralLabel: 'Assessments',
+  subtitle: 'What is assessed, over which stretch of time',
+  icon: 'verified_user',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  fromDate
+  toDate
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'fromDate',
+      label: 'From',
+      hint: 'When the stretch assessed starts',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'toDate',
+      label: 'To',
+      hint: 'When it ends. Not before it starts',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'fromDate', header: 'From' },
+    { field: 'toDate', header: 'To' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Assessment', record?.id),
+});
+
+export const JUDGMENT = defineLookup({
+  slug: 'judgments',
+  entity: 'Judgment',
+  entityPlural: 'Judgments',
+  permission: 'JUDGMENT',
+  label: 'Judgment',
+  pluralLabel: 'Judgments',
+  subtitle: 'Judgments, and the day each was given',
+  icon: 'scales',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  judgmentsDay
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'judgmentsDay',
+      label: 'Judgment Day',
+      hint: 'When the judgment was given',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'judgmentsDay', header: 'Judgment Day' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Judgment', record?.id),
+});
+
+export const FINDING = defineLookup({
+  slug: 'findings',
+  entity: 'Finding',
+  entityPlural: 'Findings',
+  permission: 'FINDING',
+  label: 'Finding',
+  pluralLabel: 'Findings',
+  subtitle: 'What an assessment found',
+  icon: 'list',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Finding', record?.id),
+});
+
+/**
  * Centres under a subcategory, at one of six levels (`centers`). Which centre
  * sits under which is on the centre's own page — `centers_centers`, see
  * `LINKS_BY_RECORD`. Not the GePG collection centre.
@@ -3626,6 +3728,9 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   CONTRACT_AMOUNT,
   DOWN_PAYMENT,
   CENTER,
+  ASSESSMENT,
+  JUDGMENT,
+  FINDING,
   MATERIAL,
   OBJECTS_ID,
   CERTIFICATE,
