@@ -2,6 +2,7 @@ import { gql } from '@apollo/client/core';
 
 import {
   defineLookup,
+  EntityLinkConfig,
   entityLinkPanels,
   lookupChildGqlFields,
   lookupChildPanel,
@@ -62,6 +63,50 @@ export const AGREEMENT_SECTION = defineLookup({
   icon: 'description',
 });
 
+/**
+ * The two panels that place one record under another of its own kind --
+ * `sections_sections`, `clauses_clauses`, `sub_clauses_sub_clauses`,
+ * `sub_subclauses_sub_subclauses`. One table read from each end: the record on
+ * screen is the parent in the first panel and the child in the second. This is
+ * the order a printed agreement is laid out in.
+ */
+const ownKindLinks = (
+  entity: string,
+  label: string,
+  pluralLabel: string,
+  icon: string,
+  permission: string,
+  optionsQuery: unknown,
+): EntityLinkConfig[] => {
+  const camel = `${entity.charAt(0).toLowerCase()}${entity.slice(1)}`;
+  return [
+    {
+      entity,
+      byOwnerQuery: `${camel}sByParent`,
+      ownerArg: 'parentUid',
+      targetArg: 'childUid',
+      field: 'child',
+      label: `Child ${label}`,
+      pluralLabel: `Child ${pluralLabel}`,
+      icon,
+      permission,
+      optionsQuery,
+    },
+    {
+      entity,
+      byOwnerQuery: `${camel}sByChild`,
+      ownerArg: 'childUid',
+      targetArg: 'parentUid',
+      field: 'parent',
+      label: `Parent ${label}`,
+      pluralLabel: `Parent ${pluralLabel}`,
+      icon,
+      permission,
+      optionsQuery,
+    },
+  ];
+};
+
 export const SUB_SUBCLAUSE = defineLookup({
   slug: 'sub-subclauses',
   entity: 'SubSubclause',
@@ -78,6 +123,18 @@ export const SUB_SUBCLAUSE = defineLookup({
       SUB_SUBCLAUSE_VALUES_BY_SUB_SUBCLAUSE,
       { subSubclauseUid: record?.id },
       { presetModel: { subSubclauseUid: record?.id } },
+    ),
+    ...entityLinkPanels(
+      comp,
+      ownKindLinks(
+        'SubSubclauseConnection',
+        'Sub-subclause',
+        'Sub-subclauses',
+        'notes',
+        'SUB_SUBCLAUSE_CONNECTION',
+        SUB_SUBCLAUSE.gql.all,
+      ),
+      record?.id,
     ),
   ],
 });
@@ -117,6 +174,18 @@ export const SUB_CLAUSE = defineLookup({
         { subClauseUid: record?.id },
         { presetModel: { subClauseUid: record?.id } },
       ),
+      entityLinkPanels(
+        comp,
+        ownKindLinks(
+          'SubClauseConnection',
+          'Sub-clause',
+          'Sub-clauses',
+          'subject',
+          'SUB_CLAUSE_CONNECTION',
+          SUB_CLAUSE.gql.all,
+        ),
+        record?.id,
+      ),
     ),
 });
 
@@ -155,6 +224,18 @@ export const CLAUSE = defineLookup({
         { clauseUid: record?.id },
         { presetModel: { clauseUid: record?.id } },
       ),
+      entityLinkPanels(
+        comp,
+        ownKindLinks(
+          'ClauseConnection',
+          'Clause',
+          'Clauses',
+          'notes',
+          'CLAUSE_CONNECTION',
+          CLAUSE.gql.all,
+        ),
+        record?.id,
+      ),
     ),
 });
 
@@ -192,6 +273,18 @@ export const SECTION = defineLookup({
         SECTION_VALUES_BY_SECTION,
         { sectionUid: record?.id },
         { presetModel: { sectionUid: record?.id } },
+      ),
+      entityLinkPanels(
+        comp,
+        ownKindLinks(
+          'SectionConnection',
+          'Section',
+          'Sections',
+          'folder',
+          'SECTION_CONNECTION',
+          SECTION.gql.all,
+        ),
+        record?.id,
       ),
     ),
 });

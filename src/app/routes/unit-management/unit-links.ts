@@ -1447,6 +1447,32 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   Agreement: [
+    // One agreement under another -- agreements_agreements. The same table
+    // read from each end: what follows this agreement, and what it follows.
+    {
+      entity: 'AgreementConnection',
+      byOwnerQuery: 'agreementConnectionsByParent',
+      ownerArg: 'parentUid',
+      targetArg: 'childUid',
+      field: 'child',
+      label: 'Child Agreement',
+      pluralLabel: 'Child Agreements',
+      icon: 'description',
+      permission: 'AGREEMENT_CONNECTION',
+      optionsQuery: ALL_AGREEMENT,
+    },
+    {
+      entity: 'AgreementConnection',
+      byOwnerQuery: 'agreementConnectionsByChild',
+      ownerArg: 'childUid',
+      targetArg: 'parentUid',
+      field: 'parent',
+      label: 'Parent Agreement',
+      pluralLabel: 'Parent Agreements',
+      icon: 'description',
+      permission: 'AGREEMENT_CONNECTION',
+      optionsQuery: ALL_AGREEMENT,
+    },
     {
       entity: 'UnitAgreement',
       byOwnerQuery: 'unitAgreementsByAgreement',
