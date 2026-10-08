@@ -180,7 +180,7 @@ export const SUB_CLAUSE = defineLookup({
           'SubClauseConnection',
           'Sub-clause',
           'Sub-clauses',
-          'subject',
+          'notes',
           'SUB_CLAUSE_CONNECTION',
           SUB_CLAUSE.gql.all,
         ),
@@ -300,6 +300,40 @@ export const SECTION = defineLookup({
  * Read from the level's own page as well as from a screen of their own, since
  * that is where someone reading a clause expects to find its wording.
  */
+/** Every agreement, for choosing the ones a wording is used in. */
+const ALL_AGREEMENTS_FOR_WORDING = gql`
+  query allAgreements {
+    allAgreements {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * The agreements one wording is used in, read from the wording's side --
+ * `agreements_sections_values` and its three siblings. Wording that is the same
+ * in every agreement shows them all here.
+ */
+const wordingAgreements = (
+  entity: string,
+  field: string,
+  permission: string,
+): EntityLinkConfig[] => [
+  {
+    entity,
+    byOwnerQuery: `${entity.charAt(0).toLowerCase()}${entity.slice(1)}sBy${field.charAt(0).toUpperCase()}${field.slice(1)}`,
+    ownerArg: `${field}Uid`,
+    targetArg: 'agreementUid',
+    field: 'agreement',
+    label: 'Agreement',
+    pluralLabel: 'Agreements',
+    icon: 'list',
+    permission,
+    optionsQuery: ALL_AGREEMENTS_FOR_WORDING,
+  },
+];
+
 export const SECTION_VALUE = defineLookup({
   slug: 'section-values',
   entity: 'SectionValue',
@@ -317,6 +351,12 @@ export const SECTION_VALUE = defineLookup({
   extraFields: [parentSelect('sectionUid', 'Section', SECTION.gql.all)],
   extraColumns: [{ field: 'section', valueFn: (row) => row?.section?.name }],
   toModel: (data) => ({ sectionUid: data?.section?.id }),
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      wordingAgreements('AgreementSectionValue', 'sectionValue', 'AGREEMENT_SECTION_VALUE'),
+      record?.id,
+    ),
 });
 
 export const CLAUSE_VALUE = defineLookup({
@@ -336,6 +376,12 @@ export const CLAUSE_VALUE = defineLookup({
   extraFields: [parentSelect('clauseUid', 'Clause', CLAUSE.gql.all)],
   extraColumns: [{ field: 'clause', valueFn: (row) => row?.clause?.name }],
   toModel: (data) => ({ clauseUid: data?.clause?.id }),
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      wordingAgreements('AgreementClauseValue', 'clauseValue', 'AGREEMENT_CLAUSE_VALUE'),
+      record?.id,
+    ),
 });
 
 export const SUB_CLAUSE_VALUE = defineLookup({
@@ -357,6 +403,12 @@ export const SUB_CLAUSE_VALUE = defineLookup({
     { field: 'subClause', header: 'Sub-clause', valueFn: (row) => row?.subClause?.name },
   ],
   toModel: (data) => ({ subClauseUid: data?.subClause?.id }),
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      wordingAgreements('AgreementSubClauseValue', 'subClauseValue', 'AGREEMENT_SUB_CLAUSE_VALUE'),
+      record?.id,
+    ),
 });
 
 export const SUB_SUBCLAUSE_VALUE = defineLookup({
@@ -382,6 +434,16 @@ export const SUB_SUBCLAUSE_VALUE = defineLookup({
     },
   ],
   toModel: (data) => ({ subSubclauseUid: data?.subSubclause?.id }),
+  extraContents: (comp, record) =>
+    entityLinkPanels(
+      comp,
+      wordingAgreements(
+        'AgreementSubSubclauseValue',
+        'subSubclauseValue',
+        'AGREEMENT_SUB_SUBCLAUSE_VALUE',
+      ),
+      record?.id,
+    ),
 });
 
 export const SUB_SUBCLAUSE_VALUES_BY_SUB_SUBCLAUSE = gql`

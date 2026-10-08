@@ -22,6 +22,42 @@ import { entityLinkPanels, EntityLinkConfig } from '@shared/lookup';
  * what the controllers ask for.
  */
 
+const ALL_SECTION_VALUE = gql`
+  query allSectionValues {
+    allSectionValues {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_CLAUSE_VALUE = gql`
+  query allClauseValues {
+    allClauseValues {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_SUB_CLAUSE_VALUE = gql`
+  query allSubClauseValues {
+    allSubClauseValues {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_SUB_SUBCLAUSE_VALUE = gql`
+  query allSubSubclauseValues {
+    allSubSubclauseValues {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_AGREEMENT = gql`
   query allAgreements {
     allAgreements {
@@ -1447,6 +1483,58 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   Agreement: [
+    // The wording this agreement is written with, one panel per level
+    // (agreements_sections_values, agreements_clauses_values,
+    // agreements_sub_clauses_values, agreements_sub_subclauses_values). Wording
+    // shared by every agreement, the GCC for one, is linked to each that uses it.
+    {
+      entity: 'AgreementSectionValue',
+      byOwnerQuery: 'agreementSectionValuesByAgreement',
+      ownerArg: 'agreementUid',
+      targetArg: 'sectionValueUid',
+      field: 'sectionValue',
+      label: 'Section Wording',
+      pluralLabel: 'Section Wordings',
+      icon: 'folder',
+      permission: 'AGREEMENT_SECTION_VALUE',
+      optionsQuery: ALL_SECTION_VALUE,
+    },
+    {
+      entity: 'AgreementClauseValue',
+      byOwnerQuery: 'agreementClauseValuesByAgreement',
+      ownerArg: 'agreementUid',
+      targetArg: 'clauseValueUid',
+      field: 'clauseValue',
+      label: 'Clause Wording',
+      pluralLabel: 'Clause Wordings',
+      icon: 'notes',
+      permission: 'AGREEMENT_CLAUSE_VALUE',
+      optionsQuery: ALL_CLAUSE_VALUE,
+    },
+    {
+      entity: 'AgreementSubClauseValue',
+      byOwnerQuery: 'agreementSubClauseValuesByAgreement',
+      ownerArg: 'agreementUid',
+      targetArg: 'subClauseValueUid',
+      field: 'subClauseValue',
+      label: 'Sub-clause Wording',
+      pluralLabel: 'Sub-clause Wordings',
+      icon: 'notes',
+      permission: 'AGREEMENT_SUB_CLAUSE_VALUE',
+      optionsQuery: ALL_SUB_CLAUSE_VALUE,
+    },
+    {
+      entity: 'AgreementSubSubclauseValue',
+      byOwnerQuery: 'agreementSubSubclauseValuesByAgreement',
+      ownerArg: 'agreementUid',
+      targetArg: 'subSubclauseValueUid',
+      field: 'subSubclauseValue',
+      label: 'Sub-subclause Wording',
+      pluralLabel: 'Sub-subclause Wordings',
+      icon: 'notes',
+      permission: 'AGREEMENT_SUB_SUBCLAUSE_VALUE',
+      optionsQuery: ALL_SUB_SUBCLAUSE_VALUE,
+    },
     // One agreement under another -- agreements_agreements. The same table
     // read from each end: what follows this agreement, and what it follows.
     {
@@ -1457,7 +1545,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       field: 'child',
       label: 'Child Agreement',
       pluralLabel: 'Child Agreements',
-      icon: 'description',
+      icon: 'list',
       permission: 'AGREEMENT_CONNECTION',
       optionsQuery: ALL_AGREEMENT,
     },
@@ -1469,7 +1557,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       field: 'parent',
       label: 'Parent Agreement',
       pluralLabel: 'Parent Agreements',
-      icon: 'description',
+      icon: 'list',
       permission: 'AGREEMENT_CONNECTION',
       optionsQuery: ALL_AGREEMENT,
     },
