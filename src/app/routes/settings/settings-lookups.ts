@@ -2853,6 +2853,44 @@ export const USE_ITEM_REF_ON_PAY = defineLookup({
 });
 
 /**
+ * Accounts under a subcategory, and the day each started (`accounts`). The fees
+ * that belong to an account are a panel on its own page -- `accounts_fees`, see
+ * `LINKS_BY_RECORD`. Not a bank account.
+ */
+export const ACCOUNT = defineLookup({
+  slug: 'accounts',
+  entity: 'Account',
+  entityPlural: 'Accounts',
+  permission: 'ACCOUNT',
+  label: 'Account',
+  pluralLabel: 'Accounts',
+  subtitle: 'Accounts, and the fees that belong to each',
+  icon: 'wallet',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  startedDay
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'startedDay',
+      label: 'Started Day',
+      hint: 'When the account started',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'startedDay', header: 'Started' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Account', record?.id),
+});
+
+/**
  * What one unit of a billable thing costs. Every bill item starts here: its
  * amount is this multiplied by the quantity, and the VAT, discount and
  * withholding tax are all multiplied onto that.
@@ -3701,6 +3739,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   WITHHOLDING_TAX,
   USE_ITEM_REF_ON_PAY,
   FEE,
+  ACCOUNT,
   BILL_HEADERS_DESCRIPTION,
   BILL_DETAILS_TEMPLATE,
   BILL_HEADERS_SETTING,

@@ -58,6 +58,15 @@ const ALL_SUB_SUBCLAUSE_VALUE = gql`
   }
 `;
 
+const ALL_ACCOUNT = gql`
+  query allAccounts {
+    allAccounts {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_AGREEMENT = gql`
   query allAgreements {
     allAgreements {
@@ -1325,6 +1334,21 @@ const UNIT_LINKS: EntityLinkConfig[] = [
  * solutions, so it earns two panels.
  */
 const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
+  // The fees that belong to an account (accounts_fees).
+  Account: [
+    {
+      entity: 'AccountFee',
+      byOwnerQuery: 'accountFeesByAccount',
+      ownerArg: 'accountUid',
+      targetArg: 'feeUid',
+      field: 'fee',
+      label: 'Fee',
+      pluralLabel: 'Fees',
+      icon: 'coins',
+      permission: 'ACCOUNT_FEE',
+      optionsQuery: ALL_FEE,
+    },
+  ],
   // What an assessment covers, and what it came to: one panel per link table
   // (bio_data_assessments, tasks_assessments, objectsid_assessments,
   // judgments_assessments, findings_assessments).
@@ -1893,6 +1917,19 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   Fee: [
+    // The accounts a fee is under (accounts_fees), read from the fee's side.
+    {
+      entity: 'AccountFee',
+      byOwnerQuery: 'accountFeesByFee',
+      ownerArg: 'feeUid',
+      targetArg: 'accountUid',
+      field: 'account',
+      label: 'Account',
+      pluralLabel: 'Accounts',
+      icon: 'wallet',
+      permission: 'ACCOUNT_FEE',
+      optionsQuery: ALL_ACCOUNT,
+    },
     {
       entity: 'UnitFee',
       byOwnerQuery: 'unitFeesByFee',
