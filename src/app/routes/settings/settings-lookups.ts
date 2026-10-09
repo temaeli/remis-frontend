@@ -1002,7 +1002,7 @@ export const HEADERS_FOR_CN_REUSE = defineLookup({
 });
 
 /**
- * The nineteen labels of the PostgreSQL enum `remis_core_schema.statuses`,
+ * The twenty labels of the PostgreSQL enum `remis_core_schema.statuses`,
  * mirroring `CoreStatus` on the backend. The two lists have to stay in step.
  */
 export enum CoreStatus {
@@ -1025,11 +1025,13 @@ export enum CoreStatus {
   FORWARDED = 'FORWARDED',
   PASSED = 'PASSED',
   FAILED = 'FAILED',
+  WIP = 'WIP',
 }
 
 export const CORE_STATUS_OPTIONS: Option[] = Object.values(CoreStatus).map((value) => ({
   value,
-  label: getDisplayName(value) as string,
+  // Spelt out: title-casing the label would read "Wip".
+  label: value === CoreStatus.WIP ? 'Work in Progress' : (getDisplayName(value) as string),
 }));
 
 /**
