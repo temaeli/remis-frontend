@@ -335,6 +335,15 @@ const ALL_HANDOVER = gql`
   }
 `;
 
+const ALL_INSTALLMENT = gql`
+  query allInstallments {
+    allInstallments {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_INSPECTION = gql`
   query allInspections {
     allInspections {
@@ -1566,6 +1575,74 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       ],
       // NOT NULL on the join row, so the link form has to ask for it. A unit
       // appears once under a down payment, so it carries one person there.
+      extraFields: [
+        {
+          arg: 'bioDataUid',
+          rowField: 'bioData',
+          rowGqlFields: 'id\nname',
+          field: {
+            label: 'Paid By',
+            type: FieldType.select,
+            optionsVariables: {
+              labelKey: 'name',
+              valueKey: 'id',
+              fetchParameter: { query: ALL_BIO_DATA },
+            },
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+        },
+      ],
+    },
+  ],
+  // As for a down payment: the installments under an installment and the ones
+  // it sits under (installments_installments), then the units it is for
+  // (installments_units), where the join row also names the person who pays.
+  Installment: [
+    {
+      entity: 'InstallmentConnection',
+      byOwnerQuery: 'installmentConnectionsByParent',
+      ownerArg: 'parentUid',
+      targetArg: 'childUid',
+      field: 'child',
+      label: 'Child Installment',
+      pluralLabel: 'Child Installments',
+      icon: 'money',
+      permission: 'INSTALLMENT_CONNECTION',
+      optionsQuery: ALL_INSTALLMENT,
+    },
+    {
+      entity: 'InstallmentConnection',
+      byOwnerQuery: 'installmentConnectionsByChild',
+      ownerArg: 'childUid',
+      targetArg: 'parentUid',
+      field: 'parent',
+      label: 'Parent Installment',
+      pluralLabel: 'Parent Installments',
+      icon: 'money',
+      permission: 'INSTALLMENT_CONNECTION',
+      optionsQuery: ALL_INSTALLMENT,
+    },
+    {
+      entity: 'InstallmentUnit',
+      byOwnerQuery: 'installmentUnitsByInstallment',
+      ownerArg: 'installmentUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'INSTALLMENT_UNIT',
+      optionsQuery: ALL_UNIT,
+      columns: [
+        'index',
+        'unit.assignedNumber as Assigned Number',
+        'unit.name as Unit',
+        'bioData.name as Paid By',
+        'actions',
+      ],
+      // NOT NULL on the join row, so the link form has to ask for it. A unit
+      // appears once under an installment, so it carries one person there.
       extraFields: [
         {
           arg: 'bioDataUid',

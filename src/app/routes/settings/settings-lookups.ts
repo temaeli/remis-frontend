@@ -2288,6 +2288,65 @@ export const DOWN_PAYMENT = defineLookup({
 });
 
 /**
+ * What is paid in parts, under a subcategory. The same shape as a down payment,
+ * without the from and to days; the figure sits in a column named like the
+ * table, so its key is `installments`.
+ */
+export const INSTALLMENT = defineLookup({
+  slug: 'installments',
+  entity: 'Installment',
+  entityPlural: 'Installments',
+  permission: 'INSTALLMENT',
+  label: 'Installment',
+  pluralLabel: 'Installments',
+  subtitle: 'What is paid in parts, when, and for which units',
+  icon: 'money',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  installments
+  installmentDay
+  deadline
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'installments',
+      label: 'Installments',
+      hint: 'Greater than zero',
+      type: FieldType.input,
+      inputType: 'number',
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    // CHECKed by the table and refused by the backend the wrong way round.
+    {
+      key: 'installmentDay',
+      label: 'Installment Day',
+      hint: 'Before the deadline',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      hint: 'After the installment day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'installments', header: 'Installments' },
+    { field: 'installmentDay', header: 'Installment Day' },
+    { field: 'deadline', header: 'Deadline' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Installment', record?.id),
+});
+
+/**
  * Assessments, and the judgments and findings they come to. Each is a named
  * record under a subcategory; an assessment also says the stretch of time it
  * covers. What an assessment covers -- people, tasks, objects -- and the
@@ -3807,6 +3866,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   FLAT_AMOUNT,
   CONTRACT_AMOUNT,
   DOWN_PAYMENT,
+  INSTALLMENT,
   CENTER,
   ASSESSMENT,
   JUDGMENT,
