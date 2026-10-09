@@ -4,15 +4,22 @@ import { gql } from '@apollo/client/core';
 
 import { projectAssetsPanel } from './project-asset';
 import { projectPrioritiesPanel } from './priorities';
+import { CORE_STATUS_OPTIONS } from '@routes/settings/settings-lookups';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import { BaseComponent } from '@shared/components/base-componet/base-component';
+import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
+import { ContentParameter } from '@shared/components/view-component/view-interface';
 import {
   defineLookup,
   entityLinkPanels,
   EntityLinkConfig,
   lookupChildGqlFields,
   lookupChildPanel,
+  lookupDeleteBtn,
   lookupRefGqlFields,
+  lookupUpsertBtn,
   LookupModule,
+  openLookupForm,
 } from '@shared/lookup';
 
 /**
@@ -207,6 +214,7 @@ export const REGISTRY_PROJECT = defineLookup({
       },
     ),
     projectPrioritiesPanel(comp, record?.id),
+    projectStatusChangesPanel(comp, record?.id),
     ...entityLinkPanels(comp, PROJECT_STREET_LINK, record?.id),
     ...entityLinkPanels(comp, PROJECT_SP_CODE_LINK, record?.id),
   ],
@@ -347,6 +355,110 @@ export const PROJECT_PEOPLE_BY_PROJECT = gql`
     }
   }
 `;
+
+/**
+ * The statuses a project has taken, and when — `projects_statusid`.
+ *
+ * A project, a status and a day: no audit block, no flags, no code or name, so
+ * the two field blocks are overridden rather than inherited. Declared as a
+ * lookup for its form and its save and delete, but left out of
+ * `PROJECT_LOOKUPS`: the backend reads it by project only, so it has no list
+ * and no page of its own, only the panel on the project.
+ */
+export const PROJECT_STATUS_CHANGE = defineLookup({
+  slug: 'project-status-changes',
+  entity: 'ProjectStatusChange',
+  entityPlural: 'ProjectStatusChanges',
+  permission: 'PROJECT_STATUS_CHANGE',
+  label: 'Project Status',
+  pluralLabel: 'Statuses',
+  subtitle: 'The statuses a project has taken, and when',
+  icon: 'history',
+  auditGqlFields: `
+  id
+  uid: id
+`,
+  descriptiveGqlFields: `
+  status
+  changeDay
+`,
+  // The delete prompt names the row by this; there is no name column to use.
+  nameKey: 'status',
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    parentSelect('projectUid', 'Project', REGISTRY_PROJECT.gql.all),
+    {
+      key: 'status',
+      label: 'Status',
+      type: FieldType.select,
+      options: CORE_STATUS_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      // Not required: left empty, the backend records now, as the column's own
+      // default would.
+      key: 'changeDay',
+      label: 'Change Day',
+      hint: 'Leave empty to record now',
+      type: FieldType.dateTime,
+    },
+  ],
+});
+
+const statusLabel = (value?: string): string =>
+  CORE_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value ?? '';
+
+const PROJECT_STATUS_CHANGES_BY_PROJECT = gql`
+  query projectStatusChangesByProject($projectUid: String) {
+    projectStatusChangesByProject(projectUid: $projectUid) {
+      id
+      uid: id
+      status
+      changeDay
+    }
+  }
+`;
+
+/**
+ * Newest first, as the backend returns them, so the top row is where the
+ * project stands now.
+ *
+ * Built here rather than through `lookupChildPanel`, whose row menu leads with
+ * View: this table has no page to open.
+ */
+function projectStatusChangesPanel(comp: BaseComponent, projectUid?: string): ContentParameter {
+  // The by-project read does not repeat the project on each row, so an edit is
+  // told which one it is under here.
+  const lookup: LookupModule = { ...PROJECT_STATUS_CHANGE, toModel: () => ({ projectUid }) };
+
+  return {
+    type: 'table',
+    name: lookup.pluralLabel,
+    label: lookup.pluralLabel,
+    icon: lookup.icon,
+    keyColumns: [
+      'index',
+      { field: 'status', header: 'Status', valueFn: (row) => statusLabel(row?.status) },
+      { field: 'changeDay', header: 'Change Day' },
+      'actions',
+    ],
+    headerButtons: [
+      {
+        icon: 'add',
+        label: `Add ${lookup.label}`,
+        class: 'btn-add-primary',
+        click: () => openLookupForm(comp, lookup, { projectUid }),
+        permissions: lookup.upsertPermissions,
+      },
+    ],
+    actionButtons: [
+      { ...MORE_BTN, buttons: [lookupUpsertBtn(comp, lookup), lookupDeleteBtn(comp, lookup)] },
+    ],
+    reloadActions$: [lookup.changed$],
+    fetchParameter: { query: PROJECT_STATUS_CHANGES_BY_PROJECT, variables: { projectUid } },
+  };
+}
 
 const ALL_STREETS = gql`
   query allStreets {

@@ -1,6 +1,8 @@
 import { gql } from '@apollo/client/core';
 
 import { BaseComponent } from '@shared/components/base-componet/base-component';
+import { FieldType } from '@shared/components/generic-form/field.interface';
+import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import { entityLinkPanels, EntityLinkConfig } from '@shared/lookup';
 
@@ -223,6 +225,15 @@ const ALL_COST = gql`
 const ALL_DISCOUNT = gql`
   query allDiscounts {
     allDiscounts {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_DOWN_PAYMENT = gql`
+  query allDownPayments {
+    allDownPayments {
       id
       name
     }
@@ -1503,6 +1514,75 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
         'parent.name as Centre',
         'parent.hierarchy as Level',
         'actions',
+      ],
+    },
+  ],
+  // The down payments under a down payment, and the ones it sits under
+  // (down_payments_down_payments) — one table read from each end, as for
+  // centres. Then the units it is for (down_payments_units), where the join row
+  // also names the person who pays.
+  DownPayment: [
+    {
+      entity: 'DownPaymentConnection',
+      byOwnerQuery: 'downPaymentConnectionsByParent',
+      ownerArg: 'parentUid',
+      targetArg: 'childUid',
+      field: 'child',
+      label: 'Child Down Payment',
+      pluralLabel: 'Child Down Payments',
+      icon: 'money',
+      permission: 'DOWN_PAYMENT_CONNECTION',
+      optionsQuery: ALL_DOWN_PAYMENT,
+    },
+    {
+      entity: 'DownPaymentConnection',
+      byOwnerQuery: 'downPaymentConnectionsByChild',
+      ownerArg: 'childUid',
+      targetArg: 'parentUid',
+      field: 'parent',
+      label: 'Parent Down Payment',
+      pluralLabel: 'Parent Down Payments',
+      icon: 'money',
+      permission: 'DOWN_PAYMENT_CONNECTION',
+      optionsQuery: ALL_DOWN_PAYMENT,
+    },
+    {
+      entity: 'DownPaymentUnit',
+      byOwnerQuery: 'downPaymentUnitsByDownPayment',
+      ownerArg: 'downPaymentUid',
+      targetArg: 'unitUid',
+      field: 'unit',
+      label: 'Unit',
+      pluralLabel: 'Units',
+      icon: 'domain',
+      permission: 'DOWN_PAYMENT_UNIT',
+      optionsQuery: ALL_UNIT,
+      columns: [
+        'index',
+        'unit.assignedNumber as Assigned Number',
+        'unit.name as Unit',
+        'bioData.name as Paid By',
+        'actions',
+      ],
+      // NOT NULL on the join row, so the link form has to ask for it. A unit
+      // appears once under a down payment, so it carries one person there.
+      extraFields: [
+        {
+          arg: 'bioDataUid',
+          rowField: 'bioData',
+          rowGqlFields: 'id\nname',
+          field: {
+            label: 'Paid By',
+            type: FieldType.select,
+            optionsVariables: {
+              labelKey: 'name',
+              valueKey: 'id',
+              fetchParameter: { query: ALL_BIO_DATA },
+            },
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+        },
       ],
     },
   ],

@@ -2219,13 +2219,17 @@ export const DOWN_PAYMENT = defineLookup({
   permission: 'DOWN_PAYMENT',
   label: 'Down Payment',
   pluralLabel: 'Down Payments',
-  subtitle: 'What is paid up front',
+  subtitle: 'What is paid up front, when, and for which units',
   icon: 'money',
   extraGqlFields: `
   subcategory {
     ${lookupRefGqlFields}
   }
   amount
+  downPaymentDay
+  deadline
+  fromDay
+  toDay
 `,
   extraFields: [
     parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
@@ -2238,12 +2242,47 @@ export const DOWN_PAYMENT = defineLookup({
       min: 0,
       validations: [VALIDATOR_REQUIRED],
     },
+    // Two pairs, each CHECKed by the table and refused by the backend the
+    // wrong way round: the day before its deadline, and from before to.
+    {
+      key: 'downPaymentDay',
+      label: 'Down Payment Day',
+      hint: 'Before the deadline',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      hint: 'After the down payment day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'fromDay',
+      label: 'From Day',
+      hint: 'Before the to day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'toDay',
+      label: 'To Day',
+      hint: 'After the from day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
   ],
+  // The stretch it stands for reads better on the detail page than squeezed
+  // into the list.
   extraColumns: [
     { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
     { field: 'amount', header: 'Amount' },
+    { field: 'downPaymentDay', header: 'Down Payment Day' },
+    { field: 'deadline', header: 'Deadline' },
   ],
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'DownPayment', record?.id),
 });
 
 /**
