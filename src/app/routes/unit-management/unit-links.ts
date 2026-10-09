@@ -2401,6 +2401,32 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   RegistryProject: [
+    // The expenses and the bill headers that belong to a project
+    // (projects_expenses, projects_bill_headers).
+    {
+      entity: 'ProjectExpense',
+      byOwnerQuery: 'projectExpensesByProject',
+      ownerArg: 'projectUid',
+      targetArg: 'expenseUid',
+      field: 'expense',
+      label: 'Expense',
+      pluralLabel: 'Expenses',
+      icon: 'coins',
+      permission: 'PROJECT_EXPENSE',
+      optionsQuery: ALL_EXPENSE,
+    },
+    {
+      entity: 'ProjectBillHeader',
+      byOwnerQuery: 'projectBillHeadersByProject',
+      ownerArg: 'projectUid',
+      targetArg: 'billHeaderUid',
+      field: 'billHeader',
+      label: 'Bill Header',
+      pluralLabel: 'Bill Headers',
+      icon: 'bill',
+      permission: 'PROJECT_BILL_HEADER',
+      optionsQuery: ALL_BILL_HEADER,
+    },
     {
       entity: 'UnitProject',
       byOwnerQuery: 'unitProjectsByProject',
