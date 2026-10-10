@@ -113,7 +113,6 @@ export const UNIT = defineLookup({
   area
   netArea
   grossArea
-  status
   ${coordinateGqlFields}
   floor {
     ${lookupRefGqlFields}
@@ -132,25 +131,10 @@ export const UNIT = defineLookup({
     decimalField('grossArea', 'Gross Area', 'Not less than the net area', UNIT_AREA_DECIMALS),
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
-    {
-      key: 'status',
-      label: 'Status',
-      type: FieldType.select,
-      // The labels of the PostgreSQL enum `units_statuses`. The backend's
-      // UnitStatus documents them as assumed — the CREATE TYPE was never
-      // supplied — so confirm them against the database before relying on this.
-      options: [
-        { value: 'AVAILABLE', label: 'Available' },
-        { value: 'RESERVED', label: 'Reserved' },
-        { value: 'SOLD', label: 'Sold' },
-        { value: 'OCCUPIED', label: 'Occupied' },
-        { value: 'UNDER_MAINTENANCE', label: 'Under Maintenance' },
-      ],
-      validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
-    },
   ],
-  extraColumns: ['area', 'netArea as Net', 'grossArea as Gross', 'floor.name as Floor', 'status'],
+  // No status: `units` no longer carries one. The statuses a unit has taken are
+  // Unit Status Records, under Unit Management.
+  extraColumns: ['area', 'netArea as Net', 'grossArea as Gross', 'floor.name as Floor'],
   toModel: (data) => ({ floorUid: data?.floor?.id }),
   // Everything a unit relates to hangs off its own join table with its own
   // link/unlink pair. One panel each, declared in the unit module so this file
