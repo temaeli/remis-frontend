@@ -545,12 +545,41 @@ export const NOTICE = defineLookup({
   pluralLabel: 'Notices',
   subtitle: 'Notices served in relation to a unit',
   icon: 'announcement',
+  // Three days and nothing else: the table no longer carries the coordinates
+  // or the figure named after it.
   extraGqlFields: `
-  ${coordinateGqlFields}
-  notices
+  noticeDay
+  fromDay
+  deadline
 `,
-  extraFields: [...coordinateFields(), numberField('notices', 'Notices')],
-  extraColumns: ['notices'],
+  extraFields: [
+    {
+      key: 'noticeDay',
+      label: 'Notice Day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    // CHECKed by the table and refused by the backend the wrong way round.
+    {
+      key: 'fromDay',
+      label: 'From Day',
+      hint: 'Before the deadline',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      hint: 'After the from day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'noticeDay', header: 'Notice Day' },
+    { field: 'fromDay', header: 'From Day' },
+    { field: 'deadline', header: 'Deadline' },
+  ],
   // The join read from this side — which units this record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'Notice', record?.id),
 });
