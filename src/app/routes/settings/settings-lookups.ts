@@ -3493,6 +3493,95 @@ export const BILL_HEADERS_SETTING = defineLookup({
   ],
 });
 
+/**
+ * A quantity a person is billed for, under a subcategory, in a financial year —
+ * `bill_headers_settings_quantities`.
+ *
+ * Despite the name it is not tied to a bill headers setting: the table stands
+ * on its own. It has a bill creation day too, which the table requires to
+ * equal the started day, so the form asks for the started day only and the
+ * backend writes it twice.
+ */
+export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
+  slug: 'bill-setting-quantities',
+  entity: 'BillHeadersSettingQuantity',
+  entityPlural: 'BillHeadersSettingQuantities',
+  permission: 'BILL_HEADERS_SETTING_QUANTITY',
+  label: 'Bill Setting Quantity',
+  pluralLabel: 'Bill Setting Quantities',
+  subtitle: 'The quantities a person is billed for, by subcategory and financial year',
+  icon: 'calculator',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  bioData {
+    id
+    name
+  }
+  financialYear {
+    ${lookupRefGqlFields}
+  }
+  quantities
+  startedDay
+  deadline
+  billCreationDay
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'bioDataUid',
+      label: 'Person',
+      type: FieldType.select,
+      optionsVariables: {
+        labelKey: 'name',
+        valueKey: 'id',
+        fetchParameter: { query: ALL_BIO_DATA_NAMES },
+      },
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    parentSelect('financialYearUid', 'Financial Year', () => FINANCIAL_YEAR),
+    {
+      key: 'quantities',
+      label: 'Quantity',
+      hint: 'Greater than zero',
+      type: FieldType.input,
+      inputType: 'number',
+      min: 0,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    // CHECKed by the table and refused by the backend the wrong way round.
+    {
+      key: 'startedDay',
+      label: 'Started Day',
+      hint: 'Before the deadline. Also the day the bill is created',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      hint: 'After the started day',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'bioData', header: 'Person', valueFn: (row) => row?.bioData?.name },
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'financialYear', header: 'Financial Year', valueFn: (row) => row?.financialYear?.name },
+    { field: 'quantities', header: 'Quantity' },
+    { field: 'startedDay', header: 'Started Day' },
+    { field: 'deadline', header: 'Deadline' },
+  ],
+  toModel: (data) => ({
+    subcategoryUid: data?.subcategory?.id,
+    bioDataUid: data?.bioData?.id,
+    financialYearUid: data?.financialYear?.id,
+  }),
+});
+
 //  Location — the administrative hierarchy, under `modules.setting.location`.
 //
 //  country -> region -> district -> council -> ward -> street, one table per
@@ -3836,6 +3925,7 @@ export const BILLING_LOOKUPS: LookupModule[] = [
   BILL_HEADERS_DESCRIPTION,
   BILL_DETAILS_TEMPLATE,
   BILL_HEADERS_SETTING,
+  BILL_HEADERS_SETTING_QUANTITY,
   // Where a renewal-run bill's expiry comes from: first bill, then renewals.
   FIRST_WINDOW_BILLING_CYCLE,
   SECOND_WINDOW_BILLING_CYCLE,
