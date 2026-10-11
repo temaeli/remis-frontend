@@ -2442,6 +2442,30 @@ export const FINDING = defineLookup({
 });
 
 /**
+ * What an inspection noted, under a subcategory (`observations`) — where a
+ * finding is what it concluded. Which inspections recorded it is on its page.
+ */
+export const OBSERVATION = defineLookup({
+  slug: 'observations',
+  entity: 'Observation',
+  entityPlural: 'Observations',
+  permission: 'OBSERVATION',
+  label: 'Observation',
+  pluralLabel: 'Observations',
+  subtitle: 'What an inspection noted',
+  icon: 'view',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Observation', record?.id),
+});
+
+/**
  * Centres under a subcategory, at one of six levels (`centers`). Which centre
  * sits under which is on the centre's own page — `centers_centers`, see
  * `LINKS_BY_RECORD`. Not the GePG collection centre.
@@ -2573,9 +2597,13 @@ export const OBJECTS_ID = defineLookup({
   extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
   extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
-  // The grades an object carries (objectsid_grades). Deleting the object is
-  // refused while any are linked.
-  extraContents: (comp, record) => entityLinkPanels(comp, [OBJECTS_ID_GRADE_LINK], record?.id),
+  // The grades an object carries (objectsid_grades), then the inspections that
+  // looked at it (inspections_objectsid). Deleting the object is refused while
+  // any of either are linked.
+  extraContents: (comp, record) => [
+    ...entityLinkPanels(comp, [OBJECTS_ID_GRADE_LINK], record?.id),
+    ...recordLinkPanels(comp, 'ObjectsId', record?.id),
+  ],
 });
 
 /** A moment on the certificate. All five are timestamps in the table. */
@@ -3486,9 +3514,28 @@ export const BILL_HEADERS_SETTING = defineLookup({
     approvedByUid: data?.approvedBy?.id,
     requestedByUid: data?.requestedBy?.id,
   }),
-  // Whom this setting raises bills for, and the penalties billed from it.
+  // Whom this setting raises bills for, how much of it for each
+  // (bill_headers_settings_quantities), and the penalties billed from it.
   extraContents: (comp, record) => [
     billSettingPeoplePanel(comp, record?.id),
+    lookupChildPanel(
+      comp,
+      () => BILL_HEADERS_SETTING_QUANTITY,
+      BILL_SETTING_QUANTITIES_BY_SETTING,
+      { billHeadersSettingUid: record?.id },
+      {
+        presetModel: { billHeadersSettingUid: record?.id },
+        keyColumns: [
+          'index',
+          'name',
+          { field: 'bioData', header: 'Person', valueFn: (row) => row?.bioData?.name },
+          { field: 'quantities', header: 'Quantity' },
+          { field: 'startedDay', header: 'Started Day' },
+          { field: 'deadline', header: 'Deadline' },
+          'actions',
+        ],
+      },
+    ),
     ...entityLinkPanels(comp, [BILL_SETTING_PENALTY_LINK], record?.id),
   ],
 });
@@ -3497,10 +3544,10 @@ export const BILL_HEADERS_SETTING = defineLookup({
  * A quantity a person is billed for, under a subcategory, in a financial year —
  * `bill_headers_settings_quantities`.
  *
- * Despite the name it is not tied to a bill headers setting: the table stands
- * on its own. It has a bill creation day too, which the table requires to
- * equal the started day, so the form asks for the started day only and the
- * backend writes it twice.
+ * It belongs to one bill headers setting, and is listed and added on that
+ * setting's page too. It has a bill creation day as well, which the table
+ * requires to equal the started day, so the form asks for the started day only
+ * and the backend writes it twice.
  */
 export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
   slug: 'bill-setting-quantities',
@@ -3512,6 +3559,9 @@ export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
   subtitle: 'The quantities a person is billed for, by subcategory and financial year',
   icon: 'calculator',
   extraGqlFields: `
+  billHeadersSetting {
+    ${lookupRefGqlFields}
+  }
   subcategory {
     ${lookupRefGqlFields}
   }
@@ -3528,6 +3578,7 @@ export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
   billCreationDay
 `,
   extraFields: [
+    parentSelect('billHeadersSettingUid', 'Bill Headers Setting', () => BILL_HEADERS_SETTING),
     parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
     {
       key: 'bioDataUid',
@@ -3568,6 +3619,11 @@ export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
     },
   ],
   extraColumns: [
+    {
+      field: 'billHeadersSetting',
+      header: 'Bill Headers Setting',
+      valueFn: (row) => row?.billHeadersSetting?.name,
+    },
     { field: 'bioData', header: 'Person', valueFn: (row) => row?.bioData?.name },
     { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
     { field: 'financialYear', header: 'Financial Year', valueFn: (row) => row?.financialYear?.name },
@@ -3576,11 +3632,36 @@ export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
     { field: 'deadline', header: 'Deadline' },
   ],
   toModel: (data) => ({
+    billHeadersSettingUid: data?.billHeadersSetting?.id,
     subcategoryUid: data?.subcategory?.id,
     bioDataUid: data?.bioData?.id,
     financialYearUid: data?.financialYear?.id,
   }),
 });
+
+export const BILL_SETTING_QUANTITIES_BY_SETTING = gql`
+  query billHeadersSettingQuantitiesBySetting($billHeadersSettingUid: String) {
+    billHeadersSettingQuantitiesBySetting(billHeadersSettingUid: $billHeadersSettingUid) {
+      ${lookupChildGqlFields}
+      billHeadersSetting {
+        ${lookupRefGqlFields}
+      }
+      subcategory {
+        ${lookupRefGqlFields}
+      }
+      bioData {
+        id
+        name
+      }
+      financialYear {
+        ${lookupRefGqlFields}
+      }
+      quantities
+      startedDay
+      deadline
+    }
+  }
+`;
 
 //  Location — the administrative hierarchy, under `modules.setting.location`.
 //
@@ -3954,6 +4035,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   ASSESSMENT,
   JUDGMENT,
   FINDING,
+  OBSERVATION,
   MATERIAL,
   OBJECTS_ID,
   CERTIFICATE,

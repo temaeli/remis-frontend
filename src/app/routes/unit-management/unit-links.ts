@@ -123,6 +123,15 @@ const ALL_FINDING = gql`
   }
 `;
 
+const ALL_OBSERVATION = gql`
+  query allObservations {
+    allObservations {
+      id
+      name
+    }
+  }
+`;
+
 const ALL_TASK = gql`
   query allTasks {
     allTasks {
@@ -1456,6 +1465,20 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   Assessment: [
     // Who carries it out, ahead of who and what it is about.
     officerLink('AssessmentBioData', 'assessmentUid', 'ASSESSMENT_BIO_DATA', ASSESSMENT_ROLE_OPTIONS),
+    // The inspections carried out under it (inspections_assessments, read from
+    // this side).
+    {
+      entity: 'InspectionAssessment',
+      byOwnerQuery: 'inspectionAssessmentsByAssessment',
+      ownerArg: 'assessmentUid',
+      targetArg: 'inspectionUid',
+      field: 'inspection',
+      label: 'Inspection',
+      pluralLabel: 'Inspections',
+      icon: 'assignment_turned_in',
+      permission: 'INSPECTION_ASSESSMENT',
+      optionsQuery: ALL_INSPECTION,
+    },
     {
       entity: 'BioDataAssessment',
       byOwnerQuery: 'bioDataAssessmentsByAssessment',
@@ -1537,8 +1560,63 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       permission: 'JUDGMENT_ASSESSMENT',
       optionsQuery: ALL_ASSESSMENT,
     },
+    {
+      entity: 'InspectionJudgment',
+      byOwnerQuery: 'inspectionJudgmentsByJudgment',
+      ownerArg: 'judgmentUid',
+      targetArg: 'inspectionUid',
+      field: 'inspection',
+      label: 'Inspection',
+      pluralLabel: 'Inspections',
+      icon: 'assignment_turned_in',
+      permission: 'INSPECTION_JUDGMENT',
+      optionsQuery: ALL_INSPECTION,
+    },
+  ],
+  // The inspections that looked at an object, and the ones that recorded an
+  // observation — inspections_objectsid and inspections_observations, each read
+  // from the far side.
+  ObjectsId: [
+    {
+      entity: 'InspectionObjectsId',
+      byOwnerQuery: 'inspectionObjectsIdsByObjectsId',
+      ownerArg: 'objectsIdUid',
+      targetArg: 'inspectionUid',
+      field: 'inspection',
+      label: 'Inspection',
+      pluralLabel: 'Inspections',
+      icon: 'assignment_turned_in',
+      permission: 'INSPECTION_OBJECTS_ID',
+      optionsQuery: ALL_INSPECTION,
+    },
+  ],
+  Observation: [
+    {
+      entity: 'InspectionObservation',
+      byOwnerQuery: 'inspectionObservationsByObservation',
+      ownerArg: 'observationUid',
+      targetArg: 'inspectionUid',
+      field: 'inspection',
+      label: 'Inspection',
+      pluralLabel: 'Inspections',
+      icon: 'assignment_turned_in',
+      permission: 'INSPECTION_OBSERVATION',
+      optionsQuery: ALL_INSPECTION,
+    },
   ],
   Finding: [
+    {
+      entity: 'InspectionFinding',
+      byOwnerQuery: 'inspectionFindingsByFinding',
+      ownerArg: 'findingUid',
+      targetArg: 'inspectionUid',
+      field: 'inspection',
+      label: 'Inspection',
+      pluralLabel: 'Inspections',
+      icon: 'assignment_turned_in',
+      permission: 'INSPECTION_FINDING',
+      optionsQuery: ALL_INSPECTION,
+    },
     {
       entity: 'FindingAssessment',
       byOwnerQuery: 'findingAssessmentsByFinding',
@@ -2292,6 +2370,70 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   ],
   Inspection: [
     officerLink('InspectionBioData', 'inspectionUid', 'INSPECTION_BIO_DATA', INSPECTION_ROLE_OPTIONS),
+    // What the inspection belongs to and looks at, then what it records and
+    // comes to — one two-key join table each (inspections_assessments,
+    // inspections_objectsid, inspections_observations, inspections_findings,
+    // inspections_judgments).
+    {
+      entity: 'InspectionAssessment',
+      byOwnerQuery: 'inspectionAssessmentsByInspection',
+      ownerArg: 'inspectionUid',
+      targetArg: 'assessmentUid',
+      field: 'assessment',
+      label: 'Assessment',
+      pluralLabel: 'Assessments',
+      icon: 'verified_user',
+      permission: 'INSPECTION_ASSESSMENT',
+      optionsQuery: ALL_ASSESSMENT,
+    },
+    {
+      entity: 'InspectionObjectsId',
+      byOwnerQuery: 'inspectionObjectsIdsByInspection',
+      ownerArg: 'inspectionUid',
+      targetArg: 'objectsIdUid',
+      field: 'objectsId',
+      label: 'Object',
+      pluralLabel: 'Objects',
+      icon: 'institution',
+      permission: 'INSPECTION_OBJECTS_ID',
+      optionsQuery: ALL_OBJECT,
+    },
+    {
+      entity: 'InspectionObservation',
+      byOwnerQuery: 'inspectionObservationsByInspection',
+      ownerArg: 'inspectionUid',
+      targetArg: 'observationUid',
+      field: 'observation',
+      label: 'Observation',
+      pluralLabel: 'Observations',
+      icon: 'view',
+      permission: 'INSPECTION_OBSERVATION',
+      optionsQuery: ALL_OBSERVATION,
+    },
+    {
+      entity: 'InspectionFinding',
+      byOwnerQuery: 'inspectionFindingsByInspection',
+      ownerArg: 'inspectionUid',
+      targetArg: 'findingUid',
+      field: 'finding',
+      label: 'Finding',
+      pluralLabel: 'Findings',
+      icon: 'list',
+      permission: 'INSPECTION_FINDING',
+      optionsQuery: ALL_FINDING,
+    },
+    {
+      entity: 'InspectionJudgment',
+      byOwnerQuery: 'inspectionJudgmentsByInspection',
+      ownerArg: 'inspectionUid',
+      targetArg: 'judgmentUid',
+      field: 'judgment',
+      label: 'Judgment',
+      pluralLabel: 'Judgments',
+      icon: 'verified_user',
+      permission: 'INSPECTION_JUDGMENT',
+      optionsQuery: ALL_JUDGMENT,
+    },
     {
       entity: 'UnitInspection',
       byOwnerQuery: 'unitInspectionsByInspection',
