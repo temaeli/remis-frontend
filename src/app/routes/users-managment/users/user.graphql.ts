@@ -9,8 +9,9 @@ import { gql } from 'apollo-angular';
 /**
  * Personal data lives on `bio_data` in remis_core_schema, not on `uaa.users`,
  * which keeps only credentials. The column names differ from the old ones on
- * User: middleName is `secondName`, lastName is `thirdName`, nationalId is
- * `nin` and phoneNumber is `mobileNumber`.
+ * User: middleName is `secondName`, lastName is `thirdName` and phoneNumber is
+ * `mobileNumber`. There is no national ID or identity type on it any more: the
+ * DBA dropped both columns, and a person's documents are filed separately.
  *
  * Nullable — a login can exist before a person record is attached to it — so
  * always read through it defensively.
@@ -21,14 +22,8 @@ export const bioDataGqlFields = `
     firstName
     secondName
     thirdName
-    nin
     mobileNumber
     email
-    identityType {
-      id
-      uid: id
-      name
-    }
   }
 `;
 
@@ -44,7 +39,6 @@ export const LIST_PEOPLE = gql`
       firstName
       secondName
       thirdName
-      nin
     }
   }
 `;

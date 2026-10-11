@@ -43,7 +43,7 @@ const ownerFieldsGql = `
   uid: id
   ownerType
   ownershipSharePercent
-  owner { id name nin }
+  owner { id name }
 `;
 
 const encumbranceFieldsGql = `
@@ -249,7 +249,6 @@ function openOwnerForm(comp: BaseComponent, registrationUid?: string, row?: Look
 const ownerColumns: GridKeyColumn[] = [
   'index',
   'owner.name as Owner',
-  'owner.nin as National ID',
   'ownerType as Held As',
   { field: 'ownershipSharePercent', header: 'Share (%)' },
   'actions',

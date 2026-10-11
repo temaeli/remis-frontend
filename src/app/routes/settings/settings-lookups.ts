@@ -1,5 +1,5 @@
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
-import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
+import { VALIDATOR_EMAIL, VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
@@ -258,12 +258,8 @@ export const PERSON = defineLookup({
   secondName
   thirdName
   name
-  nin
   email
   mobileNumber
-  identityType {
-    ${lookupRefGqlFields}
-  }
 `,
   nameKey: 'firstName',
   baseFields: [
@@ -286,20 +282,11 @@ export const PERSON = defineLookup({
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
     },
-    {
-      key: 'identityTypeUid',
-      label: 'Identity Type',
-      type: FieldType.select,
-      optionsVariables: {
-        labelKey: 'name',
-        valueKey: 'id',
-        fetchParameter: { query: IDENTITY_TYPE.gql.all },
-      },
-      validations: [VALIDATOR_REQUIRED],
-    },
-    // The four below are UNIQUE on the table where given, and all optional: a
-    // person can be registered before their documents are to hand.
-    { key: 'nin', label: 'National ID', type: FieldType.input },
+    // No identity type and no national ID: bio_data no longer carries either.
+    // A person's documents, the national ID among them, are filed in the
+    // Identifications panel on their page.
+    //
+    // The three below are checked for clashes where given.
     { key: 'mobileNumber', label: 'Mobile Number', type: FieldType.input },
     { key: 'email', label: 'Email', type: FieldType.input, class: 'col-span-full' },
     {
@@ -315,15 +302,14 @@ export const PERSON = defineLookup({
     { field: 'firstName', header: 'First Name' },
     { field: 'secondName', header: 'Middle Name' },
     { field: 'thirdName', header: 'Last Name' },
-    { field: 'nin', header: 'National ID' },
     { field: 'mobileNumber', header: 'Mobile' },
+    { field: 'email', header: 'Email' },
   ],
-  toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
     personOrganisationsPanel(comp, record?.id),
-    // The documents beyond the one on the record itself: ZANID, driving
-    // licence, TIN. bio_data holds a single nin and one identity type.
+    // The person's documents: national ID, ZANID, driving licence. bio_data
+    // itself holds none.
     personIdentificationsPanel(comp, record?.id),
     // Where GePG's CustId reads a TIN from, when the bill's identity type
     // means TIN.
@@ -377,24 +363,27 @@ export const BUSINESS_NAME = defineLookup({
   pluralLabel: 'Business Names',
   subtitle: 'Organisations and other named entities on the register',
   icon: 'institution',
+  // No identity type: business_names no longer carries one.
   extraGqlFields: `
-  identityType {
-    ${lookupRefGqlFields}
-  }
   isPublic
+  email
+  mobileNumber
 `,
   extraFields: [
+    // Both are required and unique on the register. The number is held with
+    // its country code, so one typed as 0754000000 comes back as 255754000000.
     {
-      key: 'identityTypeUid',
-      label: 'Identity Type',
-      type: FieldType.select,
-      optionsVariables: {
-        labelKey: 'name',
-        valueKey: 'id',
-        fetchParameter: { query: IDENTITY_TYPE.gql.all },
-      },
+      key: 'email',
+      label: 'Email',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED, VALIDATOR_EMAIL],
+    },
+    {
+      key: 'mobileNumber',
+      label: 'Mobile Number',
+      hint: 'A Tanzanian mobile number, e.g. 0754000000',
+      type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
     },
     {
       key: 'isPublic',
@@ -405,7 +394,8 @@ export const BUSINESS_NAME = defineLookup({
     },
   ],
   extraColumns: [
-    { field: 'identityType', valueFn: (row) => row?.identityType?.name },
+    { field: 'email', header: 'Email' },
+    { field: 'mobileNumber', header: 'Mobile Number' },
     {
       field: 'isPublic',
       header: 'Public',
@@ -413,7 +403,10 @@ export const BUSINESS_NAME = defineLookup({
       valueClassMapper: (row) => (row?.isPublic ? 'text-success' : 'text-danger'),
     },
   ],
-  toModel: (data) => ({ identityTypeUid: data?.identityType?.id }),
+  // The number arrives as a number; the form and the mutation take text.
+  toModel: (data) => ({
+    mobileNumber: data?.mobileNumber != null ? String(data.mobileNumber) : null,
+  }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BusinessName', record?.id),
     lookupChildPanel(comp, () => BANK_ACCOUNT, BANK_ACCOUNTS_BY_ISSUER, {

@@ -52,16 +52,13 @@ export interface UserDtoInput {
 
 /**
  * The person behind a login. Names are first/second/third rather than
- * first/middle/last, the national ID is `nin`, and the phone number is numeric.
+ * first/middle/last, and the phone number is numeric.
  */
 export interface BioData {
   id?: string;
   firstName?: string;
   secondName?: string;
   thirdName?: string;
-  nin?: string;
   mobileNumber?: number | string;
   email?: string;
-  /** Required on create — `bio_data.identity_types_id` is NOT NULL. */
-  identityType?: { id?: string; uid?: string; name?: string };
 }
