@@ -29,6 +29,10 @@ import {
 import { businessNameTinsPanel, personTinsPanel } from './tin-links';
 import { billSettingPeoplePanel, personBillSettingsPanel } from './bill-setting-people';
 import { runRenewalsForNewNumberBtn, runRenewalsForReuseBtn } from './renewal-run';
+import {
+  raiseQuantityBillForNewNumberBtn,
+  raiseQuantityBillForReuseBtn,
+} from './quantity-bill-run';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
@@ -3637,6 +3641,12 @@ export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
     bioDataUid: data?.bioData?.id,
     financialYearUid: data?.financialYear?.id,
   }),
+  // Nothing bills a quantity by itself: its bill is raised from its row, on a
+  // new control number or on the one the payer already holds.
+  rowActions: (comp) => [
+    raiseQuantityBillForNewNumberBtn(comp),
+    raiseQuantityBillForReuseBtn(comp),
+  ],
 });
 
 export const BILL_SETTING_QUANTITIES_BY_SETTING = gql`
