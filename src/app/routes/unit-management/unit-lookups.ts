@@ -14,6 +14,16 @@ import { recordLinkPanels } from './unit-links';
 import { MOVE_IN_FIELDS, MOVE_OUT_FIELDS } from '@routes/settings/inventory-lookups';
 import { readingLinkPanels } from './reading-links';
 
+/** Declared here rather than imported, as below: subcategories sit in settings. */
+const ALL_SUBCATEGORIES = gql`
+  query allSubcategories {
+    allSubcategories {
+      id
+      name
+    }
+  }
+`;
+
 /** Declared here rather than imported: the inventory registry sits in settings. */
 const ALL_INVENTORIES = gql`
   query allInventories {
@@ -352,9 +362,13 @@ export const INSPECTION = defineLookup({
   subtitle: 'Inspections carried out on a unit',
   icon: 'assignment_turned_in',
   extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
   inspectionDate
 `,
   extraFields: [
+    refSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
     {
       key: 'inspectionDate',
       label: 'Inspection date',
@@ -362,8 +376,13 @@ export const INSPECTION = defineLookup({
       validations: [VALIDATOR_REQUIRED],
     },
   ],
-  extraColumns: [{ field: 'inspectionDate', header: 'Inspection date' }],
-  // The join read from this side — which units this record applies to.
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'inspectionDate', header: 'Inspection date' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  // The officers on it, then the join read from this side — which units this
+  // record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'Inspection', record?.id),
 });
 

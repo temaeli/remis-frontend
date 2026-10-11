@@ -177,6 +177,87 @@ const ALL_BIO_DATA = gql`
   }
 `;
 
+/**
+ * The labels of the PostgreSQL enum `remis_core_schema.roleid`, mirroring
+ * `OfficerRole` on the backend: six for an inspection, six for an assessment.
+ * One database type holds all twelve; each panel offers only its own.
+ */
+const INSPECTION_ROLE_OPTIONS = [
+  { value: 'INSPECTION_OFFICER', label: 'Inspection Officer' },
+  { value: 'SENIOR_INSPECTION_OFFICER', label: 'Senior Inspection Officer' },
+  { value: 'PRINCIPAL_INSPECTION_OFFICER', label: 'Principal Inspection Officer' },
+  { value: 'INSPECTION_SUPERVISOR', label: 'Inspection Supervisor' },
+  { value: 'INSPECTION_MANAGER', label: 'Inspection Manager' },
+  { value: 'DIRECTOR_OF_INSPECTION', label: 'Director of Inspection' },
+];
+
+const ASSESSMENT_ROLE_OPTIONS = [
+  { value: 'ASSESSMENT_OFFICER', label: 'Assessment Officer' },
+  { value: 'SENIOR_ASSESSMENT_OFFICER', label: 'Senior Assessment Officer' },
+  { value: 'PRINCIPAL_ASSESSMENT_OFFICER', label: 'Principal Assessment Officer' },
+  { value: 'ASSESSMENT_SUPERVISOR', label: 'Assessment Supervisor' },
+  { value: 'ASSESSMENT_MANAGER', label: 'Assessment Manager' },
+  { value: 'DIRECTOR_OF_ASSESSMENT', label: 'Director of Assessment' },
+];
+
+const OFFICER_ROLE_OPTIONS = [...INSPECTION_ROLE_OPTIONS, ...ASSESSMENT_ROLE_OPTIONS];
+
+/**
+ * The officers on an inspection or an assessment — `inspections_bio_data` and
+ * `assessments_bio_data`, the same panel with different words. The join row
+ * names the person and the role they hold; linking someone already there under
+ * another role changes their role.
+ */
+const officerLink = (
+  entity: 'InspectionBioData' | 'AssessmentBioData',
+  ownerArg: 'inspectionUid' | 'assessmentUid',
+  permission: string,
+  roleOptions: { value: string; label: string }[],
+): EntityLinkConfig => ({
+  entity,
+  byOwnerQuery: ownerArg === 'inspectionUid' ? 'inspectionBioDataByInspection' : 'assessmentBioDataByAssessment',
+  ownerArg,
+  targetArg: 'bioDataUid',
+  field: 'bioData',
+  label: 'Officer',
+  pluralLabel: 'Officers',
+  icon: 'users',
+  permission,
+  optionsQuery: ALL_BIO_DATA,
+  targetGqlFields: `
+    id
+    uid: id
+    name
+  `,
+  columns: [
+    'index',
+    'bioData.name as Officer',
+    {
+      field: 'role',
+      header: 'Role',
+      // Read from all twelve: the table lets a row hold either family's label.
+      valueFn: (row) =>
+        OFFICER_ROLE_OPTIONS.find((option) => option.value === row?.role)?.label ?? row?.role,
+    },
+    'actions',
+  ],
+  extraFields: [
+    {
+      arg: 'role',
+      rowField: 'role',
+      // An enum argument, so the variable cannot be declared as a String.
+      gqlType: 'OfficerRole',
+      field: {
+        label: 'Role',
+        type: FieldType.select,
+        options: roleOptions,
+        validations: [VALIDATOR_REQUIRED],
+        class: 'col-span-full',
+      },
+    },
+  ],
+});
+
 const ALL_BOOKING = gql`
   query allBookings {
     allBookings {
@@ -1373,6 +1454,8 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   // (bio_data_assessments, tasks_assessments, objectsid_assessments,
   // judgments_assessments, findings_assessments).
   Assessment: [
+    // Who carries it out, ahead of who and what it is about.
+    officerLink('AssessmentBioData', 'assessmentUid', 'ASSESSMENT_BIO_DATA', ASSESSMENT_ROLE_OPTIONS),
     {
       entity: 'BioDataAssessment',
       byOwnerQuery: 'bioDataAssessmentsByAssessment',
@@ -2208,6 +2291,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   Inspection: [
+    officerLink('InspectionBioData', 'inspectionUid', 'INSPECTION_BIO_DATA', INSPECTION_ROLE_OPTIONS),
     {
       entity: 'UnitInspection',
       byOwnerQuery: 'unitInspectionsByInspection',
