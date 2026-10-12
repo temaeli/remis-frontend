@@ -186,45 +186,34 @@ const ALL_BIO_DATA = gql`
   }
 `;
 
-/**
- * The labels of the PostgreSQL enum `remis_core_schema.roleid`, mirroring
- * `OfficerRole` on the backend: six for an inspection, six for an assessment.
- * One database type holds all twelve; each panel offers only its own.
- */
-const INSPECTION_ROLE_OPTIONS = [
-  { value: 'INSPECTION_OFFICER', label: 'Inspection Officer' },
-  { value: 'SENIOR_INSPECTION_OFFICER', label: 'Senior Inspection Officer' },
-  { value: 'PRINCIPAL_INSPECTION_OFFICER', label: 'Principal Inspection Officer' },
-  { value: 'INSPECTION_SUPERVISOR', label: 'Inspection Supervisor' },
-  { value: 'INSPECTION_MANAGER', label: 'Inspection Manager' },
-  { value: 'DIRECTOR_OF_INSPECTION', label: 'Director of Inspection' },
-];
-
-const ASSESSMENT_ROLE_OPTIONS = [
-  { value: 'ASSESSMENT_OFFICER', label: 'Assessment Officer' },
-  { value: 'SENIOR_ASSESSMENT_OFFICER', label: 'Senior Assessment Officer' },
-  { value: 'PRINCIPAL_ASSESSMENT_OFFICER', label: 'Principal Assessment Officer' },
-  { value: 'ASSESSMENT_SUPERVISOR', label: 'Assessment Supervisor' },
-  { value: 'ASSESSMENT_MANAGER', label: 'Assessment Manager' },
-  { value: 'DIRECTOR_OF_ASSESSMENT', label: 'Director of Assessment' },
-];
-
-const OFFICER_ROLE_OPTIONS = [...INSPECTION_ROLE_OPTIONS, ...ASSESSMENT_ROLE_OPTIONS];
+/** The positions register: what a person can be put on a piece of work as. */
+const ALL_POSITION = gql`
+  query allPositions {
+    allPositions {
+      id
+      name
+    }
+  }
+`;
 
 /**
  * The officers on an inspection or an assessment — `inspections_bio_data` and
  * `assessments_bio_data`, the same panel with different words. The join row
- * names the person and the role they hold; linking someone already there under
- * another role changes their role.
+ * names the person and the position they hold; linking someone already there
+ * under another position changes their position.
+ *
+ * The position is a row of `positions`, where it used to be one of twelve
+ * fixed roles. Both panels offer the whole register: nothing on a position
+ * says whether it is for inspecting or assessing.
  */
 const officerLink = (
   entity: 'InspectionBioData' | 'AssessmentBioData',
   ownerArg: 'inspectionUid' | 'assessmentUid',
   permission: string,
-  roleOptions: { value: string; label: string }[],
 ): EntityLinkConfig => ({
   entity,
-  byOwnerQuery: ownerArg === 'inspectionUid' ? 'inspectionBioDataByInspection' : 'assessmentBioDataByAssessment',
+  byOwnerQuery:
+    ownerArg === 'inspectionUid' ? 'inspectionBioDataByInspection' : 'assessmentBioDataByAssessment',
   ownerArg,
   targetArg: 'bioDataUid',
   field: 'bioData',
@@ -238,28 +227,21 @@ const officerLink = (
     uid: id
     name
   `,
-  columns: [
-    'index',
-    'bioData.name as Officer',
-    {
-      field: 'role',
-      header: 'Role',
-      // Read from all twelve: the table lets a row hold either family's label.
-      valueFn: (row) =>
-        OFFICER_ROLE_OPTIONS.find((option) => option.value === row?.role)?.label ?? row?.role,
-    },
-    'actions',
-  ],
+  columns: ['index', 'bioData.name as Officer', 'position.name as Position', 'actions'],
   extraFields: [
     {
-      arg: 'role',
-      rowField: 'role',
-      // An enum argument, so the variable cannot be declared as a String.
-      gqlType: 'OfficerRole',
+      arg: 'positionUid',
+      rowField: 'position',
+      rowGqlFields: 'id\nname',
       field: {
-        label: 'Role',
+        label: 'Position',
+        hint: 'Maintained under Reference Data > Positions',
         type: FieldType.select,
-        options: roleOptions,
+        optionsVariables: {
+          labelKey: 'name',
+          valueKey: 'id',
+          fetchParameter: { query: ALL_POSITION },
+        },
         validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },
@@ -1464,7 +1446,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   // judgments_assessments, findings_assessments).
   Assessment: [
     // Who carries it out, ahead of who and what it is about.
-    officerLink('AssessmentBioData', 'assessmentUid', 'ASSESSMENT_BIO_DATA', ASSESSMENT_ROLE_OPTIONS),
+    officerLink('AssessmentBioData', 'assessmentUid', 'ASSESSMENT_BIO_DATA'),
     // The inspections carried out under it (inspections_assessments, read from
     // this side).
     {
@@ -2369,7 +2351,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   Inspection: [
-    officerLink('InspectionBioData', 'inspectionUid', 'INSPECTION_BIO_DATA', INSPECTION_ROLE_OPTIONS),
+    officerLink('InspectionBioData', 'inspectionUid', 'INSPECTION_BIO_DATA'),
     // What the inspection belongs to and looks at, then what it records and
     // comes to — one two-key join table each (inspections_assessments,
     // inspections_objectsid, inspections_observations, inspections_findings,

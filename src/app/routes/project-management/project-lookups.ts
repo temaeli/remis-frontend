@@ -208,6 +208,11 @@ export const REGISTRY_PROJECT = defineLookup({
             header: 'Capacity',
             valueFn: (row: any) => row?.subcategory?.name,
           },
+          {
+            field: 'position',
+            header: 'Position',
+            valueFn: (row: any) => row?.position?.name,
+          },
           'name',
           'actions',
         ],
@@ -232,6 +237,15 @@ const ALL_SP_CODES = gql`
 const ALL_SUBCATEGORIES = gql`
   query allSubcategories {
     allSubcategories {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_POSITIONS = gql`
+  query allPositions {
+    allPositions {
       id
       name
     }
@@ -285,7 +299,8 @@ const PROJECT_SP_CODE_LINK: EntityLinkConfig[] = [
  * Not a link panel: `projects_bio_data` carries the whole audit block and a
  * code, name and description of its own, so a person's part in a project is a
  * record to be described rather than a line drawn between two ids. The
- * subcategory says in what capacity.
+ * subcategory says in what capacity, and the position (`positions`) what they
+ * are on the project as; the table will not take a row without one.
  */
 export const PROJECT_PERSON = defineLookup({
   slug: 'project-people',
@@ -301,6 +316,9 @@ export const PROJECT_PERSON = defineLookup({
     ${lookupRefGqlFields}
   }
   project {
+    ${lookupRefGqlFields}
+  }
+  position {
     ${lookupRefGqlFields}
   }
   person {
@@ -326,16 +344,19 @@ export const PROJECT_PERSON = defineLookup({
       class: 'col-span-full',
     },
     parentSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
+    parentSelect('positionUid', 'Position', ALL_POSITIONS),
   ],
   extraColumns: [
     { field: 'project', valueFn: (row) => row?.project?.name },
     { field: 'person', header: 'Person', valueFn: (row) => personName(row?.person) },
     { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'position', valueFn: (row) => row?.position?.name },
   ],
   toModel: (data) => ({
     projectUid: data?.project?.id,
     personUid: data?.person?.id,
     subcategoryUid: data?.subcategory?.id,
+    positionUid: data?.position?.id,
   }),
 });
 
@@ -350,6 +371,9 @@ export const PROJECT_PEOPLE_BY_PROJECT = gql`
         thirdName
       }
       subcategory {
+        ${lookupRefGqlFields}
+      }
+      position {
         ${lookupRefGqlFields}
       }
     }

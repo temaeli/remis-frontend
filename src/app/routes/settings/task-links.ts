@@ -64,7 +64,22 @@ interface TaskLinkConfig {
    */
   sideFields?: string;
   sideLabel?: (row: any) => string;
+  /**
+   * The link also names a position, which the form asks for and the mutation
+   * takes as `positionUid`. Only `tasks_bio_data` does: the DBA added a NOT
+   * NULL `positions_id` to it, so a person is put on a task as something.
+   */
+  withPosition?: boolean;
 }
+
+const allPositions = gql`
+  query allPositions {
+    allPositions {
+      id
+      name
+    }
+  }
+`;
 
 const allBusinessNames = gql`
   query allBusinessNames {
@@ -284,6 +299,7 @@ const TASK_LINKS: TaskLinkConfig[] = [
       thirdName
     `,
     sideLabel: personName,
+    withPosition: true,
   },
   {
     entity: 'TaskBudget',
@@ -477,7 +493,10 @@ const buildGql = (config: TaskLinkConfig) => {
   ${field} {
     ${config.sideFields ?? sideGqlFields}
   }
+  ${config.withPosition ? 'position {\n    id\n    name\n  }' : ''}
 `;
+  const positionDeclared = config.withPosition ? ', $positionUid: String' : '';
+  const positionPassed = config.withPosition ? ', positionUid: $positionUid' : '';
 
   return {
     byTask: gql`
@@ -488,8 +507,8 @@ const buildGql = (config: TaskLinkConfig) => {
       }
     `,
     link: gql`
-      mutation link${entity}($taskUid: String, $${field}Uid: String) {
-        link${entity}(taskUid: $taskUid, ${field}Uid: $${field}Uid) {
+      mutation link${entity}($taskUid: String, $${field}Uid: String${positionDeclared}) {
+        link${entity}(taskUid: $taskUid, ${field}Uid: $${field}Uid${positionPassed}) {
           ${responseGqlFields(rowFields)}
         }
       }
@@ -541,6 +560,25 @@ function linkBtn(
             validations: [VALIDATOR_REQUIRED],
             class: 'col-span-full',
           },
+          // Linking someone already there under another position changes
+          // their position rather than adding them twice.
+          ...(config.withPosition
+            ? [
+                {
+                  key: 'positionUid',
+                  label: 'Position',
+                  hint: 'Maintained under Reference Data > Positions',
+                  type: FieldType.select,
+                  optionsVariables: {
+                    labelKey: 'name',
+                    valueKey: 'id',
+                    fetchParameter: { query: allPositions },
+                  },
+                  validations: [VALIDATOR_REQUIRED],
+                  class: 'col-span-full',
+                },
+              ]
+            : []),
         ],
         closeAction$: close$,
 
@@ -602,6 +640,7 @@ const linkColumns = (config: TaskLinkConfig): GridKeyColumn[] =>
           header: config.label,
           valueFn: (row: any) => config.sideLabel!(row?.[config.field]),
         },
+        ...(config.withPosition ? (['position.name as Position'] as GridKeyColumn[]) : []),
         'actions',
       ]
     : [

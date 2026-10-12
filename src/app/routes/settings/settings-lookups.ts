@@ -2470,6 +2470,32 @@ export const OBSERVATION = defineLookup({
 });
 
 /**
+ * What a person can be put on a piece of work as, under a subcategory
+ * (`positions`). Picked when someone is put on an inspection, an assessment, a
+ * project or a task; it replaced a fixed list of twelve roles.
+ *
+ * Not a designation, which is a member of staff's job title on their login.
+ */
+export const POSITION = defineLookup({
+  slug: 'positions',
+  entity: 'Position',
+  entityPlural: 'Positions',
+  permission: 'POSITION',
+  label: 'Position',
+  pluralLabel: 'Positions',
+  subtitle: 'What a person is on an inspection, an assessment, a project or a task as',
+  icon: 'users',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+/**
  * Centres under a subcategory, at one of six levels (`centers`). Which centre
  * sits under which is on the centre's own page — `centers_centers`, see
  * `LINKS_BY_RECORD`. Not the GePG collection centre.
@@ -4046,6 +4072,7 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   JUDGMENT,
   FINDING,
   OBSERVATION,
+  POSITION,
   MATERIAL,
   OBJECTS_ID,
   CERTIFICATE,
