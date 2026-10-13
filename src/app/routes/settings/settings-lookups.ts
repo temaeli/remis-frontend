@@ -694,6 +694,40 @@ export const PAYMENT_SERVICE_PROVIDER = defineLookup({
   pluralLabel: 'Payment Service Providers',
   subtitle: 'The banks and operators a bill can be paid through',
   icon: 'payment',
+  // The code is what a bill sends to GePG as CollPsp, so it is typed, never
+  // generated: a generated one would go out as if it were the provider's.
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'name',
+      label: 'Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'assignedNumber',
+      label: 'GePG PSP Code',
+      hint: 'The code GePG knows this provider by. Sent on every bill as CollPsp',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      type: FieldType.textarea,
+      rows: 3,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  baseColumns: [
+    'index',
+    { field: 'assignedNumber', header: 'GePG PSP Code' },
+    'name',
+    'description',
+  ],
   extraGqlFields: `
   businessName {
     ${lookupRefGqlFields}
