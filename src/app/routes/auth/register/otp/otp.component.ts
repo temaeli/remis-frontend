@@ -1,129 +1,110 @@
-import { Component, ElementRef, inject, QueryList, ViewChildren } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormControl } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { Router } from '@angular/router';
-import { take } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
 import { LoadingDirective } from '@core/loading/loader.directive';
 import { NotificationService } from '@shared/services/notification.service';
-import { AuthService } from '../../auth.service';
 import { settings$ } from '@core/settings/settings.store';
+import { RegistrationService } from '../registration.service';
 
+const CODE_LENGTH = 6;
+
+/**
+ * Step two of registering yourself: the code that was sent to the email and the
+ * mobile number given on the form. A correct code creates the account and
+ * leads to the sign-in screen.
+ *
+ * Opened with nothing waiting on a code -- by a reload, or straight from a link
+ * -- it says so and points back to the form, since what was typed there is
+ * kept in memory only.
+ */
 @Component({
   selector: 'app-otp',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    LoadingDirective,
-  ],
+  imports: [MatButtonModule, LoadingDirective, RouterLink],
   templateUrl: './otp.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OtpComponent {
-  fb = inject(FormBuilder);
-  auth = inject(AuthService);
-  notify = inject(NotificationService);
-  router = inject(Router);
+  private readonly registration = inject(RegistrationService);
+  private readonly notify = inject(NotificationService);
+  private readonly router = inject(Router);
 
-  @ViewChildren('otpInput') otpInputs!: QueryList<ElementRef>;
+  private readonly boxes = viewChildren<ElementRef<HTMLInputElement>>('otpInput');
 
   animation = settings$.value.animations?.auth;
 
-  otpControls = Array.from(
-    { length: 6 },
-    () => new FormControl('', [Validators.required, Validators.pattern(/^[0-9]$/)]),
-  );
+  readonly pending = this.registration.pending;
+  readonly positions = Array.from({ length: CODE_LENGTH }, (_, i) => i);
 
-  form = this.fb.group({
-    nationalId: [localStorage.getItem('nationalId'), [Validators.required]],
-    phoneNumber: [
-      localStorage.getItem('phoneNumber'),
-      [Validators.required, Validators.pattern(/^\d{9,15}$/)],
-    ],
-  });
+  readonly digits = signal<string[]>(Array(CODE_LENGTH).fill(''));
+  readonly code = computed(() => this.digits().join(''));
+  readonly complete = computed(() => /^\d{6}$/.test(this.code()));
 
-  isRequesting = false;
-  loading = false;
+  readonly verifying = signal(false);
+  readonly resending = signal(false);
+  readonly failure = signal('');
 
-  invalid(field: string) {
-    const f = this.form.get(field);
-    return f && f.invalid && (f.dirty || f.touched);
+  /** Keeps one digit in the box and moves on to the next. */
+  onInput(index: number, event: Event): void {
+    const box = event.target as HTMLInputElement;
+    const digit = box.value.replace(/\D/g, '').slice(-1);
+    box.value = digit;
+    this.digits.update((all) => all.map((old, i) => (i === index ? digit : old)));
+    if (digit && index < CODE_LENGTH - 1) this.focus(index + 1);
   }
 
-  get otpInvalid() {
-    return this.otpControls.some((c) => c.invalid);
+  /** Backspace in an empty box steps back to the one before. */
+  onKeydown(index: number, event: KeyboardEvent): void {
+    if (event.key === 'Backspace' && !this.digits()[index] && index > 0) this.focus(index - 1);
   }
 
-  // Auto focus next
-  onOtpInput(i: number) {
-    const input = this.otpInputs.toArray()[i].nativeElement;
+  /** A code pasted from the message fills every box at once. */
+  onPaste(event: ClipboardEvent): void {
+    const pasted = (event.clipboardData?.getData('text') ?? '').replace(/\D/g, '');
+    if (!pasted) return;
+    event.preventDefault();
+    const filled = this.positions.map((i) => pasted[i] ?? '');
+    this.digits.set(filled);
+    this.boxes().forEach((box, i) => (box.nativeElement.value = filled[i]));
+    this.focus(Math.min(pasted.length, CODE_LENGTH) - 1);
+  }
 
-    if (input.value.length === 1) {
-      if (i < this.otpControls.length - 1) this.otpInputs.toArray()[i + 1].nativeElement.focus();
+  async submit(): Promise<void> {
+    if (!this.complete() || this.verifying()) return;
+    this.verifying.set(true);
+    this.failure.set('');
+
+    const answer = await this.registration.verifyAndRegister(this.code());
+    this.verifying.set(false);
+
+    if (!answer.ok) {
+      this.failure.set(answer.message);
+      return;
     }
+    this.notify.success(answer.message);
+    this.router.navigate(['auth', 'login']);
   }
 
-  // Backspace auto-jump back
-  onOtpKey(event: KeyboardEvent, i: number) {
-    const input = this.otpControls[i];
+  async resend(): Promise<void> {
+    if (this.resending()) return;
+    this.resending.set(true);
+    this.failure.set('');
 
-    if (event.key === 'Backspace' && !input.value && i > 0) {
-      this.otpInputs.toArray()[i - 1].nativeElement.focus();
-    }
+    const answer = await this.registration.resendCode();
+    this.resending.set(false);
+
+    if (answer.ok) this.notify.success(answer.message);
+    else this.failure.set(answer.message);
   }
 
-  getOtpString() {
-    return this.otpControls.map((c) => c.value).join('');
-  }
-
-  submit() {
-    // if (this.isRequesting && this.form.invalid) return this.form.markAllAsTouched();
-    // else if (!this.isRequesting && this.otpInvalid) {
-    //   return this.otpControls.forEach((c) => c.markAsTouched());
-    // }
-    // let sub;
-    // this.loading = true;
-    // if (this.isRequesting) sub = this.requestOtp({ ...this.form.value });
-    // else sub = this.verifyOtp({ otp: this.getOtpString() });
-    // sub.add(() => (this.loading = false));
-  }
-
-  verifyOtp(value: any) {
-    // return this.auth
-    //   .verifyUserOTP({ ...value, otpId: localStorage.getItem('otpId') })
-    //   .pipe(take(1))
-    //   .subscribe({
-    //     next: (res): any => {
-    //       if (!res.success) return this.notify.error(res.message ?? 'Error');
-    //       this.notify.success('Registration Success, Go to Login');
-    //       ['phoneNumber', 'nationalId'].forEach((x) => localStorage.removeItem(x));
-    //       localStorage.removeItem('otpId');
-    //       this.router.navigate(['auth', 'login']);
-    //     },
-    //     error: (err) => this.notify.error(err?.error?.message ?? err?.message),
-    //   });
-  }
-
-  requestOtp(value: any) {
-    // return this.auth
-    //   .requestOTP(value)
-    //   .pipe(take(1))
-    //   .subscribe({
-    //     next: (res): any => {
-    //       if (!res.success) return this.notify.error(res.message ?? 'Error');
-    //       this.notify.success('OTP Request Success, Verify the OTP sent to your Email');
-    //       ['phoneNumber', 'nationalId'].forEach((x) => localStorage.setItem(x, value[x])); // for otp
-    //       if (!localStorage.getItem('otpId') && res?.data?.otp?.id) {
-    //         localStorage.setItem('otpId', res?.data?.otp?.id);
-    //       }
-    //       this.isRequesting = false;
-    //     },
-    //     error: (err) => this.notify.error(err?.error?.message ?? err?.message),
-    //   });
+  private focus(index: number): void {
+    this.boxes()[index]?.nativeElement.focus();
   }
 }

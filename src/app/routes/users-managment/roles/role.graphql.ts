@@ -18,6 +18,7 @@ export const roleMinimalGqlFields = `
 export const roleFields = `
     name
     description
+    external
     permissionList{
       ${permissionFields}
     }

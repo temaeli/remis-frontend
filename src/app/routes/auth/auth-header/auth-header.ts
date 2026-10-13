@@ -100,8 +100,8 @@ export class AuthHeader {
     {
       label: 'Register',
       class: GOLD_BTN,
-      click: () => this.router.navigate(['/auth/self-register']),
-      showFunction: () => !this.auth.check() && !this.router.url.includes('self-register'),
+      click: () => this.router.navigate(['/auth/register']),
+      showFunction: () => !this.auth.check() && !this.router.url.includes('register'),
     },
     {
       label: 'Home',

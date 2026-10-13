@@ -9,35 +9,50 @@ import {
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { BehaviorSubject } from 'rxjs';
 
+/**
+ * What the backend needs to put someone on the register and give them a login:
+ * the three names a person record requires, the email they will sign in with,
+ * their mobile number and national ID, and a password of their own.
+ */
 export const registerFp: FormParameters = {
   crossValidators: [{ fields: ['password', 'confirmPassword'], type: 'match' }],
 
   fields: [
     {
-      key: 'fullName',
+      key: 'firstName',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
     },
     {
-      key: 'emailAddress',
+      key: 'secondName',
+      label: 'Middle Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'thirdName',
+      label: 'Last Name',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'email',
+      label: 'Email Address',
+      hint: 'You will sign in with this, and the code is sent here',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED, VALIDATOR_EMAIL],
     },
     {
-      key: 'nationalId',
-      type: FieldType.input,
-      validations: [VALIDATOR_REQUIRED, VALIDATOR_NIN],
-    },
-    {
-      key: 'phoneNumber',
+      key: 'mobileNumber',
+      hint: 'For example 0654321234',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED, VALIDATOR_TANZINIA_PHONE],
     },
     {
-      key: 'gender',
-      type: FieldType.select,
-      options: ['MALE', 'FEMALE'],
-      validations: [VALIDATOR_REQUIRED],
+      key: 'nationalId',
+      label: 'National ID (NIN)',
+      type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED, VALIDATOR_NIN],
     },
     {
       key: 'password',
@@ -55,7 +70,7 @@ export const registerFp: FormParameters = {
     {
       key: 'save',
       type: FieldType.submit,
-      label: 'Submit',
+      label: 'Send Verification Code',
       class: 'col-span-full',
       isSaving$: new BehaviorSubject(false),
     },

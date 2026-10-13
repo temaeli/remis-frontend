@@ -43,6 +43,12 @@ export class Users extends BaseComponent {
       valueClassMapper: (row) => (row?.active ? 'text-success' : 'text-danger'),
     },
     {
+      // EXTERNAL registered themselves on the portal; INTERNAL was created here.
+      field: 'userType',
+      header: 'Type',
+      valueFn: (row) => (row?.userType === 'EXTERNAL' ? 'External' : 'Internal'),
+    },
+    {
       field: 'isStaff',
       valueFn: (row) => (row?.isStaff ? 'Yes' : 'No'),
       valueClassMapper: (row) => (row?.isStaff ? 'text-success' : 'text-danger'),

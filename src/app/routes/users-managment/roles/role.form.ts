@@ -37,6 +37,17 @@ export const getRoleFormFields = (comp: BaseComponent): FieldConfig[] => [
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
   },
+  {
+    // Every role ticked here is given to anyone who registers themselves on
+    // the portal. Roles for an account an administrator creates are still
+    // chosen by hand, ticked or not.
+    key: 'external',
+    label: 'External role',
+    hint: 'Given automatically to everyone who registers themselves on the portal',
+    type: FieldType.checkbox,
+    class: 'col-span-full',
+    validations: [],
+  },
 ];
 
 export function roleUpsertBtn(comp: BaseComponent): ActionButton {

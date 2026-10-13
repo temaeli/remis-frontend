@@ -33,6 +33,8 @@ export interface UserAccount {
   bioData?: BioData;
   active?: boolean;
   isStaff?: boolean;
+  /** EXTERNAL registered themselves on the portal; INTERNAL was created by an administrator. */
+  userType?: 'EXTERNAL' | 'INTERNAL';
   rolesList?: UserRole[];
 }
 

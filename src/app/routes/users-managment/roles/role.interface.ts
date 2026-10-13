@@ -19,6 +19,8 @@ export interface Role {
   description?: string;
   active?: boolean;
   canBeEdited?: boolean;
+  /** Given to everyone who registers themselves on the portal. */
+  external?: boolean;
   permissionList?: Permission[];
   createdAt?: string;
   updatedAt?: string;
@@ -29,5 +31,6 @@ export interface RoleDtoInput {
   uid?: string;
   name?: string;
   description?: string;
+  external?: boolean;
   permissionList?: { id: string }[];
 }

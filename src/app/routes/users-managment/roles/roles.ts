@@ -48,6 +48,11 @@ export class Roles extends BaseComponent {
       },
     },
     {
+      field: 'external',
+      header: 'For',
+      valueFn: (row) => (row?.external ? 'Self-registered users' : 'Assigned by hand'),
+    },
+    {
       field: 'active',
       valueFn: (row) => (row?.active ? 'Active' : 'Inactive'),
       valueClassMapper: (row) => (row?.active ? 'text-success' : 'text-danger'),

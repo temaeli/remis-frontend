@@ -3,23 +3,18 @@
     class="mx-auto max-w-5xl w-full grow my-4 sm:my-6 lg:my-12 p-4 sm:p-6 lg:p-12 z-10
      {{ animation }} --order-3 rounded-lg bg-white/80 backdrop-blur-[3px] border-gray-100"
   >
-    <!-- <div
-      class="w-full h-50 bottom-0 left-0 absolute animate bg-gradient-to-t rounded-[inherit] from-[#00448b70] to-[#002d5c00] opacity-80"
-    ></div> -->
-
-    <h2 class="text-lg font-semibold text-start mt-5 relative lg:-top-5 {{ animation }} --order-4">
+    <h1 class="text-lg font-semibold text-start mt-5 relative lg:-top-5 {{ animation }} --order-4">
       Create Account
-    </h2>
-    <!-- grid grid-cols-1 md:grid-cols-2 gap-4 p-4 -->
+    </h1>
 
     <app-form [fp]="fp" class="block  {{ animation }} --order-5" />
 
     <div class="flex justify-start flex-wrap col col-span-2  {{ animation }} --order-6">
       <a
-        [routerLink]="['/auth/register', 'otp']"
-        class="font-semibold text-center text-gray-400 mt-5 relative lg:-top-5 hover:text-[var(--color-primary)]"
+        [routerLink]="['/auth/login']"
+        class="font-semibold text-center text-gray-600 mt-5 relative lg:-top-5 hover:text-[var(--color-primary)]"
       >
-        Already have Otp?
+        Already have an account? Sign in
       </a>
     </div>
   </div>
