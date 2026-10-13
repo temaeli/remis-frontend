@@ -962,6 +962,68 @@ export const UNIT_STATUS_RECORD = defineLookup({
   toModel: (data) => ({ unitUid: data?.unit?.id }),
 });
 
+/**
+ * The labels `units_flags` is offered, out of the nine the database enum
+ * `flags` holds. The first four are a budget's, and say which version it is;
+ * these five say how a unit is put on the market. The table itself would take
+ * any of the nine.
+ */
+const UNIT_FLAG_OPTIONS = [
+  { value: 'SELL', label: 'Sell' },
+  { value: 'RENT', label: 'Rent' },
+  { value: 'HIRE_PURCHASE', label: 'Hire Purchase' },
+  { value: 'HIRE', label: 'Hire' },
+  { value: 'PURCHASE', label: 'Purchase' },
+  { value: 'LATEST', label: 'Latest' },
+  { value: 'OLD', label: 'Old' },
+  { value: 'MAIN', label: 'Main' },
+  { value: 'ADDITIONAL', label: 'Additional' },
+];
+
+/** A flag put on a unit, under a subcategory (`units_flags`). */
+export const UNIT_FLAG = defineLookup({
+  slug: 'unit-flags',
+  entity: 'UnitFlag',
+  entityPlural: 'UnitFlags',
+  permission: 'UNIT_FLAG',
+  label: 'Unit Flag',
+  pluralLabel: 'Unit Flags',
+  subtitle: 'How a unit is flagged: for sale, for rent, on hire purchase',
+  icon: 'label',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  unit {
+    ${lookupRefGqlFields}
+  }
+  flag
+`,
+  extraFields: [
+    refSelect('unitUid', 'Unit', ALL_UNIT),
+    refSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
+    {
+      key: 'flag',
+      label: 'Flag',
+      type: FieldType.select,
+      options: UNIT_FLAG_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    'unit.name as Unit',
+    'subcategory.name as Subcategory',
+    {
+      field: 'flag',
+      header: 'Flag',
+      valueFn: (row) =>
+        UNIT_FLAG_OPTIONS.find((option) => option.value === row?.flag)?.label ?? row?.flag,
+    },
+  ],
+  toModel: (data) => ({ unitUid: data?.unit?.id, subcategoryUid: data?.subcategory?.id }),
+});
+
 export const VISIT = defineLookup({
   slug: 'visits',
   entity: 'Visit',
@@ -1006,4 +1068,5 @@ export const UNIT_LOOKUPS: LookupModule[] = [
   NOTICE,
   TITLE_DEED,
   UNIT_STATUS_RECORD,
+  UNIT_FLAG,
 ];
