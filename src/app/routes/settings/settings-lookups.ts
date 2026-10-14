@@ -1534,12 +1534,15 @@ export const EXCHANGE_RATE = defineLookup({
   icon: 'money_exchange',
   extraGqlFields: `
   rateAgainstTzs
-  latitude
-  longitude
+  inUse
+  fromDay
+  deadline
   currency {
     ${lookupRefGqlFields}
   }
 `,
+  // A rate holds from its start to its deadline, and no two rates' periods may
+  // overlap -- whatever their currency, as the table's constraints are written.
   extraFields: [
     {
       key: 'currencyUid',
@@ -1554,14 +1557,34 @@ export const EXCHANGE_RATE = defineLookup({
       class: 'col-span-full',
     },
     amountField('rateAgainstTzs', 'Rate Against TZS'),
-    // Faithful to the table as built rather than meaningful for a rate, and both
-    // are NOT NULL, so the form has to ask for them.
-    amountField('latitude', 'Latitude'),
-    amountField('longitude', 'Longitude'),
+    {
+      key: 'fromDay',
+      label: 'Starts',
+      hint: 'Leave empty for now',
+      type: FieldType.dateTime,
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      hint: 'Not before it starts. No two rates may cover the same moment',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+    {
+      key: 'inUse',
+      label: 'In use',
+      type: FieldType.checkbox,
+      value: true,
+      class: 'col-span-full',
+      validations: [],
+    },
   ],
   extraColumns: [
     { field: 'currency', valueFn: (row) => row?.currency?.name },
     { field: 'rateAgainstTzs', header: 'Rate Against TZS' },
+    { field: 'fromDay', header: 'Starts' },
+    { field: 'deadline', header: 'Deadline' },
+    { field: 'inUse', header: 'In Use', valueFn: (row) => (row?.inUse ? 'Yes' : 'No') },
   ],
   toModel: (data) => ({ currencyUid: data?.currency?.id }),
 });
