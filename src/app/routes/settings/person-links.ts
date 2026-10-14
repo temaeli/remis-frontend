@@ -4,19 +4,24 @@ import { Subject } from 'rxjs';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
-import { FieldType } from '@shared/components/generic-form/field.interface';
+import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
 
+import { PARTY_OPTIONS, partyColumn } from './party-links';
+
 /**
- * Which people are linked to an organisation on the register —
- * `bio_data_business_names`, a join table with its own link/unlink pair.
+ * Which people are linked to an organisation on the register, and as what —
+ * `bio_data_business_names`, a join table with its own link/unlink pair and a
+ * `parties` column that defaults to EMPLOYEE. Linking a pair that is already
+ * linked changes its party.
  *
  * Shown on the organisation's detail page. Deliberately does not import the
- * lookup registry it hangs off, which would be a cycle.
+ * lookup registry it hangs off, which would be a cycle; `party-links` imports
+ * nothing from the app, so taking the party list from there is safe.
  *
  * People are labelled from their names rather than `bio_data.name`: that column
  * is nullable and nothing on the user-creation path fills it in, so a select
@@ -28,6 +33,7 @@ export const personBusinessName$ = new Subject<unknown>();
 
 const linkRowGqlFields = `
   uid
+  party
   person {
     id
     firstName
@@ -67,8 +73,8 @@ const ALL_BUSINESS_NAMES_FOR_LINK = gql`
 `;
 
 export const LINK_PERSON_BUSINESS_NAME = gql`
-  mutation linkPersonBusinessName($personUid: String, $businessNameUid: String) {
-    linkPersonBusinessName(personUid: $personUid, businessNameUid: $businessNameUid) {
+  mutation linkPersonBusinessName($personUid: String, $businessNameUid: String, $party: Party) {
+    linkPersonBusinessName(personUid: $personUid, businessNameUid: $businessNameUid, party: $party) {
       ${responseGqlFields(linkRowGqlFields)}
     }
   }
@@ -106,6 +112,17 @@ const fullName = (person?: {
 }): string =>
   [person?.firstName, person?.secondName, person?.thirdName].filter(Boolean).join(' ').trim();
 
+/** What the person is to the organisation. Both link forms start it at EMPLOYEE, the database default. */
+const partyFormField: FieldConfig = {
+  key: 'party',
+  label: 'Party',
+  hint: 'What they are to the organisation',
+  type: FieldType.select,
+  options: PARTY_OPTIONS,
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+};
+
 function linkBtn(comp: BaseComponent, businessNameUid?: string): ActionButton {
   return {
     icon: 'add',
@@ -114,7 +131,7 @@ function linkBtn(comp: BaseComponent, businessNameUid?: string): ActionButton {
     click: () => {
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
-        model: {},
+        model: { party: 'EMPLOYEE' },
         title: 'Link Person',
         fields: [
           {
@@ -133,6 +150,7 @@ function linkBtn(comp: BaseComponent, businessNameUid?: string): ActionButton {
             validations: [VALIDATOR_REQUIRED],
             class: 'col-span-full',
           },
+          partyFormField,
         ],
         closeAction$: close$,
 
@@ -189,7 +207,7 @@ function linkOrganisationBtn(comp: BaseComponent, personUid?: string): ActionBut
     click: () => {
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
-        model: {},
+        model: { party: 'EMPLOYEE' },
         title: 'Link Organisation',
         fields: [
           {
@@ -204,6 +222,7 @@ function linkOrganisationBtn(comp: BaseComponent, personUid?: string): ActionBut
             validations: [VALIDATOR_REQUIRED],
             class: 'col-span-full',
           },
+          partyFormField,
         ],
         closeAction$: close$,
 
@@ -240,6 +259,7 @@ export const personOrganisationsPanel = (
     'index',
     'businessName.assignedNumber as Assigned Number',
     'businessName.name as Organisation',
+    partyColumn,
     'actions',
   ],
   headerButtons: [linkOrganisationBtn(comp, personUid)],
@@ -261,6 +281,7 @@ export const businessNamePeoplePanel = (
   keyColumns: [
     'index',
     { field: 'person', header: 'Name', valueFn: (row: any) => fullName(row?.person) },
+    partyColumn,
     'actions',
   ],
   headerButtons: [linkBtn(comp, businessNameUid)],

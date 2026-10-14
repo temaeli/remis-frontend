@@ -21,6 +21,11 @@ import {
 } from '@shared/lookup';
 import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
 import {
+  businessNamePartyPanels,
+  certificatePartyPanels,
+  personCertificatesPanels,
+} from './party-links';
+import {
   businessNameIdentificationsPanel,
   identityTypeIdentificationsPanel,
   personIdentificationsPanel,
@@ -312,6 +317,8 @@ export const PERSON = defineLookup({
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
     personOrganisationsPanel(comp, record?.id),
+    // The certificates this person is named on, and as what.
+    ...personCertificatesPanels(comp, record?.id),
     // The person's documents: national ID, ZANID, driving licence. bio_data
     // itself holds none.
     personIdentificationsPanel(comp, record?.id),
@@ -419,6 +426,8 @@ export const BUSINESS_NAME = defineLookup({
     businessNamePeoplePanel(comp, record?.id),
     businessNameIdentificationsPanel(comp, record?.id),
     businessNameTinsPanel(comp, record?.id),
+    // The certificates it is named on, and the organisations above and below it.
+    ...businessNamePartyPanels(comp, record?.id),
     ...coreAttachmentPanels(comp, 'businessName', record?.id),
   ],
 });
@@ -2747,10 +2756,12 @@ export const CERTIFICATE: LookupModule = defineLookup({
     subcategoryUid: data?.subcategory?.id,
     issuedByUid: data?.issuedBy?.id,
   }),
-  // The certificates under this one, and those it sits under. Deleting it is
-  // refused while either list has anything in it.
-  extraContents: (comp, record) =>
-    entityLinkPanels(
+  // Who the certificate names and as what, then the certificates under this
+  // one and those it sits under. Deleting it is refused while any of the four
+  // lists has anything in it.
+  extraContents: (comp, record) => [
+    ...certificatePartyPanels(comp, record?.id),
+    ...entityLinkPanels(
       comp,
       [
         {
@@ -2780,6 +2791,7 @@ export const CERTIFICATE: LookupModule = defineLookup({
       ],
       record?.id,
     ),
+  ],
 });
 
 /**

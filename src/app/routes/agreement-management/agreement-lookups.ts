@@ -6,6 +6,7 @@ import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from
 // Safe in this direction only: the settings registry imports nothing back from
 // here, so there is no cycle.
 import { SECTION } from '@routes/settings/agreement-setting-lookups';
+import { partyColumn, partyField } from '@routes/settings/party-links';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 
 /**
@@ -157,7 +158,9 @@ export const AGREEMENT = defineLookup({
   id
   name
 `,
-          columns: ['index', 'bioData.name as Name', 'actions'],
+          columns: ['index', 'bioData.name as Name', partyColumn, 'actions'],
+          // What the person is to the agreement (agreements_bio_data.parties).
+          extraFields: [partyField()],
         },
         {
           entity: 'AgreementBusinessName',
@@ -170,6 +173,15 @@ export const AGREEMENT = defineLookup({
           icon: 'institution',
           permission: 'AGREEMENT_BUSINESS_NAME',
           optionsQuery: ALL_BUSINESS_NAMES,
+          columns: [
+            'index',
+            'businessName.assignedNumber as Assigned Number',
+            'businessName.name as Name',
+            partyColumn,
+            'actions',
+          ],
+          // What the organisation is to the agreement.
+          extraFields: [partyField()],
         },
         // agreements_sections — the join to the clause hierarchy. Not to be
         // confused with agreement_sections, the standalone catalogue that lives
