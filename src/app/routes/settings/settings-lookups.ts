@@ -26,6 +26,14 @@ import {
   personCertificatesPanels,
 } from './party-links';
 import {
+  applicantPeoplePanels,
+  businessNameRegisterPanels,
+  collectionCenterPeoplePanels,
+  consumerPartyPanels,
+  personRegisterPanels,
+  subcategoryOrganisationsPanels,
+} from './register-links';
+import {
   businessNameIdentificationsPanel,
   identityTypeIdentificationsPanel,
   personIdentificationsPanel,
@@ -319,6 +327,8 @@ export const PERSON = defineLookup({
     personOrganisationsPanel(comp, record?.id),
     // The certificates this person is named on, and as what.
     ...personCertificatesPanels(comp, record?.id),
+    // The collection centres they are at, and the applicants and consumers they are.
+    ...personRegisterPanels(comp, record?.id),
     // The person's documents: national ID, ZANID, driving licence. bio_data
     // itself holds none.
     personIdentificationsPanel(comp, record?.id),
@@ -428,6 +438,8 @@ export const BUSINESS_NAME = defineLookup({
     businessNameTinsPanel(comp, record?.id),
     // The certificates it is named on, and the organisations above and below it.
     ...businessNamePartyPanels(comp, record?.id),
+    // The consumers it is, and the subcategories it is under.
+    ...businessNameRegisterPanels(comp, record?.id),
     ...coreAttachmentPanels(comp, 'businessName', record?.id),
   ],
 });
@@ -809,8 +821,12 @@ export const COLLECTION_CENTER = defineLookup({
   pluralLabel: 'Collection Centers',
   subtitle: 'Where payments are collected',
   icon: 'location',
-  // The join read from this side — which units this applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'CollectionCenter', record?.id),
+  // The join read from this side — which units this applies to — and the people
+  // at it (bio_data_collection_centers).
+  extraContents: (comp, record) => [
+    ...recordLinkPanels(comp, 'CollectionCenter', record?.id),
+    ...collectionCenterPeoplePanels(comp, record?.id),
+  ],
 });
 
 export const DISCOUNT = defineLookup({
@@ -1770,6 +1786,8 @@ export const SUBCATEGORY = defineLookup({
       SECOND_WINDOW_BILLING_CYCLES_BY_SUBCATEGORY,
       { subcategoryUid: record?.id },
     ),
+    // The organisations under it (business_names_subcategories).
+    ...subcategoryOrganisationsPanels(comp, record?.id),
   ],
 });
 
@@ -2559,6 +2577,55 @@ export const POSITION = defineLookup({
   extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
   extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+/**
+ * A kind of applicant, under a subcategory (`applicants`). The people who are
+ * one are on its page, `bio_data_applicants`.
+ */
+export const APPLICANT = defineLookup({
+  slug: 'applicants',
+  entity: 'Applicant',
+  entityPlural: 'Applicants',
+  permission: 'APPLICANT',
+  label: 'Applicant',
+  pluralLabel: 'Applicants',
+  subtitle: 'Kinds of applicant, and the people who are one',
+  icon: 'users',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => applicantPeoplePanels(comp, record?.id),
+});
+
+/**
+ * A kind of consumer, under a subcategory (`consumers`). The people and the
+ * organisations that are one are on its page, `bio_data_consumers` and
+ * `business_names_consumers`.
+ */
+export const CONSUMER = defineLookup({
+  slug: 'consumers',
+  entity: 'Consumer',
+  entityPlural: 'Consumers',
+  permission: 'CONSUMER',
+  label: 'Consumer',
+  pluralLabel: 'Consumers',
+  subtitle: 'Kinds of consumer, and the people and organisations that are one',
+  icon: 'users',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraContents: (comp, record) => consumerPartyPanels(comp, record?.id),
 });
 
 /**
@@ -4142,6 +4209,8 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   FINDING,
   OBSERVATION,
   POSITION,
+  APPLICANT,
+  CONSUMER,
   MATERIAL,
   OBJECTS_ID,
   CERTIFICATE,
