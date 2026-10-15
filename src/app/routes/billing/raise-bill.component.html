@@ -46,14 +46,32 @@
           </mat-form-field>
         }
 
-        <mat-form-field appearance="outline"
-          ><mat-label>Applied Date</mat-label>
-          <input matInput type="date" formControlName="appliedDate"
-        /></mat-form-field>
-        <mat-form-field appearance="outline"
-          ><mat-label>Expiry Date</mat-label>
-          <input matInput type="date" formControlName="expiredDate"
-        /></mat-form-field>
+        <!-- Material's calendar rather than <input type="date">, which phones show
+             as a typed mm/dd/yyyy box. Tapping the field opens the calendar too. -->
+        <mat-form-field appearance="outline">
+          <mat-label>Applied Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="appliedPicker"
+            formControlName="appliedDate"
+            readonly
+            (click)="appliedPicker.open()"
+          />
+          <mat-datepicker-toggle matSuffix [for]="appliedPicker" />
+          <mat-datepicker #appliedPicker />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Expiry Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="expiryPicker"
+            formControlName="expiredDate"
+            readonly
+            (click)="expiryPicker.open()"
+          />
+          <mat-datepicker-toggle matSuffix [for]="expiryPicker" />
+          <mat-datepicker #expiryPicker />
+        </mat-form-field>
       </div>
     </section>
 
@@ -79,9 +97,18 @@
           </mat-form-field>
         }
 
-        <mat-form-field appearance="outline"
-          ><mat-label>Expires</mat-label> <input matInput type="date" formControlName="expiredAt"
-        /></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Expires</mat-label>
+          <input
+            matInput
+            [matDatepicker]="expiresPicker"
+            formControlName="expiredAt"
+            readonly
+            (click)="expiresPicker.open()"
+          />
+          <mat-datepicker-toggle matSuffix [for]="expiresPicker" />
+          <mat-datepicker #expiresPicker />
+        </mat-form-field>
       </div>
     </section>
 

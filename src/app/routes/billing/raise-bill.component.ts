@@ -12,6 +12,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -21,6 +23,18 @@ import { RAISE_BILL } from './bill.graphql';
 import { bill$ } from './bill.form';
 import { BILL_OPTION_QUERIES, BillOptions, emptyOptions } from './bill-options.graphql';
 import { BillLineAmounts, calculateBillTotals, calculateLine } from './bill.calculator';
+
+/**
+ * A picked date as the backend's LocalDate wants it, "YYYY-MM-DD", read in local
+ * time. A string, such as a value set in code, is passed through as it is.
+ */
+const toLocalDate = (value: unknown): string => {
+  if (!(value instanceof Date) || isNaN(value.getTime())) {
+    return typeof value === 'string' ? value : '';
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+};
 
 /**
  * Raises a bill: the header, the bill, and its lines, in one submission.
@@ -44,9 +58,11 @@ import { BillLineAmounts, calculateBillTotals, calculateLine } from './bill.calc
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
+    MatDatepickerModule,
     PageHeaderComponent,
     IconComponent,
   ],
+  providers: [provideNativeDateAdapter()],
   templateUrl: './raise-bill.component.html',
 })
 export class RaiseBillComponent extends BaseComponent implements OnInit {
@@ -252,10 +268,17 @@ export class RaiseBillComponent extends BaseComponent implements OnInit {
     }
 
     this.saving.set(true);
+    const input = this.form.getRawValue();
+    // The datepicker holds a Date. The backend takes a LocalDate, and a Date
+    // would travel as UTC: midnight in Dar es Salaam is the day before in UTC.
+    input.header.appliedDate = toLocalDate(input.header.appliedDate);
+    input.header.expiredDate = toLocalDate(input.header.expiredDate);
+    input.detail.expiredAt = toLocalDate(input.detail.expiredAt);
+
     const response = await this.fs.fetch({
       notify: true,
       mutation: RAISE_BILL,
-      variables: { input: this.form.getRawValue() },
+      variables: { input },
       successFn: (res: any) => {
         bill$.next(res?.data);
         this.router.navigate(['../bills', res?.data?.id], { relativeTo: this.route });
