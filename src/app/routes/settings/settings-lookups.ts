@@ -715,13 +715,14 @@ export const PAYMENT_SERVICE_PROVIDER = defineLookup({
   pluralLabel: 'Payment Service Providers',
   subtitle: 'The banks and operators a bill can be paid through',
   icon: 'payment',
-  // The code is what a bill sends to GePG as CollPsp, so it is typed, never
-  // generated: a generated one would go out as if it were the provider's.
+  // The name is what a bill sends to GePG as CollPsp. The code is typed, never
+  // generated: it is the one GePG knows this provider by.
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
     {
       key: 'name',
       label: 'Name',
+      hint: 'Sent on every bill as CollPsp',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
@@ -729,7 +730,7 @@ export const PAYMENT_SERVICE_PROVIDER = defineLookup({
     {
       key: 'assignedNumber',
       label: 'GePG PSP Code',
-      hint: 'The code GePG knows this provider by. Sent on every bill as CollPsp',
+      hint: 'The code GePG knows this provider by',
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
