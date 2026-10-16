@@ -96,6 +96,26 @@ const ALL_CENTER = gql`
   }
 `;
 
+const ALL_BILL_HEADERS_SETTING_QUANTITY = gql`
+  query allBillHeadersSettingQuantities {
+    allBillHeadersSettingQuantities {
+      id
+      name
+    }
+  }
+`;
+
+/** A quantity as the far side of a connection: what tells one from the next. */
+const quantitySideGqlFields = `
+    id
+    uid: id
+    assignedNumber
+    name
+    quantities
+    startedDay
+    deadline
+  `;
+
 const ALL_ASSESSMENT = gql`
   query allAssessments {
     allAssessments {
@@ -1610,6 +1630,53 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'verified_user',
       permission: 'FINDING_ASSESSMENT',
       optionsQuery: ALL_ASSESSMENT,
+    },
+  ],
+  // The quantities under a quantity, and the ones it sits under
+  // (bill_headers_settings_quantities_connections). The backend refuses a link
+  // between records that differ on setting, person, financial year, started
+  // day, deadline or bill creation day — across the whole chain — and one that
+  // would close a loop.
+  BillHeadersSettingQuantity: [
+    {
+      entity: 'BillHeadersSettingQuantityConnection',
+      byOwnerQuery: 'billHeadersSettingQuantityConnectionsByParent',
+      ownerArg: 'parentUid',
+      targetArg: 'childUid',
+      field: 'child',
+      label: 'Child Quantity',
+      pluralLabel: 'Child Quantities',
+      icon: 'numbers',
+      permission: 'BILL_HEADERS_SETTING_QUANTITY_CONNECTION',
+      optionsQuery: ALL_BILL_HEADERS_SETTING_QUANTITY,
+      targetGqlFields: quantitySideGqlFields,
+      columns: [
+        'index',
+        'child.assignedNumber as Assigned Number',
+        'child.name as Quantity Record',
+        'child.quantities as Quantity',
+        'actions',
+      ],
+    },
+    {
+      entity: 'BillHeadersSettingQuantityConnection',
+      byOwnerQuery: 'billHeadersSettingQuantityConnectionsByChild',
+      ownerArg: 'childUid',
+      targetArg: 'parentUid',
+      field: 'parent',
+      label: 'Parent Quantity',
+      pluralLabel: 'Parent Quantities',
+      icon: 'numbers',
+      permission: 'BILL_HEADERS_SETTING_QUANTITY_CONNECTION',
+      optionsQuery: ALL_BILL_HEADERS_SETTING_QUANTITY,
+      targetGqlFields: quantitySideGqlFields,
+      columns: [
+        'index',
+        'parent.assignedNumber as Assigned Number',
+        'parent.name as Quantity Record',
+        'parent.quantities as Quantity',
+        'actions',
+      ],
     },
   ],
   // The centres under a centre, and the ones it sits under (centers_centers).

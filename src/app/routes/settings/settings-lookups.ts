@@ -3834,6 +3834,9 @@ export const BILL_HEADERS_SETTING_QUANTITY = defineLookup({
     raiseQuantityBillForNewNumberBtn(comp),
     raiseQuantityBillForReuseBtn(comp),
   ],
+  // The quantities under this one and those it sits under
+  // (bill_headers_settings_quantities_connections).
+  extraContents: (comp, record) => recordLinkPanels(comp, 'BillHeadersSettingQuantity', record?.id),
 });
 
 export const BILL_SETTING_QUANTITIES_BY_SETTING = gql`
