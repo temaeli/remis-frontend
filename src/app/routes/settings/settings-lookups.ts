@@ -2629,6 +2629,30 @@ export const CONSUMER = defineLookup({
   extraContents: (comp, record) => consumerPartyPanels(comp, record?.id),
 });
 
+/** The kinds of payload the system sends out (`outgoing_payloads`). */
+export const OUTGOING_PAYLOAD = defineLookup({
+  slug: 'outgoing-payloads',
+  entity: 'OutgoingPayload',
+  entityPlural: 'OutgoingPayloads',
+  permission: 'OUTGOING_PAYLOAD',
+  label: 'Outgoing Payload',
+  pluralLabel: 'Outgoing Payloads',
+  subtitle: 'The kinds of payload the system sends out',
+  icon: 'call_made',
+});
+
+/** The kinds of payload the system receives (`incoming_payloads`). */
+export const INCOMING_PAYLOAD = defineLookup({
+  slug: 'incoming-payloads',
+  entity: 'IncomingPayload',
+  entityPlural: 'IncomingPayloads',
+  permission: 'INCOMING_PAYLOAD',
+  label: 'Incoming Payload',
+  pluralLabel: 'Incoming Payloads',
+  subtitle: 'The kinds of payload the system receives',
+  icon: 'call_received',
+});
+
 /**
  * Centres under a subcategory, at one of six levels (`centers`). Which centre
  * sits under which is on the centre's own page — `centers_centers`, see
@@ -4212,6 +4236,8 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   POSITION,
   APPLICANT,
   CONSUMER,
+  OUTGOING_PAYLOAD,
+  INCOMING_PAYLOAD,
   MATERIAL,
   OBJECTS_ID,
   CERTIFICATE,
