@@ -571,10 +571,7 @@ const renewalNumberGqlFields = `
   assignedNumber
   reason
   createdAt
-  controlNumber {
-    id
-    controlNumber
-  }
+  controlNumber
 `;
 
 export const RENEWAL_NUMBER_OF_PERSON = gql`
@@ -633,18 +630,23 @@ function setRenewalNumberBtn(
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
         model: editing
-          ? { uid: row?.uid, controlNumberUid: row?.controlNumber?.id, reason: row?.reason }
+          ? {
+              uid: row?.uid,
+              // Stored as numeric; the picker's options are the issued numbers as text.
+              controlNumber: row?.controlNumber != null ? String(row.controlNumber) : undefined,
+              reason: row?.reason,
+            }
           : {},
         title: editing ? 'Change Renewal Control Number' : 'Set Renewal Control Number',
         fields: [
           {
-            key: 'controlNumberUid',
+            key: 'controlNumber',
             label: 'Control Number',
             hint: 'A number GePG has already issued. Each one serves one person only',
             type: FieldType.select,
             optionsVariables: {
               labelKey: 'controlNumber',
-              valueKey: 'id',
+              valueKey: 'controlNumber',
               fetchParameter: { query: ALL_CONTROL_NUMBERS_FOR_LINK },
             },
             validations: [VALIDATOR_REQUIRED],
@@ -691,7 +693,7 @@ function clearRenewalNumberBtn(comp: BaseComponent): ActionButton {
       confirmText: 'REMOVE',
       confirmButtonColor: 'red',
       message:
-        `Remove control number <b class='text-danger'>${row?.controlNumber?.controlNumber ?? ''}</b> ` +
+        `Remove control number <b class='text-danger'>${row?.controlNumber ?? ''}</b> ` +
         'from this person? Their renewals will be skipped until another is set.',
     }),
     click: async (row: any) => {
@@ -719,7 +721,7 @@ export const personRenewalNumberPanel = (
   permissions: RENEWAL_VIEW_PERMISSIONS,
   keyColumns: [
     'index',
-    'controlNumber.controlNumber as Control Number',
+    'controlNumber as Control Number',
     'reason',
     { field: 'createdAt', header: 'Set' },
     'actions',
