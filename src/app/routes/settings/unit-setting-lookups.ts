@@ -14,6 +14,7 @@ import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-l
 import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
 import { UNIT_PROCESS_LINK } from './grade-process-links';
+import { unitLocksPanel } from './unit-locks';
 
 /**
  * The unit's own configuration — `modules.setting.unit` on the backend, paired
@@ -153,6 +154,9 @@ export const UNIT = defineLookup({
         presetModel: { unitUid: record?.id },
       },
     ),
+    // Locking the unit for a while (units_locks), for as long as a chosen Unit
+    // Lock Duration says.
+    unitLocksPanel(comp, record?.id),
     ...unitLinkPanels(comp, record?.id),
     // The cases this unit is the subject of (units_processes).
     ...entityLinkPanels(comp, [UNIT_PROCESS_LINK], record?.id),
