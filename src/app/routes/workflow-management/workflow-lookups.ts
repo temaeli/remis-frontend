@@ -87,6 +87,28 @@ export enum ApplicationType {
   PURCHASES = 'PURCHASES',
   RENT = 'RENT',
   RENT_PURCHASES = 'RENT_PURCHASES',
+  REGISTRATION = 'REGISTRATION',
+  RENEWAL = 'RENEWAL',
+  AMENDMENT = 'AMENDMENT',
+  REPLACEMENT = 'REPLACEMENT',
+  CANCELLATION = 'CANCELLATION',
+  EXTENSION = 'EXTENSION',
+  TRANSFER = 'TRANSFER',
+  REINSTATEMENT = 'REINSTATEMENT',
+  OTHER = 'OTHER',
+  BUY = 'BUY',
+  SELL = 'SELL',
+  HIRE = 'HIRE',
+  LEASE = 'LEASE',
+  HIRE_PURCHASE = 'HIRE_PURCHASE',
+  COMPLAINT = 'COMPLAINT',
+  COMPLIMENT = 'COMPLIMENT',
+  INQUIRY = 'INQUIRY',
+  SUGGESTION = 'SUGGESTION',
+  REQUEST = 'REQUEST',
+  GENERAL_FEEDBACK = 'GENERAL_FEEDBACK',
+  RESERVE_UNIT = 'RESERVE_UNIT',
+  LOCK_UNIT = 'LOCK_UNIT',
 }
 
 const toOptions = (values: Record<string, string>): Option[] =>
@@ -353,6 +375,31 @@ const WORKFLOW_STEP_ATTACHMENT_LINK: EntityLinkConfig = {
     id
     assignedNumber
     name
+  `,
+};
+
+/**
+ * The bills one action raised — `workflow_steps_executions_bill_headers`. The
+ * bill-side twin of the filed documents above: linked and unlinked, and an
+ * action links a bill once.
+ */
+const WORKFLOW_STEP_EXECUTION_BILL_LINK: EntityLinkConfig = {
+  entity: 'WorkflowStepExecutionBillHeader',
+  byOwnerQuery: 'workflowStepExecutionBillHeadersByExecution',
+  ownerArg: 'executionUid',
+  targetArg: 'billHeaderUid',
+  field: 'billHeader',
+  label: 'Bill',
+  pluralLabel: 'Bills Raised',
+  icon: 'receipt',
+  permission: 'WORKFLOW_STEP_EXECUTION_BILL_HEADER',
+  optionsQuery: gql`
+    query allBillHeaders {
+      allBillHeaders {
+        id
+        name
+      }
+    }
   `,
 };
 
@@ -1331,7 +1378,13 @@ export const WORKFLOW_STEP_EXECUTION = defineLookup({
   // The papers this action filed. A link panel rather than a child list: the row
   // is three foreign keys with nothing to edit.
   extraContents: (comp, record) =>
-    record?.id ? entityLinkPanels(comp, [WORKFLOW_STEP_ATTACHMENT_LINK], record.id) : [],
+    record?.id
+      ? entityLinkPanels(
+          comp,
+          [WORKFLOW_STEP_ATTACHMENT_LINK, WORKFLOW_STEP_EXECUTION_BILL_LINK],
+          record.id,
+        )
+      : [],
 });
 
 /**

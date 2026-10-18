@@ -1,5 +1,9 @@
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
-import { VALIDATOR_EMAIL, VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
+import {
+  VALIDATOR_EMAIL,
+  VALIDATOR_PERSON_EMAIL,
+  VALIDATOR_REQUIRED,
+} from '@shared/components/generic-form/form-constants';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
@@ -40,6 +44,8 @@ import {
   personRenewalNumberPanel,
 } from './person-identifications';
 import { businessNameTinsPanel, personTinsPanel } from './tin-links';
+import { businessNameAddressPanel, personAddressPanel } from './contact-addresses';
+import { personDeclarationsPanel } from './person-declarations';
 import { billSettingPeoplePanel, personBillSettingsPanel } from './bill-setting-people';
 import { runRenewalsForNewNumberBtn, runRenewalsForReuseBtn } from './renewal-run';
 import {
@@ -277,6 +283,7 @@ export const PERSON = defineLookup({
   name
   email
   mobileNumber
+  gender
 `,
   nameKey: 'firstName',
   baseFields: [
@@ -299,13 +306,30 @@ export const PERSON = defineLookup({
       type: FieldType.input,
       validations: [VALIDATOR_REQUIRED],
     },
+    // bio_data.genders, the remis_core_schema.genders enum.
+    {
+      key: 'gender',
+      label: 'Gender',
+      type: FieldType.select,
+      options: [
+        { value: 'MALE', label: 'Male' },
+        { value: 'FEMALE', label: 'Female' },
+      ],
+      validations: [VALIDATOR_REQUIRED],
+    },
     // No identity type and no national ID: bio_data no longer carries either.
     // A person's documents, the national ID among them, are filed in the
     // Identifications panel on their page.
     //
     // The three below are checked for clashes where given.
     { key: 'mobileNumber', label: 'Mobile Number', type: FieldType.input },
-    { key: 'email', label: 'Email', type: FieldType.input, class: 'col-span-full' },
+    {
+      key: 'email',
+      label: 'Email',
+      type: FieldType.input,
+      validations: [VALIDATOR_PERSON_EMAIL],
+      class: 'col-span-full',
+    },
     {
       key: 'name',
       label: 'Listed Name',
@@ -319,11 +343,16 @@ export const PERSON = defineLookup({
     { field: 'firstName', header: 'First Name' },
     { field: 'secondName', header: 'Middle Name' },
     { field: 'thirdName', header: 'Last Name' },
+    { field: 'gender', header: 'Gender', valueFn: (row) => getDisplayName(row?.gender) },
     { field: 'mobileNumber', header: 'Mobile' },
     { field: 'email', header: 'Email' },
   ],
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
+    // Postal and physical address.
+    personAddressPanel(comp, record?.id),
+    // What they have declared, and when. Read only.
+    personDeclarationsPanel(comp, record?.id),
     personOrganisationsPanel(comp, record?.id),
     // The certificates this person is named on, and as what.
     ...personCertificatesPanels(comp, record?.id),
@@ -434,6 +463,7 @@ export const BUSINESS_NAME = defineLookup({
       issuerUid: record?.id,
     }),
     businessNamePeoplePanel(comp, record?.id),
+    businessNameAddressPanel(comp, record?.id),
     businessNameIdentificationsPanel(comp, record?.id),
     businessNameTinsPanel(comp, record?.id),
     // The certificates it is named on, and the organisations above and below it.
@@ -2555,6 +2585,31 @@ export const OBSERVATION = defineLookup({
 });
 
 /**
+ * A declaration's wording, under a subcategory, which people accept
+ * (`bio_data_declarations`). The code, name and description may not hold a
+ * quote, `"`, `&`, `<` or `>`, and the code not a space either (declarations33
+ * to 35).
+ */
+export const DECLARATION = defineLookup({
+  slug: 'declarations',
+  entity: 'Declaration',
+  entityPlural: 'Declarations',
+  permission: 'DECLARATION',
+  label: 'Declaration',
+  pluralLabel: 'Declarations',
+  subtitle: 'What a person declares and accepts',
+  icon: 'list',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+`,
+  extraFields: [parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY)],
+  extraColumns: [{ field: 'subcategory', valueFn: (row) => row?.subcategory?.name }],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+});
+
+/**
  * What a person can be put on a piece of work as, under a subcategory
  * (`positions`). Picked when someone is put on an inspection, an assessment, a
  * project or a task; it replaced a fixed list of twelve roles.
@@ -2692,6 +2747,44 @@ export const CENTER = defineLookup({
   toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
   // The centres under this one, and the ones it sits under (centers_centers).
   extraContents: (comp, record) => recordLinkPanels(comp, 'Center', record?.id),
+});
+
+/**
+ * How long a unit under a subcategory stays locked (`units_locks_seconds`). The
+ * length is above 0, to two places. Code, name and description must not hold
+ * any of ' " & < > — the backend refuses them.
+ */
+export const UNIT_LOCK_DURATION = defineLookup({
+  slug: 'unit-lock-durations',
+  entity: 'UnitLockDuration',
+  entityPlural: 'UnitLockDurations',
+  permission: 'UNIT_LOCK_DURATION',
+  label: 'Unit Lock Duration',
+  pluralLabel: 'Unit Lock Durations',
+  subtitle: 'How long a unit under a subcategory stays locked',
+  icon: 'lock_clock',
+  extraGqlFields: `
+  subcategory {
+    ${lookupRefGqlFields}
+  }
+  seconds
+`,
+  extraFields: [
+    parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
+    {
+      key: 'seconds',
+      label: 'Lock Length (seconds)',
+      hint: 'More than 0',
+      type: FieldType.decimal,
+      decimals: 2,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [
+    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
+    { field: 'seconds', header: 'Seconds' },
+  ],
+  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
 });
 
 export const MATERIAL = defineLookup({
@@ -3455,6 +3548,12 @@ export const BILL_HEADERS_SETTING = defineLookup({
   billItemsName
   billItemsDescription
   compound
+  followFirstWindowBillingCycles
+  followSecondWindowBillingCycles
+  startNow
+  appliedDateIsEqualToBilledDate
+  billedDateIsEqualToNow
+  singleQuantity
   billDetailsTemplate { ${lookupRefGqlFields} }
   generatedBy { id name }
   approvedBy { id name }
@@ -3520,6 +3619,53 @@ export const BILL_HEADERS_SETTING = defineLookup({
     {
       key: 'compound',
       label: 'Compound',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
+    // The DBA's switches of 2026-10-18, kept on record like Compound: billing does
+    // not read them yet. The two window switches may not both be on
+    // (bill_headers_settings71); the backend says so if they are.
+    {
+      key: 'followFirstWindowBillingCycles',
+      label: "Follow the First Window's Billing Cycles",
+      hint: 'Not together with the second window',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
+    {
+      key: 'followSecondWindowBillingCycles',
+      label: "Follow the Second Window's Billing Cycles",
+      hint: 'Not together with the first window',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
+    {
+      key: 'startNow',
+      label: 'Start Now',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
+    {
+      key: 'appliedDateIsEqualToBilledDate',
+      label: 'Applied Date Is the Billed Date',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
+    {
+      key: 'billedDateIsEqualToNow',
+      label: 'Billed Date Is Now',
+      type: FieldType.toggle,
+      value: false,
+      class: 'col-span-full',
+    },
+    {
+      key: 'singleQuantity',
+      label: 'Single Quantity',
       type: FieldType.toggle,
       value: false,
       class: 'col-span-full',
@@ -3612,6 +3758,12 @@ export const BILL_HEADERS_SETTING = defineLookup({
         'description',
         'billDetailsTemplateUid',
         'compound',
+        'followFirstWindowBillingCycles',
+        'followSecondWindowBillingCycles',
+        'startNow',
+        'appliedDateIsEqualToBilledDate',
+        'billedDateIsEqualToNow',
+        'singleQuantity',
         'appliedDate',
         'expiredDate',
       ],
@@ -4232,10 +4384,13 @@ export const REFERENCE_LOOKUPS: LookupModule[] = [
   DOWN_PAYMENT,
   INSTALLMENT,
   CENTER,
+  UNIT_LOCK_DURATION,
   ASSESSMENT,
   JUDGMENT,
   FINDING,
   OBSERVATION,
+  // Filed under a subcategory, and accepted by people.
+  DECLARATION,
   POSITION,
   APPLICANT,
   CONSUMER,

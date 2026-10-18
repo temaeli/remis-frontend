@@ -43,6 +43,40 @@ export const VALIDATOR_EMAIL = {
   validator: Validators.email,
 };
 
+/**
+ * A person's email, held to `bio_data37`. Stricter than {@link VALIDATOR_EMAIL},
+ * which lets through `someone@remis`; the database refuses an address whose
+ * domain has no dot, so the form does too. `EmailAddresses` on the backend.
+ */
+const emailLocalPart = '[A-Z0-9!#$%&\'*+/=?^_`{|}~-]+';
+
+export const VALIDATOR_PERSON_EMAIL = {
+  name: 'pattern',
+  message: 'Invalid email address, for example name@example.com',
+  validator: Validators.pattern(
+    new RegExp(
+      '^' +
+        emailLocalPart +
+        '(\\.' +
+        emailLocalPart +
+        ')*' +
+        '@([A-Z0-9]([A-Z0-9-]*[A-Z0-9])?\\.)+[A-Z]{2,63}$',
+      'i',
+    ),
+  ),
+};
+
+/**
+ * A GePG control number as `normal_bill_control_numbers_bio_data42` takes it:
+ * digits only, above 100000000000. Twelve digits or more, not led by a zero, and
+ * not that number itself.
+ */
+export const VALIDATOR_CONTROL_NUMBER = {
+  name: 'pattern',
+  message: 'Digits only, greater than 100000000000',
+  validator: Validators.pattern(/^(?!0)(?!100000000000$)[0-9]{12,50}$/),
+};
+
 //TODO; put actual domain
 export const VALIDATOR_DOMAIN_EMAIL = {
   name: 'email',

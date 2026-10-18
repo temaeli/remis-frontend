@@ -1,7 +1,7 @@
 import { FieldType } from '@shared/components/generic-form/field.interface';
 import {
-  VALIDATOR_EMAIL,
   VALIDATOR_NIN,
+  VALIDATOR_PERSON_EMAIL,
   VALIDATOR_REQUIRED,
   VALIDATOR_STRONG_PASSWORD,
   VALIDATOR_TANZINIA_PHONE,
@@ -40,7 +40,7 @@ export const registerFp: FormParameters = {
       label: 'Email Address',
       hint: 'You will sign in with this, and the code is sent here',
       type: FieldType.input,
-      validations: [VALIDATOR_REQUIRED, VALIDATOR_EMAIL],
+      validations: [VALIDATOR_REQUIRED, VALIDATOR_PERSON_EMAIL],
     },
     {
       key: 'mobileNumber',

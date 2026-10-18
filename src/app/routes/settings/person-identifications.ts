@@ -5,7 +5,10 @@ import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { FieldType, Option } from '@shared/components/generic-form/field.interface';
-import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
+import {
+  VALIDATOR_CONTROL_NUMBER,
+  VALIDATOR_REQUIRED,
+} from '@shared/components/generic-form/form-constants';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
@@ -29,7 +32,7 @@ import { getDisplayName } from '@core/helpers/view.helpers';
 export const anyOtherId$ = new Subject<unknown>();
 
 /**
- * The five labels of the PostgreSQL enum
+ * The labels of the PostgreSQL enum
  * `remis_core_schema.identification_types`, mirroring `IdentificationType` on
  * the backend. The two lists have to stay in step.
  */
@@ -39,6 +42,8 @@ export enum IdentificationType {
   DRIVING_LICENSE = 'DRIVING_LICENSE',
   TIN = 'TIN',
   CUSTOM = 'CUSTOM',
+  BUSINESS_REGISTRATION_NUMBER = 'BUSINESS_REGISTRATION_NUMBER',
+  INCORPORATION_NUMBER = 'INCORPORATION_NUMBER',
 }
 
 export const IDENTIFICATION_TYPE_OPTIONS: Option[] = Object.values(IdentificationType).map(
@@ -560,6 +565,10 @@ export const businessNameIdentificationsPanel = (
  * panel shows a single row and the button reads Set rather than Add. The query
  * still answers with a list, because a table reads a list: a list of nought or
  * one.
+ *
+ * The user types all four values — control number, reason, name and
+ * description — and they are set once in a lifetime: there is no Change. A
+ * wrong one is removed and set again.
  * ------------------------------------------------------------------ */
 
 /** Notifies the panel that the number changed. */
@@ -569,6 +578,8 @@ const renewalNumberGqlFields = `
   id
   uid: id
   assignedNumber
+  name
+  description
   reason
   createdAt
   controlNumber
@@ -578,15 +589,6 @@ export const RENEWAL_NUMBER_OF_PERSON = gql`
   query renewalControlNumberByPerson($bioDataUid: String) {
     renewalControlNumberByPerson(bioDataUid: $bioDataUid) {
       ${renewalNumberGqlFields}
-    }
-  }
-`;
-
-const ALL_CONTROL_NUMBERS_FOR_LINK = gql`
-  query allNormalBillControlNumbers {
-    allNormalBillControlNumbers {
-      id
-      controlNumber
     }
   }
 `;
@@ -617,45 +619,46 @@ const RENEWAL_WRITE_PERMISSIONS = [
 ];
 const RENEWAL_DELETE_PERMISSIONS = ['ROLE_DELETE_RENEWAL_CONTROL_NUMBER'];
 
-function setRenewalNumberBtn(
-  comp: BaseComponent,
-  bioDataUid: string | undefined,
-  editing: boolean,
-): ActionButton {
+function setRenewalNumberBtn(comp: BaseComponent, bioDataUid: string | undefined): ActionButton {
   return {
-    icon: editing ? 'edit' : 'add',
-    label: editing ? 'Change' : 'Set Renewal Control Number',
-    class: editing ? '' : 'btn-add-primary',
-    click: (row?: any) => {
+    icon: 'add',
+    label: 'Set Renewal Control Number',
+    class: 'btn-add-primary',
+    click: () => {
       const close$ = new Subject<void>();
       const formParameter: FormParameters = {
-        model: editing
-          ? {
-              uid: row?.uid,
-              // Stored as numeric; the picker's options are the issued numbers as text.
-              controlNumber: row?.controlNumber != null ? String(row.controlNumber) : undefined,
-              reason: row?.reason,
-            }
-          : {},
-        title: editing ? 'Change Renewal Control Number' : 'Set Renewal Control Number',
+        model: {},
+        title: 'Set Renewal Control Number',
         fields: [
           {
             key: 'controlNumber',
             label: 'Control Number',
-            hint: 'A number GePG has already issued. Each one serves one person only',
-            type: FieldType.select,
-            optionsVariables: {
-              labelKey: 'controlNumber',
-              valueKey: 'controlNumber',
-              fetchParameter: { query: ALL_CONTROL_NUMBERS_FOR_LINK },
-            },
-            validations: [VALIDATOR_REQUIRED],
+            hint: 'The number GePG issued, e.g. 991234567890. Each one serves one person only',
+            type: FieldType.input,
+            validations: [VALIDATOR_REQUIRED, VALIDATOR_CONTROL_NUMBER],
             class: 'col-span-full',
           },
           {
             key: 'reason',
             label: 'Reason',
             hint: 'Goes to GePG with every renewal. Must be unique — describe this client',
+            type: FieldType.textarea,
+            rows: 2,
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+          {
+            key: 'name',
+            label: 'Name',
+            hint: 'Must be unique',
+            type: FieldType.input,
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+          {
+            key: 'description',
+            label: 'Description',
+            hint: 'Must be unique. Set once: none of these can be changed afterwards',
             type: FieldType.textarea,
             rows: 2,
             validations: [VALIDATOR_REQUIRED],
@@ -694,7 +697,8 @@ function clearRenewalNumberBtn(comp: BaseComponent): ActionButton {
       confirmButtonColor: 'red',
       message:
         `Remove control number <b class='text-danger'>${row?.controlNumber ?? ''}</b> ` +
-        'from this person? Their renewals will be skipped until another is set.',
+        'from this person? It is deleted for good, and their renewals are skipped ' +
+        'until another is set.',
     }),
     click: async (row: any) => {
       await comp.fs.fetch({
@@ -722,17 +726,14 @@ export const personRenewalNumberPanel = (
   keyColumns: [
     'index',
     'controlNumber as Control Number',
+    'name',
+    'description',
     'reason',
     { field: 'createdAt', header: 'Set' },
     'actions',
   ],
-  headerButtons: [setRenewalNumberBtn(comp, bioDataUid, false)],
-  actionButtons: [
-    {
-      ...MORE_BTN,
-      buttons: [setRenewalNumberBtn(comp, bioDataUid, true), clearRenewalNumberBtn(comp)],
-    },
-  ],
+  headerButtons: [setRenewalNumberBtn(comp, bioDataUid)],
+  actionButtons: [{ ...MORE_BTN, buttons: [clearRenewalNumberBtn(comp)] }],
   reloadActions$: [renewalControlNumber$],
   fetchParameter: { query: RENEWAL_NUMBER_OF_PERSON, variables: { bioDataUid } },
 });
