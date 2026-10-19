@@ -403,6 +403,16 @@ const WORKFLOW_STEP_EXECUTION_BILL_LINK: EntityLinkConfig = {
   `,
 };
 
+/** Every fee, for the fee a step's bill charges. */
+const ALL_FEES_FOR_STEP_BILL = gql`
+  query allFees {
+    allFees {
+      id
+      name
+    }
+  }
+`;
+
 /** Signs a route off, which is what makes it usable. Its own mutation, its own permission. */
 const APPROVE_WORKFLOW_DEFINITION = gql`
   mutation approveWorkflowDefinition($uid: String) {
@@ -700,6 +710,54 @@ export const WORKFLOW_STEP = defineLookup({
           icon: 'bill',
           permission: 'WORKFLOW_STEP_BILL_HEADERS_SETTING',
           optionsQuery: BILL_HEADERS_SETTING.gql.all,
+          // The fee the step's bill charges, how many, and how long it lasts —
+          // all three NOT NULL, the two amounts above 0. Linking the same bill
+          // again changes them.
+          extraFields: [
+            {
+              arg: 'feeUid',
+              field: {
+                label: 'Fee',
+                type: FieldType.select,
+                optionsVariables: {
+                  labelKey: 'name',
+                  valueKey: 'id',
+                  fetchParameter: { query: ALL_FEES_FOR_STEP_BILL },
+                },
+                validations: [VALIDATOR_REQUIRED],
+                class: 'col-span-full',
+              },
+              rowField: 'fee',
+              rowGqlFields: 'id name',
+              column: { field: 'fee', header: 'Fee', valueFn: (row) => row?.fee?.name },
+            },
+            {
+              arg: 'quantities',
+              gqlType: 'BigDecimal',
+              field: {
+                label: 'Quantity',
+                hint: 'More than 0',
+                type: FieldType.decimal,
+                validations: [VALIDATOR_REQUIRED],
+                class: 'col-span-full',
+              },
+              rowField: 'quantities',
+              column: { field: 'quantities', header: 'Quantity' },
+            },
+            {
+              arg: 'ttlSeconds',
+              gqlType: 'BigDecimal',
+              field: {
+                label: 'Time to Live (seconds)',
+                hint: 'More than 0. 86400 is one day',
+                type: FieldType.decimal,
+                validations: [VALIDATOR_REQUIRED],
+                class: 'col-span-full',
+              },
+              rowField: 'ttlSeconds',
+              column: { field: 'ttlSeconds', header: 'Time to Live (s)' },
+            },
+          ],
         },
       ],
       record?.id,
