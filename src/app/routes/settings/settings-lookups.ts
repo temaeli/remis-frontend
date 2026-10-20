@@ -1,3 +1,4 @@
+import { Validators } from '@angular/forms';
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
 import {
   VALIDATOR_EMAIL,
@@ -148,28 +149,63 @@ const amountField = (key: string, label: string, hint?: string): FieldConfig => 
 });
 
 /**
- * The coordinate pair every level of the location hierarchy carries. Both are
- * required and stored as `numeric(9,6)`, so the controls round to six places to
- * match rather than letting the database truncate.
+ * Code, name and description for a table whose `assigned_code` is too short for
+ * the backend's generated codes — `varchar(3)` on the location levels,
+ * `varchar(2)` on countries — so the code is required and its length checked
+ * here, before the backend refuses it.
  */
-const coordinateFields = (): FieldConfig[] => [
+const shortCodeBaseFields = (codePattern: RegExp, codeHint: string): FieldConfig[] => [
+  { key: 'id', type: FieldType.input, visible: false },
   {
-    key: 'latitude',
-    label: 'Latitude',
-    hint: 'Between -90 and 90',
-    type: FieldType.decimal,
-    decimals: 6,
-    validations: [VALIDATOR_REQUIRED],
+    key: 'assignedNumber',
+    label: 'Code',
+    type: FieldType.input,
+    hint: codeHint,
+    validations: [
+      VALIDATOR_REQUIRED,
+      { name: 'pattern', message: codeHint, validator: Validators.pattern(codePattern) },
+    ],
+    class: 'col-span-full',
   },
   {
-    key: 'longitude',
-    label: 'Longitude',
-    hint: 'Between -180 and 180',
-    type: FieldType.decimal,
-    decimals: 6,
+    key: 'name',
+    label: 'Name',
+    type: FieldType.input,
     validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    type: FieldType.textarea,
+    rows: 3,
+    validations: [VALIDATOR_REQUIRED],
+    class: 'col-span-full',
   },
 ];
+
+/** The location levels' code: up to three characters. */
+const locationBaseFields = (): FieldConfig[] =>
+  shortCodeBaseFields(/^\S{1,3}$/, 'Up to 3 characters, no spaces');
+
+/**
+ * `post_code numeric(15,0)`, which region, district, ward and street carry and
+ * council does not. Optional: left blank, the backend keeps 1, the database's
+ * default.
+ */
+const postCodeField = (): FieldConfig => ({
+  key: 'postCode',
+  label: 'Postcode',
+  hint: 'A whole number',
+  type: FieldType.number,
+  validations: [
+    {
+      name: 'pattern',
+      message: 'A whole number of up to 15 digits',
+      validator: Validators.pattern(/^\d{1,15}$/),
+    },
+  ],
+});
 
 /**
  * The select each level of the location hierarchy uses to pick its parent. The
@@ -256,6 +292,16 @@ export const IDENTITY_TYPE = defineLookup({
   extraContents: (comp, record) => [identityTypeIdentificationsPanel(comp, record?.id)],
 });
 
+/** Yes/No columns for the `local` and `verified` switches people and organisations share. */
+const localVerifiedColumns: GridKeyColumn[] = ['local', 'verified'].map(
+  (field): GridKeyColumn => ({
+    field,
+    header: field === 'local' ? 'Local' : 'Verified',
+    valueFn: (row) => (row?.[field] === false ? 'No' : 'Yes'),
+    valueClassMapper: (row) => (row?.[field] === false ? 'text-danger' : 'text-success'),
+  }),
+);
+
 /**
  * The people on the register — `bio_data`, the party record.
  *
@@ -284,6 +330,8 @@ export const PERSON = defineLookup({
   email
   mobileNumber
   gender
+  local
+  verified
 `,
   nameKey: 'firstName',
   baseFields: [
@@ -337,6 +385,10 @@ export const PERSON = defineLookup({
       type: FieldType.input,
       class: 'col-span-full',
     },
+    // bio_data.local and .verified, both on by default. Kept on record: nothing
+    // else reads them yet.
+    { key: 'local', label: 'Local', type: FieldType.toggle, value: true },
+    { key: 'verified', label: 'Verified', type: FieldType.toggle, value: true },
   ],
   baseColumns: [
     'index',
@@ -346,6 +398,7 @@ export const PERSON = defineLookup({
     { field: 'gender', header: 'Gender', valueFn: (row) => getDisplayName(row?.gender) },
     { field: 'mobileNumber', header: 'Mobile' },
     { field: 'email', header: 'Email' },
+    ...localVerifiedColumns,
   ],
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
@@ -395,6 +448,19 @@ export const PERSON = defineLookup({
           permission: 'BIO_DATA_STREET',
           optionsQuery: STREET.gql.all,
         },
+        // countries_bio_data: the countries this person is tied to.
+        {
+          entity: 'CountryBioData',
+          byOwnerQuery: 'countryBioDataByBioData',
+          ownerArg: 'bioDataUid',
+          targetArg: 'countryUid',
+          field: 'country',
+          label: 'Country',
+          pluralLabel: 'Countries',
+          icon: 'public',
+          permission: 'COUNTRY_BIO_DATA',
+          optionsQuery: COUNTRY.gql.all,
+        },
         // The cases this person is the subject of (bio_data_processes).
         BIO_DATA_PROCESS_LINK,
       ],
@@ -418,6 +484,8 @@ export const BUSINESS_NAME = defineLookup({
   isPublic
   email
   mobileNumber
+  local
+  verified
 `,
   extraFields: [
     // Both are required and unique on the register. The number is held with
@@ -442,6 +510,10 @@ export const BUSINESS_NAME = defineLookup({
       value: true,
       class: 'col-span-full',
     },
+    // business_names.local and .verified, both on by default. Kept on record:
+    // nothing else reads them yet.
+    { key: 'local', label: 'Local', type: FieldType.toggle, value: true },
+    { key: 'verified', label: 'Verified', type: FieldType.toggle, value: true },
   ],
   extraColumns: [
     { field: 'email', header: 'Email' },
@@ -452,6 +524,7 @@ export const BUSINESS_NAME = defineLookup({
       valueFn: (row) => (row?.isPublic ? 'Yes' : 'No'),
       valueClassMapper: (row) => (row?.isPublic ? 'text-success' : 'text-danger'),
     },
+    ...localVerifiedColumns,
   ],
   // The number arrives as a number; the form and the mutation take text.
   toModel: (data) => ({
@@ -464,6 +537,25 @@ export const BUSINESS_NAME = defineLookup({
     }),
     businessNamePeoplePanel(comp, record?.id),
     businessNameAddressPanel(comp, record?.id),
+    // countries_business_names: the countries this organisation is tied to.
+    ...entityLinkPanels(
+      comp,
+      [
+        {
+          entity: 'CountryBusinessName',
+          byOwnerQuery: 'countryBusinessNamesByBusinessName',
+          ownerArg: 'businessNameUid',
+          targetArg: 'countryUid',
+          field: 'country',
+          label: 'Country',
+          pluralLabel: 'Countries',
+          icon: 'public',
+          permission: 'COUNTRY_BUSINESS_NAME',
+          optionsQuery: COUNTRY.gql.all,
+        },
+      ],
+      record?.id,
+    ),
     businessNameIdentificationsPanel(comp, record?.id),
     businessNameTinsPanel(comp, record?.id),
     // The certificates it is named on, and the organisations above and below it.
@@ -1485,6 +1577,65 @@ export const COUNTRY = defineLookup({
   pluralLabel: 'Countries',
   subtitle: 'Countries currencies are issued by',
   icon: 'flag',
+  // Keyed by the ISO 3166-1 codes. assigned_code is varchar(2), so the
+  // two-letter code is required; the other three must be given too, or the
+  // database would fill them with Tanzania's.
+  baseFields: shortCodeBaseFields(/^[A-Za-z]{2}$/, 'Two letters, as in ISO 3166-1, e.g. TZ'),
+  baseColumns: ['index', { field: 'assignedNumber', header: 'Code' }, 'name', 'description'],
+  extraGqlFields: `
+  abbreviation3Code
+  numericCode
+  phoneCode
+`,
+  extraFields: [
+    {
+      key: 'abbreviation3Code',
+      label: 'Three-Letter Code',
+      hint: 'ISO 3166-1 alpha-3, e.g. TZA',
+      type: FieldType.input,
+      validations: [
+        VALIDATOR_REQUIRED,
+        {
+          name: 'pattern',
+          message: 'Exactly 3 letters, e.g. TZA',
+          validator: Validators.pattern(/^[A-Za-z]{3}$/),
+        },
+      ],
+    },
+    {
+      key: 'numericCode',
+      label: 'Numeric Code',
+      hint: 'ISO 3166-1 numeric, e.g. 834',
+      type: FieldType.number,
+      validations: [
+        VALIDATOR_REQUIRED,
+        {
+          name: 'pattern',
+          message: 'A whole number, e.g. 834',
+          validator: Validators.pattern(/^\d{1,15}$/),
+        },
+      ],
+    },
+    {
+      key: 'phoneCode',
+      label: 'Phone Code',
+      hint: 'International dialling code, e.g. +255',
+      type: FieldType.input,
+      validations: [
+        VALIDATOR_REQUIRED,
+        {
+          name: 'pattern',
+          message: '+ followed by digits, e.g. +255',
+          validator: Validators.pattern(/^\+\d{1,9}$/),
+        },
+      ],
+    },
+  ],
+  extraColumns: [
+    { field: 'abbreviation3Code', header: 'ISO-3' },
+    { field: 'numericCode', header: 'Numeric' },
+    { field: 'phoneCode', header: 'Phone Code' },
+  ],
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => CURRENCY, CURRENCIES_BY_COUNTRY, { countryUid: record?.id }),
   ],
@@ -3624,12 +3775,10 @@ export const BILL_HEADERS_SETTING = defineLookup({
       class: 'col-span-full',
     },
     // The DBA's switches of 2026-10-18, kept on record like Compound: billing does
-    // not read them yet. The two window switches may not both be on
-    // (bill_headers_settings71); the backend says so if they are.
+    // not read them yet.
     {
       key: 'followFirstWindowBillingCycles',
       label: "Follow the First Window's Billing Cycles",
-      hint: 'Not together with the second window',
       type: FieldType.toggle,
       value: false,
       class: 'col-span-full',
@@ -3637,7 +3786,6 @@ export const BILL_HEADERS_SETTING = defineLookup({
     {
       key: 'followSecondWindowBillingCycles',
       label: "Follow the Second Window's Billing Cycles",
-      hint: 'Not together with the first window',
       type: FieldType.toggle,
       value: false,
       class: 'col-span-full',
@@ -4021,9 +4169,10 @@ export const BILL_SETTING_QUANTITIES_BY_SETTING = gql`
 //  level in remis_core_schema. `COUNTRY` sits with the reference data above
 //  because currencies hang off it too.
 //
-//  Every level is the same shape: the descriptive triple, a required coordinate
-//  pair, and a select onto the level above. `assignedNumber` is `assigned_code`
-//  on these tables and is capped at three characters.
+//  Every level is the same shape: the descriptive triple with a required code
+//  (`assigned_code`, capped at three characters), a postcode on every level
+//  but council, and a select onto the level above. The coordinate pair the
+//  levels used to carry was dropped by the DBA on 2026-10-19.
 
 export const REGION = defineLookup({
   slug: 'regions',
@@ -4034,15 +4183,18 @@ export const REGION = defineLookup({
   pluralLabel: 'Regions',
   subtitle: 'First level of the administrative hierarchy, below the country',
   icon: 'map',
+  baseFields: locationBaseFields(),
   extraGqlFields: `
-  latitude
-  longitude
+  postCode
   country {
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [parentSelect('countryUid', 'Country', () => COUNTRY), ...coordinateFields()],
-  extraColumns: [{ field: 'country', valueFn: (row) => row?.country?.name }],
+  extraFields: [parentSelect('countryUid', 'Country', () => COUNTRY), postCodeField()],
+  extraColumns: [
+    { field: 'country', valueFn: (row) => row?.country?.name },
+    { field: 'postCode', header: 'Postcode' },
+  ],
   toModel: (data) => ({ countryUid: data?.country?.id }),
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => DISTRICT, DISTRICTS_BY_REGION, { regionUid: record?.id }),
@@ -4058,15 +4210,18 @@ export const DISTRICT = defineLookup({
   pluralLabel: 'Districts',
   subtitle: 'Districts and the region each belongs to',
   icon: 'location_city',
+  baseFields: locationBaseFields(),
   extraGqlFields: `
-  latitude
-  longitude
+  postCode
   region {
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [parentSelect('regionUid', 'Region', () => REGION), ...coordinateFields()],
-  extraColumns: [{ field: 'region', valueFn: (row) => row?.region?.name }],
+  extraFields: [parentSelect('regionUid', 'Region', () => REGION), postCodeField()],
+  extraColumns: [
+    { field: 'region', valueFn: (row) => row?.region?.name },
+    { field: 'postCode', header: 'Postcode' },
+  ],
   toModel: (data) => ({ regionUid: data?.region?.id }),
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => COUNCIL, COUNCILS_BY_DISTRICT, { districtUid: record?.id }),
@@ -4082,14 +4237,14 @@ export const COUNCIL = defineLookup({
   pluralLabel: 'Councils',
   subtitle: 'Councils and the district each belongs to',
   icon: 'domain',
+  // The one level with no postcode.
+  baseFields: locationBaseFields(),
   extraGqlFields: `
-  latitude
-  longitude
   district {
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [parentSelect('districtUid', 'District', () => DISTRICT), ...coordinateFields()],
+  extraFields: [parentSelect('districtUid', 'District', () => DISTRICT)],
   extraColumns: [{ field: 'district', valueFn: (row) => row?.district?.name }],
   toModel: (data) => ({ districtUid: data?.district?.id }),
   extraContents: (comp, record) => [
@@ -4106,15 +4261,18 @@ export const WARD = defineLookup({
   pluralLabel: 'Wards',
   subtitle: 'Wards and the council each belongs to',
   icon: 'place',
+  baseFields: locationBaseFields(),
   extraGqlFields: `
-  latitude
-  longitude
+  postCode
   council {
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [parentSelect('councilUid', 'Council', () => COUNCIL), ...coordinateFields()],
-  extraColumns: [{ field: 'council', valueFn: (row) => row?.council?.name }],
+  extraFields: [parentSelect('councilUid', 'Council', () => COUNCIL), postCodeField()],
+  extraColumns: [
+    { field: 'council', valueFn: (row) => row?.council?.name },
+    { field: 'postCode', header: 'Postcode' },
+  ],
   toModel: (data) => ({ councilUid: data?.council?.id }),
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => STREET, STREETS_BY_WARD, { wardUid: record?.id }),
@@ -4130,15 +4288,18 @@ export const STREET = defineLookup({
   pluralLabel: 'Streets',
   subtitle: 'Streets and the ward each belongs to',
   icon: 'near_me',
+  baseFields: locationBaseFields(),
   extraGqlFields: `
-  latitude
-  longitude
+  postCode
   ward {
     ${lookupRefGqlFields}
   }
 `,
-  extraFields: [parentSelect('wardUid', 'Ward', () => WARD), ...coordinateFields()],
-  extraColumns: [{ field: 'ward', valueFn: (row) => row?.ward?.name }],
+  extraFields: [parentSelect('wardUid', 'Ward', () => WARD), postCodeField()],
+  extraColumns: [
+    { field: 'ward', valueFn: (row) => row?.ward?.name },
+    { field: 'postCode', header: 'Postcode' },
+  ],
   toModel: (data) => ({ wardUid: data?.ward?.id }),
   // The joins read from this side — which units, and which people, it is tied to.
   extraContents: (comp, record) => [
