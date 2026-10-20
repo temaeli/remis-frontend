@@ -43,8 +43,7 @@ import { WorkflowDiagramComponent } from './workflow-diagram.component';
  *    `assignedNumber`, which is what the `toModel` renames below are for.
  * 3. A step still has no foreign key to its definition. What a route is made of
  *    lives in the connections screen instead, where an edge names its workflow
- *    and its two ends. The `parentStep`/`childStep` pair on a step is the older
- *    way of saying the same thing and is on its way out — read the connections.
+ *    and its two ends. A step itself no longer names a parent or a child.
  */
 
 //  The five PostgreSQL enum types the module is built on. Labels must match the
@@ -549,11 +548,9 @@ export const WORKFLOW_DEFINITION = defineLookup({
 /**
  * One station on a route.
  *
- * Parent and child are both optional here and required in the database, which is
- * the one place this module's screens hide something: a step with no parent is
- * stored pointing at itself, and the backend reads that back as none. Leave the
- * parent blank on the step that begins a chain and the child blank on the one
- * that ends it.
+ * Which step follows which is drawn in the connections, not on the step: the DBA
+ * dropped the step's own parent and child columns. The step only says whether it
+ * has a parent and a child, and one step per route may be without either.
  */
 export const WORKFLOW_STEP = defineLookup({
   slug: 'workflow-steps',
@@ -588,12 +585,6 @@ export const WORKFLOW_STEP = defineLookup({
     uid: id
     workflowKey
   }
-  parentStep {
-    ${refFields}
-  }
-  childStep {
-    ${refFields}
-  }
 `,
   extraFields: [
     // The column the DBA added after the module was first built. Required rather
@@ -606,7 +597,7 @@ export const WORKFLOW_STEP = defineLookup({
     {
       key: 'sequence',
       label: 'Sequence',
-      hint: 'Position on the chain. Two steps under one parent cannot share a slot',
+      hint: 'Position on the route',
       type: FieldType.number,
       validations: [VALIDATOR_REQUIRED],
     },
@@ -630,16 +621,24 @@ export const WORKFLOW_STEP = defineLookup({
       ...enumSelect('stepType', 'Step Type', STEP_TYPE_OPTIONS),
       hint: 'The database type declares only TBD so far',
     },
-    refSelect('parentUid', 'Parent Step', ALL_WORKFLOW_STEPS, {
-      required: false,
-      hint: 'Leave blank on the step that begins the chain. Only one step in a route may have none',
-    }),
-    refSelect('childUid', 'Child Step', ALL_WORKFLOW_STEPS, {
-      required: false,
-      hint: 'Leave blank on the step that ends the chain. Only one step in a route may have none',
-    }),
-    // One initial, one final and one first step per route (workflow_steps37,
-    // 38 and 41); the backend names the step already holding the place.
+    // One step per route may be without a parent, one without a child, and one
+    // each may be initial, final and first (workflow_steps37 to 41); the backend
+    // names the step already holding the place. Which step follows which is drawn
+    // in the connections.
+    {
+      key: 'hasParent',
+      label: 'Has A Parent Step',
+      hint: 'Off only on the step that begins the route',
+      type: FieldType.toggle,
+      value: false,
+    },
+    {
+      key: 'hasChild',
+      label: 'Has A Child Step',
+      hint: 'Off only on the step that ends the route',
+      type: FieldType.toggle,
+      value: true,
+    },
     {
       key: 'isInitial',
       label: 'Initial Step',
@@ -681,8 +680,8 @@ export const WORKFLOW_STEP = defineLookup({
     'workflowDefinition.workflowKey as Workflow',
     enumColumn('actionType', 'Action'),
     enumColumn('newStatus', 'Resulting Status'),
-    'parentStep.name as Parent',
-    'childStep.name as Child',
+    flagColumn('hasParent', 'Has Parent'),
+    flagColumn('hasChild', 'Has Child'),
     flagColumn('isInitial', 'Initial'),
     flagColumn('isFinal', 'Final'),
     flagColumn('first', 'First'),
@@ -691,10 +690,6 @@ export const WORKFLOW_STEP = defineLookup({
   toModel: (data) => ({
     ...codeToModel(data),
     workflowDefinitionUid: data?.workflowDefinition?.id,
-    // parentStep and childStep are null where the record points at itself, which
-    // is how the backend spells "none" on a NOT NULL column.
-    parentUid: data?.parentStep?.id,
-    childUid: data?.childStep?.id,
   }),
   // The two tables that each replaced a single column on this one: who holds the
   // step, and what it demands before it can be completed. Both read as properties
