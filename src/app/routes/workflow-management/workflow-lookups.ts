@@ -313,6 +313,8 @@ const WORKFLOW_STEPS_BY_WORKFLOW_DEFINITION = gql`
       newStatus
       isInitial
       isFinal
+      first
+      last
     }
   }
 `;
@@ -530,6 +532,8 @@ export const WORKFLOW_DEFINITION = defineLookup({
           enumColumn('newStatus', 'Resulting Status'),
           flagColumn('isInitial', 'Initial'),
           flagColumn('isFinal', 'Final'),
+          flagColumn('first', 'First'),
+          flagColumn('last', 'Last'),
           'actions',
         ],
       },
@@ -567,6 +571,10 @@ export const WORKFLOW_STEP = defineLookup({
   isMain
   isFinal
   isMultiAction
+  hasParent
+  hasChild
+  first
+  last
   newStatus
   sequence
   systemTriggered
@@ -624,15 +632,24 @@ export const WORKFLOW_STEP = defineLookup({
     },
     refSelect('parentUid', 'Parent Step', ALL_WORKFLOW_STEPS, {
       required: false,
-      hint: 'Leave blank on the step that begins the chain',
+      hint: 'Leave blank on the step that begins the chain. Only one step in a route may have none',
     }),
     refSelect('childUid', 'Child Step', ALL_WORKFLOW_STEPS, {
       required: false,
-      hint: 'Leave blank on the step that ends the chain',
+      hint: 'Leave blank on the step that ends the chain. Only one step in a route may have none',
     }),
-    { key: 'isInitial', label: 'Initial Step', type: FieldType.toggle },
+    // One initial, one final and one first step per route (workflow_steps37,
+    // 38 and 41); the backend names the step already holding the place.
+    {
+      key: 'isInitial',
+      label: 'Initial Step',
+      hint: 'One per route',
+      type: FieldType.toggle,
+    },
     { key: 'isMain', label: 'On The Main Line', type: FieldType.toggle },
-    { key: 'isFinal', label: 'Final Step', type: FieldType.toggle },
+    { key: 'isFinal', label: 'Final Step', hint: 'One per route', type: FieldType.toggle },
+    { key: 'first', label: 'First Step', hint: 'One per route', type: FieldType.toggle },
+    { key: 'last', label: 'Last Step', type: FieldType.toggle },
     {
       key: 'isMultiAction',
       label: 'Multiple Actions',
@@ -668,6 +685,8 @@ export const WORKFLOW_STEP = defineLookup({
     'childStep.name as Child',
     flagColumn('isInitial', 'Initial'),
     flagColumn('isFinal', 'Final'),
+    flagColumn('first', 'First'),
+    flagColumn('last', 'Last'),
   ],
   toModel: (data) => ({
     ...codeToModel(data),
