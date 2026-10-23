@@ -9,8 +9,7 @@
 
     @if (pending(); as details) {
       <p class="text-center text-sm text-gray-700 dark:text-gray-200 {{ animation }} --order-4">
-        Enter the 6-digit code sent to <b>{{ details.email }}</b> and
-        <b>{{ details.mobileNumber }}</b
+        Enter the 6-digit code sent to <b>{{ details.email }}</b
         >.
       </p>
 
@@ -28,9 +27,7 @@
                 [attr.aria-label]="'Digit ' + (i + 1) + ' of 6'"
                 [attr.aria-invalid]="failure() ? 'true' : null"
                 aria-describedby="otp-status"
-                class="w-12 h-12 text-center border border-gray-500 rounded-lg text-xl !text-gray-900 bg-white
-                  dark:border-gray-400 dark:!text-white dark:bg-transparent
-                  focus:outline-2 focus:outline-offset-2 focus:outline-[var(--color-primary)]"
+                class="otp-digit w-12 h-12 text-center border border-gray-500 text-xl !text-gray-900 bg-white dark:border-gray-400 dark:!text-white dark:bg-transparent focus:outline-2 focus:outline-offset-2 focus:outline-[var(--color-primary)]"
                 (input)="onInput(i, $event)"
                 (keydown)="onKeydown(i, $event)"
                 (paste)="onPaste($event)"
@@ -77,7 +74,7 @@
     } @else {
       <p class="text-center text-sm text-gray-700 dark:text-gray-200">
         There is no registration waiting on a code. Fill in the form first, and the code is sent to
-        your email and mobile number.
+        your email.
       </p>
       <div class="flex justify-center mt-6">
         <a mat-raised-button [routerLink]="['/auth/register']" class="bg-primary !text-white">

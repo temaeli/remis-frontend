@@ -9,9 +9,9 @@ export interface RegistrationDetails {
   firstName: string;
   secondName: string;
   thirdName: string;
+  gender: 'MALE' | 'FEMALE';
   email: string;
   mobileNumber: string;
-  nationalId: string;
   password: string;
 }
 

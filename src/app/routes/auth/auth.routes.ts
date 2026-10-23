@@ -4,7 +4,6 @@ import { OtpComponent } from './register/otp/otp.component';
 import { RegisterComponent } from './register/register.component';
 import { ResetComponent } from './register/reset/reset.component';
 import { AuthLayoutComponent } from './auth-layout';
-import { SelfRegistrationComponent } from './self-registration/self-registration.component';
 
 export default [
   {
@@ -30,10 +29,5 @@ export default [
       { path: 'otp', component: OtpComponent },
       { path: 'reset', component: ResetComponent },
     ],
-  },
-  {
-    path: 'self-register',
-    component: AuthLayoutComponent,
-    children: [{ path: '', component: SelfRegistrationComponent }],
   },
 ] as Route[];

@@ -1,21 +1,220 @@
-<div class="flex size-full items-center justify-center">
-  <div
-    class="mx-auto max-w-5xl w-full grow my-4 sm:my-6 lg:my-12 p-4 sm:p-6 lg:p-12 z-10
-     {{ animation }} --order-3 rounded-lg bg-white/80 backdrop-blur-[3px] border-gray-100"
-  >
-    <h1 class="text-lg font-semibold text-start mt-5 relative lg:-top-5 {{ animation }} --order-4">
-      Create Account
-    </h1>
+<!--
+  Registering yourself: a frosted card wide enough for several fields a row, so
+  the whole form fits one laptop screen without scrolling. Two groups: your
+  details, then your password.
 
-    <app-form [fp]="fp" class="block  {{ animation }} --order-5" />
+  The card stays light in both themes — the Material controls inside it are
+  drawn for a light surface.
+-->
+<main class="register-page">
+  <section class="register-card {{ animation }} --order-1" aria-labelledby="register-title">
+    <!-- Growth rings from the corner. Decoration only. -->
+    <svg class="card-rings" viewBox="0 0 220 220" aria-hidden="true" focusable="false">
+      <circle cx="220" cy="220" r="40" />
+      <circle cx="220" cy="220" r="78" />
+      <circle cx="220" cy="220" r="116" />
+      <circle cx="220" cy="220" r="154" />
+      <circle cx="220" cy="220" r="192" />
+    </svg>
 
-    <div class="flex justify-start flex-wrap col col-span-2  {{ animation }} --order-6">
-      <a
-        [routerLink]="['/auth/login']"
-        class="font-semibold text-center text-gray-600 mt-5 relative lg:-top-5 hover:text-[var(--color-primary)]"
-      >
-        Already have an account? Sign in
-      </a>
-    </div>
-  </div>
-</div>
+    <header class="sheet-head">
+      <p class="sheet-kicker">REMIS &middot; Watumishi Housing Investments</p>
+      <h1 id="register-title">Create your account</h1>
+      <p class="sheet-lead">We will send a 6-digit code to your email and phone to confirm them.</p>
+    </header>
+
+    <form class="sheet-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <!-- ── Who you are and how we reach you ── -->
+      <fieldset class="group">
+        <legend class="group-title">
+          <mat-icon aria-hidden="true">badge</mat-icon>
+          Your details
+        </legend>
+        <div class="grid grid-4">
+          <mat-form-field appearance="outline">
+            <mat-label>First name</mat-label>
+            <input matInput formControlName="firstName" autocomplete="given-name" />
+            <mat-error>First name is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Middle name</mat-label>
+            <input matInput formControlName="secondName" autocomplete="additional-name" />
+            <mat-error>Middle name is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last name</mat-label>
+            <input matInput formControlName="thirdName" autocomplete="family-name" />
+            <mat-error>Last name is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Gender</mat-label>
+            <mat-select formControlName="gender">
+              <mat-option value="MALE">Male</mat-option>
+              <mat-option value="FEMALE">Female</mat-option>
+            </mat-select>
+            <mat-error>Gender is required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="grid grid-2 group-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Email address</mat-label>
+            <mat-icon matPrefix aria-hidden="true">mail_outline</mat-icon>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+            <mat-hint>You sign in with this</mat-hint>
+            @if (form.controls.email.hasError('required')) {
+              <mat-error>Email is required</mat-error>
+            } @else {
+              <mat-error>Enter a valid email, e.g. name&#64;example.com</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Mobile number</mat-label>
+            <mat-icon matPrefix aria-hidden="true">smartphone</mat-icon>
+            <input
+              matInput
+              type="tel"
+              inputmode="numeric"
+              formControlName="mobileNumber"
+              autocomplete="tel"
+              maxlength="12"
+              (input)="formatMobile($event)"
+            />
+            <mat-hint>Starts with 255, e.g. 255754000000</mat-hint>
+            @if (form.controls.mobileNumber.hasError('required')) {
+              <mat-error>Mobile number is required</mat-error>
+            } @else {
+              <mat-error>255 then 9 digits, e.g. 255754000000</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </fieldset>
+
+      <!-- ── Your password ── -->
+      <fieldset class="group">
+        <legend class="group-title">
+          <mat-icon aria-hidden="true">lock_outline</mat-icon>
+          Your password
+        </legend>
+        <div class="grid grid-2">
+          <div class="password-field">
+            <mat-form-field appearance="outline">
+              <mat-label>Password</mat-label>
+              <input
+                matInput
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="new-password"
+                aria-describedby="password-strength password-rules"
+              />
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              <mat-error>Does not meet every rule below</mat-error>
+            </mat-form-field>
+
+            <!-- How strong it reads, as it is typed. -->
+            <div id="password-strength" class="strength" [attr.data-tone]="strength().tone">
+              <div
+                class="strength-bar"
+                role="progressbar"
+                aria-label="Password strength"
+                aria-valuemin="0"
+                aria-valuemax="4"
+                [attr.aria-valuenow]="strength().level"
+                [attr.aria-valuetext]="strength().label || 'Not entered'"
+              >
+                @for (segment of [1, 2, 3, 4]; track segment) {
+                  <span class="strength-segment" [class.lit]="segment <= strength().level"></span>
+                }
+              </div>
+              <p class="strength-label" aria-live="polite">
+                @if (strength().label) {
+                  Strength: <b>{{ strength().label }}</b>
+                } @else {
+                  Start typing to see how strong it is
+                }
+              </p>
+            </div>
+          </div>
+
+          <div class="password-field">
+            <mat-form-field appearance="outline">
+              <mat-label>Confirm password</mat-label>
+              <input
+                matInput
+                [type]="showConfirm() ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+              />
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                [attr.aria-label]="showConfirm() ? 'Hide password' : 'Show password'"
+                [attr.aria-pressed]="showConfirm()"
+                (click)="showConfirm.set(!showConfirm())"
+              >
+                <mat-icon>{{ showConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              <mat-error>Confirm your password</mat-error>
+            </mat-form-field>
+
+            @if (confirmState() !== 'empty') {
+              <p class="match" [class.ok]="confirmState() === 'match'" aria-live="polite">
+                <mat-icon aria-hidden="true">
+                  {{ confirmState() === 'match' ? 'check_circle' : 'cancel' }}
+                </mat-icon>
+                {{ confirmState() === 'match' ? 'Passwords match' : 'Passwords do not match' }}
+              </p>
+            }
+          </div>
+        </div>
+
+        <!-- Every rule, ticked off as it is met. -->
+        <ul id="password-rules" class="rules" aria-label="Password rules">
+          @for (rule of ruleStates(); track rule.label) {
+            <li [class.met]="rule.met">
+              <mat-icon aria-hidden="true">{{
+                rule.met ? 'check_circle' : 'radio_button_unchecked'
+              }}</mat-icon>
+              <span>{{ rule.label }}</span>
+              <span class="cdk-visually-hidden">{{ rule.met ? '(met)' : '(not yet)' }}</span>
+            </li>
+          }
+        </ul>
+        @if (hasDisallowed()) {
+          <p class="rules-warning" role="alert">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            Only letters, numbers and {{ specials.split('').join(' ') }} are allowed.
+          </p>
+        }
+      </fieldset>
+
+      <button type="submit" class="submit-button" [disabled]="sending()">
+        @if (sending()) {
+          Sending code…
+        } @else {
+          <mat-icon aria-hidden="true">send</mat-icon>
+          Send verification code
+        }
+      </button>
+    </form>
+
+    <nav class="sheet-links" aria-label="Account links">
+      <span>Already have an account?</span>
+      <a [routerLink]="['/auth', 'login']">Sign in</a>
+    </nav>
+  </section>
+</main>

@@ -11,6 +11,12 @@ select {
   border-radius: 0 !important;
 }
 
+// Except the one-digit boxes of a verification code, which read as separate
+// keys rather than form fields, so they are rounded a little.
+input.otp-digit {
+  border-radius: 8px !important;
+}
+
 .bg-primary {
   background: var(--color-primary) !important;
 }

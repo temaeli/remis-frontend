@@ -14,7 +14,7 @@ import { AsyncPipe } from '@angular/common';
         type="submit"
         mat-stroked-button
         [disabled]="
-          !!(field.isSaving$ | async) || formSteppers.length ? !allSteppersValid() : group.invalid
+          !!(field.isSaving$ | async) || (formSteppers.length ? !allSteppersValid() : group.invalid)
         "
         [loading]="!!(field.isSaving$ | async)"
         class=" py-2 px-3 {{ field.inputClass }}"

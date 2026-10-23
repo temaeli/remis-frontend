@@ -51,13 +51,14 @@ export class OtpComponent {
   readonly resending = signal(false);
   readonly failure = signal('');
 
-  /** Keeps one digit in the box and moves on to the next. */
+  /** Keeps one digit in the box and moves on to the next. The last one submits without a click. */
   onInput(index: number, event: Event): void {
     const box = event.target as HTMLInputElement;
     const digit = box.value.replace(/\D/g, '').slice(-1);
     box.value = digit;
     this.digits.update((all) => all.map((old, i) => (i === index ? digit : old)));
     if (digit && index < CODE_LENGTH - 1) this.focus(index + 1);
+    if (this.complete()) this.submit();
   }
 
   /** Backspace in an empty box steps back to the one before. */
@@ -74,6 +75,7 @@ export class OtpComponent {
     this.digits.set(filled);
     this.boxes().forEach((box, i) => (box.nativeElement.value = filled[i]));
     this.focus(Math.min(pasted.length, CODE_LENGTH) - 1);
+    if (this.complete()) this.submit();
   }
 
   async submit(): Promise<void> {
