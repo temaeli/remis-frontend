@@ -184,9 +184,9 @@ const shortCodeBaseFields = (codePattern: RegExp, codeHint: string): FieldConfig
   },
 ];
 
-/** The location levels' code: up to three characters. */
+/** The location levels' code: up to 36 characters (varchar(36) on all five levels). */
 const locationBaseFields = (): FieldConfig[] =>
-  shortCodeBaseFields(/^\S{1,3}$/, 'Up to 3 characters, no spaces');
+  shortCodeBaseFields(/^\S{1,36}$/, 'Up to 36 characters, no spaces');
 
 /**
  * `post_code numeric(15,0)`, which region, district, ward and street carry and
