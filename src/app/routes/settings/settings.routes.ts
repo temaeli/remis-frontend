@@ -94,6 +94,22 @@ export const SETTINGS_ROUTES: TypedRoutes = [
       ...lookupRoutes(GENERAL_LOOKUPS),
       ...lookupRoutes(CUSTOMER_LOOKUPS),
 
+      // The documents each type of person or organisation is expected to hold.
+      {
+        path: 'party-documents',
+        data: {
+          isMenu: true,
+          name: 'Party Documents',
+          icon: 'description',
+          permissions: [
+            'ROLE_VIEW_ALL_BIO_DATA_TYPE_ATTACHMENT_TYPE',
+            'ROLE_VIEW_BIO_DATA_TYPE_ATTACHMENT_TYPE',
+          ],
+        },
+        loadComponent: () =>
+          import('./party-documents/party-documents').then((m) => m.PartyDocuments),
+      },
+
       // System Settings
       {
         path: 'system-settings',

@@ -25,11 +25,11 @@ const SPECIALS = '@$!%*?&';
 const COUNTRY_CODE = '255';
 
 /**
- * A Tanzanian mobile in full international form: 255, then nine digits, the
- * first 6, 7 or 8. The backend accepts the same range, 255600000000 to
- * 255899999999.
+ * A Tanzanian mobile in full international form: 255, then nine digits. The
+ * backend takes a person's number above 255000000000 and below 255999999999
+ * (bio_data17 and bio_data18), so those two are the only ones left out.
  */
-const MOBILE_PATTERN = /^255[678]\d{8}$/;
+const MOBILE_PATTERN = /^255(?!0{9}$)(?!9{9}$)\d{9}$/;
 
 /** One rule of the password, shown as a line of the checklist. */
 interface PasswordRule {

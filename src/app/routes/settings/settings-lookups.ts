@@ -58,6 +58,7 @@ import {
   raiseQuantityBillForReuseBtn,
 } from './quantity-bill-run';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
+import { bioDataTypeColumn, bioDataTypeField } from './party-types';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import {
@@ -336,6 +337,7 @@ export const PERSON = defineLookup({
   gender
   local
   verified
+  bioDataType
 `,
   nameKey: 'firstName',
   baseFields: [
@@ -369,6 +371,8 @@ export const PERSON = defineLookup({
       ],
       validations: [VALIDATOR_REQUIRED],
     },
+    // bio_data.bio_data_types: what kind of party, HUMAN_BEING unless chosen.
+    bioDataTypeField(),
     // No identity type and no national ID: bio_data no longer carries either.
     // A person's documents, the national ID among them, are filed in the
     // Identifications panel on their page.
@@ -400,10 +404,14 @@ export const PERSON = defineLookup({
     { field: 'secondName', header: 'Middle Name' },
     { field: 'thirdName', header: 'Last Name' },
     { field: 'gender', header: 'Gender', valueFn: (row) => getDisplayName(row?.gender) },
+    bioDataTypeColumn,
     { field: 'mobileNumber', header: 'Mobile' },
     { field: 'email', header: 'Email' },
     ...localVerifiedColumns,
   ],
+  toModel: (data) => ({
+    bioDataType: data?.bioDataType ?? 'HUMAN_BEING',
+  }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
     // Postal and physical address.
@@ -492,8 +500,11 @@ export const BUSINESS_NAME = defineLookup({
   mobileNumber
   local
   verified
+  bioDataType
 `,
   extraFields: [
+    // business_names.bio_data_types: what kind of party, COMPANY unless chosen.
+    bioDataTypeField(),
     // Both are required and unique on the register. The number is held with
     // its country code, so one typed as 0754000000 comes back as 255754000000.
     {
@@ -522,6 +533,7 @@ export const BUSINESS_NAME = defineLookup({
     { key: 'verified', label: 'Verified', type: FieldType.toggle, value: true },
   ],
   extraColumns: [
+    bioDataTypeColumn,
     { field: 'email', header: 'Email' },
     { field: 'mobileNumber', header: 'Mobile Number' },
     {
@@ -535,6 +547,7 @@ export const BUSINESS_NAME = defineLookup({
   // The number arrives as a number; the form and the mutation take text.
   toModel: (data) => ({
     mobileNumber: data?.mobileNumber != null ? String(data.mobileNumber) : null,
+    bioDataType: data?.bioDataType ?? 'COMPANY',
   }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BusinessName', record?.id),
