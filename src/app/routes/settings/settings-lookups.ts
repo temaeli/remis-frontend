@@ -24,7 +24,11 @@ import {
   lookupRefGqlFields,
   LookupModule,
 } from '@shared/lookup';
-import { businessNamePeoplePanel, personOrganisationsPanel } from './person-links';
+import {
+  businessNamePeoplePanel,
+  personLinkedPeoplePanels,
+  personOrganisationsPanel,
+} from './person-links';
 import {
   businessNamePartyPanels,
   certificatePartyPanels,
@@ -407,6 +411,8 @@ export const PERSON = defineLookup({
     // What they have declared, and when. Read only.
     personDeclarationsPanel(comp, record?.id),
     personOrganisationsPanel(comp, record?.id),
+    // The people linked under this person, and those they are linked under.
+    ...personLinkedPeoplePanels(comp, record?.id),
     // The certificates this person is named on, and as what.
     ...personCertificatesPanels(comp, record?.id),
     // The collection centres they are at, and the applicants and consumers they are.
