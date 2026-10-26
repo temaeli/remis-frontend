@@ -18,9 +18,12 @@ import { Lookup } from '@shared/lookup/lookup.interface';
  * `remis_core_schema.grace_periods_bill_headers_settings`.
  *
  * Not a lookup screen: the table has no code, name or description and no
- * active/deleted flags, so the generic list has nothing to show and the generic
- * delete has nothing to flip. It is a panel on the grace period's own page, with
- * a form of its own, and rows are removed outright.
+ * deleted flag, so the generic list has nothing to show and the generic delete
+ * has nothing to flip. It is a panel on the grace period's own page, with a form
+ * of its own, and rows are removed outright.
+ *
+ * It does have `active`: an inactive setting stays listed here, but renewal
+ * skips it and it cannot be linked to a unit.
  *
  * One row per grace period and bill template — that pair is UNIQUE — so the
  * backend refuses a second and says which template already has one.
@@ -54,6 +57,7 @@ const settingFieldsGql = `
   quantities
   day
   month
+  active
   gracePeriod { id name }
   billHeadersSetting { id name }
   fee { id name }
@@ -124,6 +128,22 @@ const DELETE_SETTING = gql`
     }
   }
 `;
+
+const ACTIVATE_OR_DEACTIVATE_SETTING = gql`
+  mutation activateOrDeactivateGracePeriodBillHeadersSetting($uid: String) {
+    activateOrDeactivateGracePeriodBillHeadersSetting(uid: $uid) {
+      ${responseGqlFields(settingFieldsGql)}
+    }
+  }
+`;
+
+/** Active or Inactive, coloured, as the users and roles grids show it. */
+const statusColumn: GridKeyColumn = {
+  field: 'active',
+  header: 'Status',
+  valueFn: (row: any) => (row?.active ? 'Active' : 'Inactive'),
+  valueClassMapper: (row: any) => (row?.active ? 'text-success' : 'text-danger'),
+};
 
 /** The lists the selects are filled from. Declared here to keep this file self-contained. */
 const named = `
@@ -320,6 +340,7 @@ const settingColumns: GridKeyColumn[] = [
   { field: 'quantities', header: 'Quantity' },
   { field: 'day', header: 'Day' },
   { field: 'month', header: 'Month', valueFn: (row: any) => monthName(row?.month) },
+  statusColumn,
   'actions',
 ];
 
@@ -361,6 +382,33 @@ export const gracePeriodBillSettingsPanel = (
     {
       ...MORE_BTN,
       buttons: [
+        {
+          label: 'Activate / Deactivate',
+          iconMapper: (row: Lookup) => (row?.['active'] ? 'toggle_off' : 'toggle_on'),
+          labelMapper: (row: Lookup) => (row?.['active'] ? 'Deactivate' : 'Activate'),
+          confirmDataMapper: (row: Lookup) => ({
+            title: row?.['active'] ? 'Deactivate Bill Setting' : 'Activate Bill Setting',
+            message: row?.['active']
+              ? `Deactivate the setting for <b>${
+                  row?.['billHeadersSetting']?.['name'] ?? 'this bill template'
+                }</b>? Renewal will stop billing it until it is activated again.`
+              : `Activate the setting for <b>${
+                  row?.['billHeadersSetting']?.['name'] ?? 'this bill template'
+                }</b>?`,
+            confirmText: row?.['active'] ? 'Deactivate' : 'Activate',
+            confirmButtonColor: row?.['active'] ? 'red' : 'primary',
+          }),
+          click: async (row: Lookup) => {
+            await comp.fs.fetch({
+              notify: true,
+              loadingOn: 'content',
+              variables: { uid: row?.['id'] },
+              mutation: ACTIVATE_OR_DEACTIVATE_SETTING,
+              successFn: (res) => settingReloaded$.next(res?.data),
+            });
+          },
+          permissions: ['ROLE_UPDATE_GRACE_PERIOD_BILL_SETTING'],
+        } as ActionButton,
         {
           icon: 'delete',
           label: 'Remove',
@@ -414,6 +462,7 @@ export const renewBillSettingsPanel = (renewUid?: string): ContentParameter => (
     'fee.name as Fee',
     'financialYear.name as Financial Year',
     { field: 'quantities', header: 'Quantity' },
+    statusColumn,
   ],
   reloadActions$: [settingReloaded$],
   fetchParameter: {
