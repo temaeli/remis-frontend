@@ -296,6 +296,23 @@ const ALL_COLLECTION_CENTER = gql`
   }
 `;
 
+const ALL_DISTRICT = gql`
+  query allDistricts {
+    allDistricts {
+      id
+      name
+    }
+  }
+`;
+
+/** One link table read from both ends: the districts a collection centre serves. */
+const COLLECTION_CENTER_DISTRICT = {
+  entity: 'CollectionCenterDistrict',
+  ownerArg: 'collectionCenterUid',
+  targetArg: 'districtUid',
+  permission: 'COLLECTION_CENTER_DISTRICT',
+};
+
 const ALL_COMMISSION = gql`
   query allCommissions {
     allCommissions {
@@ -2171,6 +2188,31 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
       icon: 'domain',
       permission: 'UNIT_COLLECTION_CENTER',
       optionsQuery: ALL_UNIT,
+    },
+    // The districts it serves (collection_centers_districts).
+    {
+      ...COLLECTION_CENTER_DISTRICT,
+      byOwnerQuery: 'collectionCenterDistrictsByCollectionCenter',
+      field: 'district',
+      label: 'District',
+      pluralLabel: 'Districts',
+      icon: 'location',
+      optionsQuery: ALL_DISTRICT,
+    },
+  ],
+
+  // The collection centres serving a district, read from the district's side.
+  District: [
+    {
+      ...COLLECTION_CENTER_DISTRICT,
+      byOwnerQuery: 'collectionCenterDistrictsByDistrict',
+      ownerArg: 'districtUid',
+      targetArg: 'collectionCenterUid',
+      field: 'collectionCenter',
+      label: 'Collection Center',
+      pluralLabel: 'Collection Centers',
+      icon: 'location',
+      optionsQuery: ALL_COLLECTION_CENTER,
     },
   ],
   Commission: [

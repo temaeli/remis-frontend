@@ -4244,6 +4244,8 @@ export const DISTRICT = defineLookup({
   toModel: (data) => ({ regionUid: data?.region?.id }),
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => COUNCIL, COUNCILS_BY_DISTRICT, { districtUid: record?.id }),
+    // The collection centres serving it (collection_centers_districts).
+    ...recordLinkPanels(comp, 'District', record?.id),
   ],
 });
 
