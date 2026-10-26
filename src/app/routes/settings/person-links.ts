@@ -268,6 +268,202 @@ export const personOrganisationsPanel = (
   fetchParameter: { query: BUSINESS_NAMES_OF_PERSON, variables: { personUid } },
 });
 
+/**
+ * One person linked under another, in a role — `bio_data_bio_data`. The party
+ * says what the child is to the parent, and is required: the column has no
+ * default. Linking a pair again changes its role; the backend refuses a person
+ * linked to themselves.
+ */
+
+/** Notifies both person-to-person panels that a link was made or broken. */
+export const bioDataBioData$ = new Subject<unknown>();
+
+const personGqlFields = `
+  id
+  firstName
+  secondName
+  thirdName
+`;
+
+const personLinkRowGqlFields = `
+  uid
+  party
+  parent {
+    ${personGqlFields}
+  }
+  child {
+    ${personGqlFields}
+  }
+`;
+
+export const PEOPLE_UNDER_PERSON = gql`
+  query bioDataBioDataByParent($parentUid: String) {
+    bioDataBioDataByParent(parentUid: $parentUid) {
+      ${personLinkRowGqlFields}
+    }
+  }
+`;
+
+export const PEOPLE_ABOVE_PERSON = gql`
+  query bioDataBioDataByChild($childUid: String) {
+    bioDataBioDataByChild(childUid: $childUid) {
+      ${personLinkRowGqlFields}
+    }
+  }
+`;
+
+export const LINK_BIO_DATA_BIO_DATA = gql`
+  mutation linkBioDataBioData($parentUid: String, $childUid: String, $party: Party) {
+    linkBioDataBioData(parentUid: $parentUid, childUid: $childUid, party: $party) {
+      ${responseGqlFields(personLinkRowGqlFields)}
+    }
+  }
+`;
+
+export const UNLINK_BIO_DATA_BIO_DATA = gql`
+  mutation unlinkBioDataBioData($uid: String) {
+    unlinkBioDataBioData(uid: $uid) {
+      ${responseGqlFields(personLinkRowGqlFields)}
+    }
+  }
+`;
+
+//  Permissions, as declared on BioDataBioDataController.
+const PERSON_LINK_VIEW_PERMISSIONS = [
+  'ROLE_VIEW_ALL_BIO_DATA_BIO_DATA',
+  'ROLE_VIEW_BIO_DATA_BIO_DATA',
+];
+const PERSON_LINK_LINK_PERMISSIONS = [
+  'ROLE_CREATE_BIO_DATA_BIO_DATA',
+  'ROLE_UPDATE_BIO_DATA_BIO_DATA',
+];
+const PERSON_LINK_UNLINK_PERMISSIONS = ['ROLE_DELETE_BIO_DATA_BIO_DATA'];
+
+/** Which side of the link the page's person is on. */
+type PersonSide = 'parent' | 'child';
+
+const otherSide = (side: PersonSide): PersonSide => (side === 'parent' ? 'child' : 'parent');
+
+function linkPersonToPersonBtn(
+  comp: BaseComponent,
+  side: PersonSide,
+  personUid?: string,
+): ActionButton {
+  const title = side === 'parent' ? 'Link Person Under' : 'Link Under Person';
+  return {
+    icon: 'add',
+    label: title,
+    class: 'btn-add-primary',
+    click: () => {
+      const close$ = new Subject<void>();
+      const formParameter: FormParameters = {
+        model: {},
+        title,
+        fields: [
+          {
+            key: `${otherSide(side)}Uid`,
+            label: 'Person',
+            type: FieldType.select,
+            optionsVariables: {
+              valueKey: 'id',
+              fetchParameter: { query: ALL_PEOPLE_FOR_LINK },
+              mapFunction: (option: any) => ({
+                ...option,
+                label: fullName(option),
+                value: option.id,
+              }),
+            },
+            validations: [VALIDATOR_REQUIRED],
+            class: 'col-span-full',
+          },
+          {
+            ...partyFormField,
+            hint:
+              side === 'parent'
+                ? 'What the linked person is to this one'
+                : 'What this person is to the linked one',
+          },
+        ],
+        closeAction$: close$,
+
+        onSubmit: async (value: any) => {
+          await comp.fs.fetch({
+            notify: true,
+            variables: { [`${side}Uid`]: personUid, ...value },
+            mutation: LINK_BIO_DATA_BIO_DATA,
+            successFn: (res) => {
+              bioDataBioData$.next(res?.data);
+              close$.next();
+            },
+          });
+        },
+      };
+
+      comp.vs?.openModal(FormComponent, formParameter, '40%');
+    },
+    permissions: PERSON_LINK_LINK_PERMISSIONS,
+  };
+}
+
+function unlinkPersonFromPersonBtn(comp: BaseComponent, side: PersonSide): ActionButton {
+  return {
+    icon: 'block',
+    label: 'Unlink',
+    class: 'text-danger',
+    confirmDataMapper: (row: any) => ({
+      title: 'UNLINK',
+      confirmText: 'UNLINK',
+      confirmButtonColor: 'red',
+      message: `Are you sure you want to unlink <b class='text-danger'>${fullName(
+        row?.[otherSide(side)],
+      )}</b> ?`,
+    }),
+    click: async (row: any) => {
+      await comp.fs.fetch({
+        notify: true,
+        loadingOn: 'content',
+        variables: { uid: row?.uid },
+        mutation: UNLINK_BIO_DATA_BIO_DATA,
+        successFn: (res) => bioDataBioData$.next(res?.data),
+      });
+    },
+    permissions: PERSON_LINK_UNLINK_PERMISSIONS,
+  };
+}
+
+/**
+ * On a person's page: the people linked under them, and the people they are
+ * linked under, each with the role.
+ */
+export const personLinkedPeoplePanels = (
+  comp: BaseComponent,
+  personUid?: string,
+): ContentParameter[] =>
+  (['parent', 'child'] as PersonSide[]).map((side) => ({
+    type: 'table',
+    name: side === 'parent' ? 'People Under This Person' : 'Linked Under',
+    label: side === 'parent' ? 'People Under This Person' : 'Linked Under',
+    icon: 'users',
+    permissions: PERSON_LINK_VIEW_PERMISSIONS,
+    keyColumns: [
+      'index',
+      {
+        field: otherSide(side),
+        header: 'Name',
+        valueFn: (row: any) => fullName(row?.[otherSide(side)]),
+      },
+      partyColumn,
+      'actions',
+    ],
+    headerButtons: [linkPersonToPersonBtn(comp, side, personUid)],
+    actionButtons: [{ ...MORE_BTN, buttons: [unlinkPersonFromPersonBtn(comp, side)] }],
+    reloadActions$: [bioDataBioData$],
+    fetchParameter:
+      side === 'parent'
+        ? { query: PEOPLE_UNDER_PERSON, variables: { parentUid: personUid } }
+        : { query: PEOPLE_ABOVE_PERSON, variables: { childUid: personUid } },
+  }));
+
 /** The people linked to one organisation, for its detail page. */
 export const businessNamePeoplePanel = (
   comp: BaseComponent,
