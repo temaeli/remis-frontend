@@ -43,6 +43,7 @@ export const PARTY_OPTIONS = [
   { value: 'EMPLOYEE', label: 'Employee' },
   { value: 'EMPLOYER', label: 'Employer' },
   { value: 'ACCOUNTING_OFFICER', label: 'Accounting Officer' },
+  { value: 'HEAD_OF_ENTITY', label: 'Head Of Entity' },
 ];
 
 const partyLabel = (party?: string): string =>

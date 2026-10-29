@@ -94,6 +94,11 @@ export const getUserFormFields = (comp: BaseComponent): FieldConfig[] => [
     showWhen: [{ key: 'isStaff' }],
     validations: [],
   },
+  // uaa.users.two_factor_enabled and .email_verified, both on by default (set
+  // in the model below, so an edit shows the stored value). Stored and shown
+  // only: sign-in does not read them.
+  { key: 'twoFactorEnabled', label: 'Two-Factor Enabled', type: FieldType.toggle },
+  { key: 'emailVerified', label: 'Email Verified', type: FieldType.toggle },
 ];
 
 export function userUpsertBtn(comp: BaseComponent): ActionButton {
@@ -102,7 +107,12 @@ export function userUpsertBtn(comp: BaseComponent): ActionButton {
       const formParameter: FormParameters = {
         // The record carries the person as a nested bioData; the form submits the
         // id. Seed it across, or an edit opens with no person selected.
-        model: { ...data, bioDataUid: data?.bioData?.id },
+        model: {
+          ...data,
+          bioDataUid: data?.bioData?.id,
+          twoFactorEnabled: data?.twoFactorEnabled ?? true,
+          emailVerified: data?.emailVerified ?? true,
+        },
         title: 'User',
         fields: getUserFormFields(comp),
         closeAction$: user$,

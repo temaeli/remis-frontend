@@ -53,6 +53,19 @@ export class Users extends BaseComponent {
       valueFn: (row) => (row?.isStaff ? 'Yes' : 'No'),
       valueClassMapper: (row) => (row?.isStaff ? 'text-success' : 'text-danger'),
     },
+    // Stored and shown only; sign-in does not read either.
+    {
+      field: 'twoFactorEnabled',
+      header: 'Two-Factor',
+      valueFn: (row) => (row?.twoFactorEnabled === false ? 'No' : 'Yes'),
+      valueClassMapper: (row) => (row?.twoFactorEnabled === false ? 'text-danger' : 'text-success'),
+    },
+    {
+      field: 'emailVerified',
+      header: 'Email Verified',
+      valueFn: (row) => (row?.emailVerified === false ? 'No' : 'Yes'),
+      valueClassMapper: (row) => (row?.emailVerified === false ? 'text-danger' : 'text-success'),
+    },
     'actions',
   ];
 

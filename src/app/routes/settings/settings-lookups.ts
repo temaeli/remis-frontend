@@ -1,10 +1,6 @@
 import { Validators } from '@angular/forms';
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
-import {
-  VALIDATOR_EMAIL,
-  VALIDATOR_PERSON_EMAIL,
-  VALIDATOR_REQUIRED,
-} from '@shared/components/generic-form/form-constants';
+import { VALIDATOR_PERSON_EMAIL, VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
@@ -58,7 +54,7 @@ import {
   raiseQuantityBillForReuseBtn,
 } from './quantity-bill-run';
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
-import { bioDataTypeColumn, bioDataTypeField } from './party-types';
+import { bioDataTypeColumn, bioDataTypeField, localField, mobileNumberField } from './party-types';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import { checklistTypeColumn, checklistTypeField, DEFAULT_CHECKLIST_TYPE } from './checklist-types';
@@ -378,8 +374,9 @@ export const PERSON = defineLookup({
     // A person's documents, the national ID among them, are filed in the
     // Identifications panel on their page.
     //
-    // The three below are checked for clashes where given.
-    { key: 'mobileNumber', label: 'Mobile Number', type: FieldType.input },
+    // The three below are checked for clashes where given. The mobile number
+    // follows the Local toggle: Tanzanian when on, foreign when off.
+    mobileNumberField(false),
     {
       key: 'email',
       label: 'Email',
@@ -394,10 +391,10 @@ export const PERSON = defineLookup({
       type: FieldType.input,
       class: 'col-span-full',
     },
-    // bio_data.local and .verified, both on by default. Kept on record: nothing
-    // else reads them yet.
-    { key: 'local', label: 'Local', type: FieldType.toggle, value: true },
-    { key: 'verified', label: 'Verified', type: FieldType.toggle, value: true },
+    // bio_data.local and .verified, both on by default (set in toModel, so an
+    // edit shows the stored value). Local decides how the mobile number is read.
+    localField(),
+    { key: 'verified', label: 'Verified', type: FieldType.toggle },
   ],
   baseColumns: [
     'index',
@@ -411,7 +408,10 @@ export const PERSON = defineLookup({
     ...localVerifiedColumns,
   ],
   toModel: (data) => ({
+    mobileNumber: data?.mobileNumber != null ? String(data.mobileNumber) : null,
     bioDataType: data?.bioDataType ?? 'HUMAN_BEING',
+    local: data?.local ?? true,
+    verified: data?.verified ?? true,
   }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
@@ -507,20 +507,16 @@ export const BUSINESS_NAME = defineLookup({
     // business_names.bio_data_types: what kind of party, COMPANY unless chosen.
     bioDataTypeField(),
     // Both are required and unique on the register. The number is held with
-    // its country code, so one typed as 0754000000 comes back as 255754000000.
+    // its country code, so a local one typed as 0754000000 comes back as
+    // 255754000000; it follows the Local toggle, Tanzanian or foreign.
+    // business_names22 holds the email to the same rule as a person's.
     {
       key: 'email',
       label: 'Email',
       type: FieldType.input,
-      validations: [VALIDATOR_REQUIRED, VALIDATOR_EMAIL],
+      validations: [VALIDATOR_REQUIRED, VALIDATOR_PERSON_EMAIL],
     },
-    {
-      key: 'mobileNumber',
-      label: 'Mobile Number',
-      hint: 'A Tanzanian mobile number, e.g. 0754000000',
-      type: FieldType.input,
-      validations: [VALIDATOR_REQUIRED],
-    },
+    mobileNumberField(true),
     {
       key: 'isPublic',
       label: 'Publicly Visible',
@@ -528,10 +524,11 @@ export const BUSINESS_NAME = defineLookup({
       value: true,
       class: 'col-span-full',
     },
-    // business_names.local and .verified, both on by default. Kept on record:
-    // nothing else reads them yet.
-    { key: 'local', label: 'Local', type: FieldType.toggle, value: true },
-    { key: 'verified', label: 'Verified', type: FieldType.toggle, value: true },
+    // business_names.local and .verified, both on by default (set in toModel,
+    // so an edit shows the stored value). Local decides how the mobile number
+    // is read.
+    localField(),
+    { key: 'verified', label: 'Verified', type: FieldType.toggle },
   ],
   extraColumns: [
     bioDataTypeColumn,
@@ -549,6 +546,8 @@ export const BUSINESS_NAME = defineLookup({
   toModel: (data) => ({
     mobileNumber: data?.mobileNumber != null ? String(data.mobileNumber) : null,
     bioDataType: data?.bioDataType ?? 'COMPANY',
+    local: data?.local ?? true,
+    verified: data?.verified ?? true,
   }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BusinessName', record?.id),
@@ -588,8 +587,9 @@ export const BUSINESS_NAME = defineLookup({
 
 /**
  * A taxpayer's number, held beside the other ways a party is identified. The
- * number is the record's own identifier and is nine characters, far shorter than
- * the generator's twenty, so the form requires it.
+ * number is the record's own identifier, `assigned_number` (at most 50
+ * characters); there is no separate numeric copy any more. A generated code is
+ * not a TIN, so the form requires it.
  */
 export const TIN_DATA = defineLookup({
   slug: 'tin-data',
@@ -604,7 +604,8 @@ export const TIN_DATA = defineLookup({
   assignedNumber
   name
   description
-  tin
+  local
+  verified
 `,
   baseFields: [
     { key: 'id', type: FieldType.input, visible: false },
@@ -612,8 +613,15 @@ export const TIN_DATA = defineLookup({
       key: 'assignedNumber',
       label: 'TIN',
       type: FieldType.input,
-      hint: 'Nine digits',
-      validations: [VALIDATOR_REQUIRED],
+      hint: 'The taxpayer identification number, e.g. 123456789',
+      validations: [
+        VALIDATOR_REQUIRED,
+        {
+          name: 'maxlength',
+          validator: Validators.maxLength(50),
+          message: 'The TIN must not exceed 50 characters',
+        },
+      ],
       class: 'col-span-full',
     },
     {
@@ -631,9 +639,29 @@ export const TIN_DATA = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
-    amountField('tin', 'TIN (numeric)', 'The table holds a second, numeric copy of the number'),
+    // tin_data.local (on by default) and .verified (off by default), set in
+    // toModel so an edit shows the stored value.
+    { key: 'local', label: 'Local', hint: 'On for a Tanzanian TIN', type: FieldType.toggle },
+    { key: 'verified', label: 'Verified', type: FieldType.toggle },
   ],
-  baseColumns: ['index', { field: 'assignedNumber', header: 'TIN' }, 'name', 'description'],
+  baseColumns: [
+    'index',
+    { field: 'assignedNumber', header: 'TIN' },
+    'name',
+    'description',
+    ...['local', 'verified'].map(
+      (field): GridKeyColumn => ({
+        field,
+        header: field === 'local' ? 'Local' : 'Verified',
+        valueFn: (row) => (row?.[field] ? 'Yes' : 'No'),
+        valueClassMapper: (row) => (row?.[field] ? 'text-success' : 'text-danger'),
+      }),
+    ),
+  ],
+  toModel: (data) => ({
+    local: data?.local ?? true,
+    verified: data?.verified ?? false,
+  }),
 });
 
 /**
