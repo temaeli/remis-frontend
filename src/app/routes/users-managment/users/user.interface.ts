@@ -35,6 +35,10 @@ export interface UserAccount {
   isStaff?: boolean;
   /** EXTERNAL registered themselves on the portal; INTERNAL was created by an administrator. */
   userType?: 'EXTERNAL' | 'INTERNAL';
+  /** `uaa.users.two_factor_enabled`, on by default. Stored and shown only; sign-in does not read it. */
+  twoFactorEnabled?: boolean;
+  /** `uaa.users.email_verified`, on by default. Stored and shown only; sign-in does not read it. */
+  emailVerified?: boolean;
   rolesList?: UserRole[];
 }
 
@@ -48,6 +52,8 @@ export interface UserDtoInput {
   email: string;
   uid?: string;
   isStaff?: boolean;
+  twoFactorEnabled?: boolean;
+  emailVerified?: boolean;
   designationUid?: string;
   roleUidList: [string];
 }

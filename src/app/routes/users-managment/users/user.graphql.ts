@@ -67,6 +67,8 @@ export const userGqlFields = `
   username
   isStaff
   userType
+  twoFactorEnabled
+  emailVerified
   ${bioDataGqlFields}
   rolesList{
    id
