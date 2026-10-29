@@ -1,0 +1,89 @@
+<div class="size-full flex-1 flex flex-col gap-3">
+  <page-header [title]="title" [subtitle]="subtitle" [actionButtons]="headerActions" />
+
+  <!-- Filters. Every one is optional; text filters match exactly. -->
+  <form
+    [formGroup]="form"
+    class="bg-white rounded-lg shadow-sm p-4 flex flex-col gap-2"
+    (ngSubmit)="search()"
+  >
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-3">
+      @for (range of dateRanges; track range.from) {
+        <mat-form-field appearance="outline">
+          <mat-label>{{ range.label }}</mat-label>
+          <mat-date-range-input [rangePicker]="picker">
+            <input matStartDate [formControlName]="range.from" placeholder="From" />
+            <input matEndDate [formControlName]="range.to" placeholder="To" />
+          </mat-date-range-input>
+          <mat-datepicker-toggle matSuffix [for]="picker" />
+          <mat-date-range-picker #picker />
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline">
+        <mat-label>Status (latest)</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="">Any</mat-option>
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @for (sel of selectFilters; track sel.control) {
+        <mat-form-field appearance="outline">
+          <mat-label>{{ sel.label }}</mat-label>
+          <mat-select [formControlName]="sel.control">
+            <mat-option value="">Any</mat-option>
+            @for (o of options()[sel.source]; track o.id) {
+              <mat-option [value]="o.id">{{ o.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @for (f of textFilters; track f.control) {
+        <mat-form-field appearance="outline">
+          <mat-label>{{ f.label }}</mat-label>
+          <input matInput [formControlName]="f.control" />
+        </mat-form-field>
+      }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading()">Search</button>
+      <button mat-stroked-button type="button" [disabled]="loading()" (click)="clear()">
+        Clear
+      </button>
+      @if (problem()) {
+        <span class="text-red-600 text-sm">{{ problem() }}</span>
+      }
+    </div>
+  </form>
+
+  <data-grid class="bill-items-report grow flex flex-col" [gridParameter]="gridParameter" />
+
+  <!-- The report's own pager: the function gives no total, only whether more follow. -->
+  <div class="bg-white rounded-lg shadow-sm px-4 py-2 flex flex-wrap items-center justify-end gap-3">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-[120px]">
+      <mat-label>Page size</mat-label>
+      <mat-select [value]="size()" (selectionChange)="changeSize($event.value)">
+        @for (s of pageSizes; track s) {
+          <mat-option [value]="s">{{ s }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <span class="text-sm">Page {{ page() + 1 }}</span>
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="page() === 0 || loading()"
+      (click)="previous()"
+    >
+      Previous
+    </button>
+    <button mat-stroked-button type="button" [disabled]="!hasNext() || loading()" (click)="next()">
+      Next
+    </button>
+  </div>
+</div>
