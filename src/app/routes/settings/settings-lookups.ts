@@ -61,6 +61,7 @@ import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { bioDataTypeColumn, bioDataTypeField } from './party-types';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import { checklistTypeColumn, checklistTypeField, DEFAULT_CHECKLIST_TYPE } from './checklist-types';
 import {
   dayField,
   graceMonthFields,
@@ -2650,6 +2651,7 @@ export const ASSESSMENT = defineLookup({
   }
   fromDate
   toDate
+  checklistType
 `,
   extraFields: [
     parentSelect('subcategoryUid', 'Subcategory', () => SUBCATEGORY),
@@ -2667,13 +2669,18 @@ export const ASSESSMENT = defineLookup({
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
+    checklistTypeField(),
   ],
   extraColumns: [
     { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
     { field: 'fromDate', header: 'From' },
     { field: 'toDate', header: 'To' },
+    checklistTypeColumn,
   ],
-  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  toModel: (data) => ({
+    subcategoryUid: data?.subcategory?.id,
+    checklistType: data?.checklistType ?? DEFAULT_CHECKLIST_TYPE,
+  }),
   extraContents: (comp, record) => recordLinkPanels(comp, 'Assessment', record?.id),
 });
 

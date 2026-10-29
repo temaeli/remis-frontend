@@ -10,8 +10,13 @@ import {
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
+  Lookup,
   LookupModule,
 } from '@shared/lookup';
+import { BaseComponent } from '@shared/components/base-componet/base-component';
+import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
+import { responseGqlFields } from '@shared/fetch/graphql.constants';
+import { checklistTypeColumn, checklistTypeField, DEFAULT_CHECKLIST_TYPE } from './checklist-types';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
 import { GRADE_LINKS, TASK_PROCESS_LINK } from './grade-process-links';
@@ -101,6 +106,19 @@ const ALL_PEOPLE = gql`
 `;
 
 const personSelect = (key: string, label: string): FieldConfig => refSelect(key, label, ALL_PEOPLE);
+
+/**
+ * The checklist_types column the three parameter tables carry, NOT NULL DEFAULT
+ * 'COMPLIANCE'. Optional on the form; the default fills it in.
+ */
+const checklistTypeParts = {
+  extraGqlFields: `
+  checklistType
+`,
+  extraFields: [checklistTypeField()],
+  extraColumns: [checklistTypeColumn],
+  toModel: (data?: Lookup) => ({ checklistType: data?.checklistType ?? DEFAULT_CHECKLIST_TYPE }),
+};
 
 //  The work: what a project is broken into, and what it runs through.
 
@@ -488,6 +506,7 @@ export const QUALITATIVE_PARAMETER = defineLookup({
   pluralLabel: 'Qualitative Parameters',
   subtitle: 'What a project is judged on, without a number',
   icon: 'assessment',
+  ...checklistTypeParts,
   // The join read from this side — which units this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'QualitativeParameter', record?.id),
 });
@@ -527,6 +546,8 @@ export const QUALITATIVE_PARAMETER_VALUE = defineLookup({
     qualitativeParameterUid: data?.qualitativeParameter?.id,
     actorUid: data?.actor?.id,
   }),
+  // The checklists this reading is on.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'QualitativeParameterValue', record?.id),
 });
 
 export const BOOLEAN_PARAMETER = defineLookup({
@@ -538,6 +559,7 @@ export const BOOLEAN_PARAMETER = defineLookup({
   pluralLabel: 'Boolean Parameters',
   subtitle: 'What a handover is judged on, as yes or no',
   icon: 'rule',
+  ...checklistTypeParts,
   // The join read from this side — which handovers this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'BooleanParameter', record?.id),
 });
@@ -581,6 +603,8 @@ export const BOOLEAN_PARAMETER_VALUE = defineLookup({
     },
   ],
   toModel: (data) => ({ booleanParameterUid: data?.booleanParameter?.id }),
+  // The checklists this answer is on.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'BooleanParameterValue', record?.id),
 });
 
 export const QUANTITATIVE_PARAMETER = defineLookup({
@@ -592,6 +616,7 @@ export const QUANTITATIVE_PARAMETER = defineLookup({
   pluralLabel: 'Quantitative Parameters',
   subtitle: 'What a project is measured on',
   icon: 'poll',
+  ...checklistTypeParts,
   // The join read from this side — which units this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'QuantitativeParameter', record?.id),
 });
@@ -632,6 +657,65 @@ export const QUANTITATIVE_PARAMETER_VALUE = defineLookup({
     quantitativeParameterUid: data?.quantitativeParameter?.id,
     actorUid: data?.actor?.id,
   }),
+  // The checklists this measurement is on.
+  extraContents: (comp, record) => recordLinkPanels(comp, 'QuantitativeParameterValue', record?.id),
+});
+
+const ACTIVATE_OR_DEACTIVATE_CHECKLIST = gql`
+  mutation activateOrDeactivateChecklist($uid: String) {
+    activateOrDeactivateChecklist(uid: $uid) {
+      ${responseGqlFields(lookupChildGqlFields)}
+    }
+  }
+`;
+
+/** Switches a checklist on if it is off, and off if it is on. */
+const checklistActiveBtn = (comp: BaseComponent, lookup: LookupModule): ActionButton => ({
+  label: 'Activate / Deactivate',
+  iconMapper: (row: Lookup) => (row?.active ? 'toggle_off' : 'toggle_on'),
+  labelMapper: (row: Lookup) => (row?.active ? 'Deactivate' : 'Activate'),
+  confirmDataMapper: (row: Lookup) => ({
+    title: row?.active ? 'Deactivate Checklist' : 'Activate Checklist',
+    message: `${row?.active ? 'Deactivate' : 'Activate'} <b>${row?.name ?? 'this checklist'}</b>?`,
+    confirmText: row?.active ? 'Deactivate' : 'Activate',
+    confirmButtonColor: row?.active ? 'red' : 'primary',
+  }),
+  click: async (row: Lookup) => {
+    await comp.fs.fetch({
+      notify: true,
+      variables: { uid: row?.id },
+      mutation: ACTIVATE_OR_DEACTIVATE_CHECKLIST,
+      successFn: (res) => lookup.changed$.next(res?.data),
+    });
+  },
+  permissions: lookup.upsertPermissions,
+});
+
+/**
+ * A checklist: a named set of parameters, readings, assessments and inspections
+ * of one kind. What it holds is its eight link panels.
+ *
+ * Code, name and description must each be unique, and none may contain
+ * ' " \ & < or > — the backend says which when it refuses.
+ */
+export const CHECKLIST = defineLookup({
+  slug: 'checklists',
+  entity: 'Checklist',
+  entityPlural: 'Checklists',
+  permission: 'CHECKLIST',
+  label: 'Checklist',
+  pluralLabel: 'Checklists',
+  subtitle: 'Parameters, readings, assessments and inspections grouped by kind',
+  icon: 'playlist_add_check',
+  extraGqlFields: `
+  checklistType
+`,
+  // Required here: unlike the tables it links to, checklists.checklist_types
+  // has no default.
+  extraFields: [checklistTypeField(true)],
+  extraColumns: [checklistTypeColumn],
+  extraActions: (comp, lookup) => [checklistActiveBtn(comp, lookup)],
+  extraContents: (comp, record) => recordLinkPanels(comp, 'Checklist', record?.id),
 });
 
 //  The building: what an asset is broken into.
@@ -966,6 +1050,7 @@ export const PROJECT_SETTING_LOOKUPS: LookupModule[] = [
   QUANTITATIVE_PARAMETER_VALUE,
   BOOLEAN_PARAMETER,
   BOOLEAN_PARAMETER_VALUE,
+  CHECKLIST,
   FLOOR,
   NET_ASSET_VALUE,
   ACTIVITY_CONNECTION,

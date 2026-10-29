@@ -13,6 +13,11 @@ import {
 import { recordLinkPanels } from './unit-links';
 import { MOVE_IN_FIELDS, MOVE_OUT_FIELDS } from '@routes/settings/inventory-lookups';
 import { readingLinkPanels } from './reading-links';
+import {
+  checklistTypeColumn,
+  checklistTypeField,
+  DEFAULT_CHECKLIST_TYPE,
+} from '@routes/settings/checklist-types';
 
 /** Declared here rather than imported, as below: subcategories sit in settings. */
 const ALL_SUBCATEGORIES = gql`
@@ -361,26 +366,22 @@ export const INSPECTION = defineLookup({
   pluralLabel: 'Inspections',
   subtitle: 'Inspections carried out on a unit',
   icon: 'assignment_turned_in',
+  // No subcategory: the DBA's inspections table has no subcategories_id.
   extraGqlFields: `
-  subcategory {
-    ${lookupRefGqlFields}
-  }
   inspectionDate
+  checklistType
 `,
   extraFields: [
-    refSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
     {
       key: 'inspectionDate',
       label: 'Inspection date',
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
+    checklistTypeField(),
   ],
-  extraColumns: [
-    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
-    { field: 'inspectionDate', header: 'Inspection date' },
-  ],
-  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraColumns: [{ field: 'inspectionDate', header: 'Inspection date' }, checklistTypeColumn],
+  toModel: (data) => ({ checklistType: data?.checklistType ?? DEFAULT_CHECKLIST_TYPE }),
   // The officers on it, then the join read from this side — which units this
   // record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'Inspection', record?.id),
