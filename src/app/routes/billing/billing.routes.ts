@@ -7,6 +7,8 @@ import { EXPENSE_LOOKUPS } from './expense-lookups';
 import { CHARGE_LOOKUPS } from './charge-lookups';
 import { BILL_RAISE_PERMISSIONS, BILL_VIEW_PERMISSIONS } from './bill.form';
 import { PAYMENT_VIEW_PERMISSIONS } from './payment.form';
+import { BILL_ITEMS_REPORT_PERMISSIONS } from './bill-items-report.graphql';
+import { permissionGuard } from '../auth/permission.guard';
 
 export const BILLING_ROUTES: TypedRoutes = [
   {
@@ -72,6 +74,24 @@ export const BILLING_ROUTES: TypedRoutes = [
     },
     loadComponent: () =>
       import('./reconciliation.component').then((m) => m.ReconciliationComponent),
+  },
+
+  /**
+   * Bill items with their bill, status, control number and payments, read from
+   * the DBA's report function. Its own permission, so the report can be given
+   * without the bill screens.
+   */
+  {
+    path: 'bill-items-report',
+    canActivate: [permissionGuard],
+    data: {
+      isMenu: true,
+      name: 'Bill Items Report',
+      icon: 'reports',
+      permissions: BILL_ITEMS_REPORT_PERMISSIONS,
+    },
+    loadComponent: () =>
+      import('./bill-items-report.component').then((m) => m.BillItemsReportComponent),
   },
 
   /**
