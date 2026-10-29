@@ -16,7 +16,7 @@ import { CURRENCY, SUBCATEGORY } from '@routes/settings/settings-lookups';
  * Expenses: money spent, when, how much and in which currency.
  *
  * Filed under billing because it is the one money screen there is. The expense
- * names none of what it was spent on — units, assets, tasks and people each hang
+ * names none of what it was spent on — units, assets, projects, tasks and people each hang
  * off a join table of their own, so they are tabs on the expense's page, and the
  * same links show from the other end on each of those records' pages.
  *
@@ -37,6 +37,15 @@ const ALL_ASSETS = gql`
 const ALL_UNITS = gql`
   query allUnits {
     allUnits {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_PROJECTS = gql`
+  query allRegistryProjects {
+    allRegistryProjects {
       id
       name
     }
@@ -120,6 +129,20 @@ const EXPENSE_LINKS: EntityLinkConfig[] = [
     icon: 'shop',
     permission: 'EXPENSE_ASSET',
     optionsQuery: ALL_ASSETS,
+  },
+  // The projects the expense belongs to (projects_expenses), the same link the
+  // project's page shows from its end.
+  {
+    entity: 'ProjectExpense',
+    byOwnerQuery: 'projectExpensesByExpense',
+    ownerArg: 'expenseUid',
+    targetArg: 'projectUid',
+    field: 'project',
+    label: 'Project',
+    pluralLabel: 'Projects',
+    icon: 'project',
+    permission: 'PROJECT_EXPENSE',
+    optionsQuery: ALL_PROJECTS,
   },
   {
     entity: 'TaskExpense',
