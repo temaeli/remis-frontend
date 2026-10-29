@@ -374,25 +374,28 @@ export const PERSON = defineLookup({
     // A person's documents, the national ID among them, are filed in the
     // Identifications panel on their page.
     //
-    // The three below are checked for clashes where given. The mobile number
-    // follows the Local toggle: Tanzanian when on, foreign when off.
-    mobileNumberField(false),
+    // The three below are NOT NULL and UNIQUE on bio_data, so all are required
+    // and checked for clashes. The mobile number follows the Local toggle:
+    // Tanzanian when on, foreign when off.
+    mobileNumberField(true),
     {
       key: 'email',
       label: 'Email',
       type: FieldType.input,
-      validations: [VALIDATOR_PERSON_EMAIL],
+      validations: [VALIDATOR_REQUIRED, VALIDATOR_PERSON_EMAIL],
       class: 'col-span-full',
     },
     {
       key: 'name',
       label: 'Listed Name',
-      hint: 'Optional. Must be unique — leave blank unless this person is listed under a particular name.',
+      hint: 'Must be unique, for example the full name. Add something to tell namesakes apart.',
       type: FieldType.input,
+      validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
-    // bio_data.local and .verified, both on by default (set in toModel, so an
-    // edit shows the stored value). Local decides how the mobile number is read.
+    // bio_data.local is on by default and .verified off, as the DBA's table has
+    // them (set in toModel, so an edit shows the stored value). Local decides
+    // how the mobile number is read.
     localField(),
     { key: 'verified', label: 'Verified', type: FieldType.toggle },
   ],
@@ -411,7 +414,7 @@ export const PERSON = defineLookup({
     mobileNumber: data?.mobileNumber != null ? String(data.mobileNumber) : null,
     bioDataType: data?.bioDataType ?? 'HUMAN_BEING',
     local: data?.local ?? true,
-    verified: data?.verified ?? true,
+    verified: data?.verified ?? false,
   }),
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'BioData', record?.id),
