@@ -16,7 +16,7 @@ import {
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
-import { checklistTypeColumn, checklistTypeField, DEFAULT_CHECKLIST_TYPE } from './checklist-types';
+import { checklistTypeColumn, checklistTypeField } from './checklist-types';
 import { ASSET } from '@routes/asset-management/asset-lookups';
 import { taskLinkPanels } from './task-links';
 import { GRADE_LINKS, TASK_PROCESS_LINK } from './grade-process-links';
@@ -107,19 +107,6 @@ const ALL_PEOPLE = gql`
 `;
 
 const personSelect = (key: string, label: string): FieldConfig => refSelect(key, label, ALL_PEOPLE);
-
-/**
- * The checklist_types column the three parameter tables carry, NOT NULL DEFAULT
- * 'COMPLIANCE'. Optional on the form; the default fills it in.
- */
-const checklistTypeParts = {
-  extraGqlFields: `
-  checklistType
-`,
-  extraFields: [checklistTypeField()],
-  extraColumns: [checklistTypeColumn],
-  toModel: (data?: Lookup) => ({ checklistType: data?.checklistType ?? DEFAULT_CHECKLIST_TYPE }),
-};
 
 //  The work: what a project is broken into, and what it runs through.
 
@@ -509,7 +496,6 @@ export const QUALITATIVE_PARAMETER = defineLookup({
   pluralLabel: 'Qualitative Parameters',
   subtitle: 'What a project is judged on, without a number',
   icon: 'assessment',
-  ...checklistTypeParts,
   // The join read from this side — which units this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'QualitativeParameter', record?.id),
 });
@@ -562,7 +548,6 @@ export const BOOLEAN_PARAMETER = defineLookup({
   pluralLabel: 'Boolean Parameters',
   subtitle: 'What a handover is judged on, as yes or no',
   icon: 'rule',
-  ...checklistTypeParts,
   // The join read from this side — which handovers this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'BooleanParameter', record?.id),
 });
@@ -619,7 +604,6 @@ export const QUANTITATIVE_PARAMETER = defineLookup({
   pluralLabel: 'Quantitative Parameters',
   subtitle: 'What a project is measured on',
   icon: 'poll',
-  ...checklistTypeParts,
   // The join read from this side — which units this applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'QuantitativeParameter', record?.id),
 });
