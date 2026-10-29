@@ -588,6 +588,157 @@ const ALL_QUANTITATIVE_PARAMETER = gql`
   }
 `;
 
+const ALL_BOOLEAN_PARAMETER_VALUE = gql`
+  query allBooleanParameterValues {
+    allBooleanParameterValues {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_QUALITATIVE_PARAMETER_VALUE = gql`
+  query allQualitativeParameterValues {
+    allQualitativeParameterValues {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_QUANTITATIVE_PARAMETER_VALUE = gql`
+  query allQuantitativeParameterValues {
+    allQuantitativeParameterValues {
+      id
+      name
+    }
+  }
+`;
+
+const ALL_CHECKLIST = gql`
+  query allChecklists {
+    allChecklists {
+      id
+      name
+    }
+  }
+`;
+
+/** One of the eight checklists_* link tables, named by its far side. */
+interface ChecklistLinkSide {
+  /** The far side's entity name, e.g. `BooleanParameter`. */
+  record: string;
+  /** Its plural, as the link reads spell it, e.g. `BooleanParameters`. */
+  plural: string;
+  label: string;
+  pluralLabel: string;
+  icon: string;
+  optionsQuery: unknown;
+}
+
+const CHECKLIST_LINK_SIDES: ChecklistLinkSide[] = [
+  {
+    record: 'BooleanParameter',
+    plural: 'BooleanParameters',
+    label: 'Boolean Parameter',
+    pluralLabel: 'Boolean Parameters',
+    icon: 'rule',
+    optionsQuery: ALL_BOOLEAN_PARAMETER,
+  },
+  {
+    record: 'QualitativeParameter',
+    plural: 'QualitativeParameters',
+    label: 'Qualitative Parameter',
+    pluralLabel: 'Qualitative Parameters',
+    icon: 'assessment',
+    optionsQuery: ALL_QUALITATIVE_PARAMETER,
+  },
+  {
+    record: 'QuantitativeParameter',
+    plural: 'QuantitativeParameters',
+    label: 'Quantitative Parameter',
+    pluralLabel: 'Quantitative Parameters',
+    icon: 'poll',
+    optionsQuery: ALL_QUANTITATIVE_PARAMETER,
+  },
+  {
+    record: 'Assessment',
+    plural: 'Assessments',
+    label: 'Assessment',
+    pluralLabel: 'Assessments',
+    icon: 'verified_user',
+    optionsQuery: ALL_ASSESSMENT,
+  },
+  {
+    record: 'BooleanParameterValue',
+    plural: 'BooleanParameterValues',
+    label: 'Boolean Parameter Value',
+    pluralLabel: 'Boolean Parameter Values',
+    icon: 'rule',
+    optionsQuery: ALL_BOOLEAN_PARAMETER_VALUE,
+  },
+  {
+    record: 'Inspection',
+    plural: 'Inspections',
+    label: 'Inspection',
+    pluralLabel: 'Inspections',
+    icon: 'assignment_turned_in',
+    optionsQuery: ALL_INSPECTION,
+  },
+  {
+    record: 'QualitativeParameterValue',
+    plural: 'QualitativeParameterValues',
+    label: 'Qualitative Parameter Value',
+    pluralLabel: 'Qualitative Parameter Values',
+    icon: 'assessment',
+    optionsQuery: ALL_QUALITATIVE_PARAMETER_VALUE,
+  },
+  {
+    record: 'QuantitativeParameterValue',
+    plural: 'QuantitativeParameterValues',
+    label: 'Quantitative Parameter Value',
+    pluralLabel: 'Quantitative Parameter Values',
+    icon: 'poll',
+    optionsQuery: ALL_QUANTITATIVE_PARAMETER_VALUE,
+  },
+];
+
+/** `BooleanParameter` -> `booleanParameter`. */
+const camel = (name: string): string => name.charAt(0).toLowerCase() + name.slice(1);
+
+/** `BooleanParameter` -> `BOOLEAN_PARAMETER`. */
+const upperSnake = (name: string): string => name.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
+
+/** The far side's panel on a checklist's page. */
+const checklistSidePanel = (side: ChecklistLinkSide): EntityLinkConfig => ({
+  entity: `Checklist${side.record}`,
+  byOwnerQuery: `checklist${side.plural}ByChecklist`,
+  ownerArg: 'checklistUid',
+  targetArg: `${camel(side.record)}Uid`,
+  field: camel(side.record),
+  label: side.label,
+  pluralLabel: side.pluralLabel,
+  icon: side.icon,
+  permission: `CHECKLIST_${upperSnake(side.record)}`,
+  optionsQuery: side.optionsQuery,
+});
+
+/** The same link read from the far side: the checklists a record is on. */
+const checklistsPanel = (record: string): EntityLinkConfig => {
+  const side = CHECKLIST_LINK_SIDES.find((s) => s.record === record)!;
+  return {
+    ...checklistSidePanel(side),
+    byOwnerQuery: `checklist${side.plural}By${side.record}`,
+    ownerArg: `${camel(side.record)}Uid`,
+    targetArg: 'checklistUid',
+    field: 'checklist',
+    label: 'Checklist',
+    pluralLabel: 'Checklists',
+    icon: 'playlist_add_check',
+    optionsQuery: ALL_CHECKLIST,
+  };
+};
+
 const ALL_REGISTRY_MASTER_PLAN = gql`
   query allRegistryMasterPlans {
     allRegistryMasterPlans {
@@ -1463,6 +1614,12 @@ const UNIT_LINKS: EntityLinkConfig[] = [
  * solutions, so it earns two panels.
  */
 const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
+  // What a checklist holds: one panel per checklists_* link table.
+  Checklist: CHECKLIST_LINK_SIDES.map(checklistSidePanel),
+  // The checklists a reading is on (checklists_*_parameter_values).
+  BooleanParameterValue: [checklistsPanel('BooleanParameterValue')],
+  QualitativeParameterValue: [checklistsPanel('QualitativeParameterValue')],
+  QuantitativeParameterValue: [checklistsPanel('QuantitativeParameterValue')],
   // The fees that belong to an account (accounts_fees).
   Account: [
     {
@@ -1484,6 +1641,8 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   Assessment: [
     // Who carries it out, ahead of who and what it is about.
     officerLink('AssessmentBioData', 'assessmentUid', 'ASSESSMENT_BIO_DATA'),
+    // The checklists it is on (checklists_assessments).
+    checklistsPanel('Assessment'),
     // The inspections carried out under it (inspections_assessments, read from
     // this side).
     {
@@ -2108,6 +2267,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   BooleanParameter: [
+    checklistsPanel('BooleanParameter'),
     {
       entity: 'HandoverBooleanParameter',
       byOwnerQuery: 'handoverBooleanParametersByParameter',
@@ -2461,6 +2621,8 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
   ],
   Inspection: [
     officerLink('InspectionBioData', 'inspectionUid', 'INSPECTION_BIO_DATA'),
+    // The checklists it is on (checklists_inspections).
+    checklistsPanel('Inspection'),
     // What the inspection belongs to and looks at, then what it records and
     // comes to — one two-key join table each (inspections_assessments,
     // inspections_objectsid, inspections_observations, inspections_findings,
@@ -2767,6 +2929,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   QualitativeParameter: [
+    checklistsPanel('QualitativeParameter'),
     {
       entity: 'UnitQualitativeParameter',
       byOwnerQuery: 'unitQualitativeParametersByQualitativeParameter',
@@ -2808,6 +2971,7 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
     },
   ],
   QuantitativeParameter: [
+    checklistsPanel('QuantitativeParameter'),
     {
       entity: 'UnitQuantitativeParameter',
       byOwnerQuery: 'unitQuantitativeParametersByQuantitativeParameter',
