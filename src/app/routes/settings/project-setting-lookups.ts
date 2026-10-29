@@ -24,6 +24,7 @@ import {
 import { coreAttachmentPanels } from './attachment-lookups';
 import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
 import { servicePrioritiesPanel } from '@routes/project-management/priorities';
+import { taskStatusHistoryPanel } from './status-history';
 
 /**
  * The project delivery configuration — `modules.setting.project` on the backend,
@@ -162,6 +163,8 @@ export const TASK = defineLookup({
     // taskLinkPanels, which derives `taskProcesssByTask` where the backend
     // named it `taskProcessesByTask`.
     ...entityLinkPanels(comp, [TASK_PROCESS_LINK], record?.id),
+    // The statuses the task has taken, and since when (tasks_statusesid).
+    taskStatusHistoryPanel(comp, record?.id),
     ...coreAttachmentPanels(comp, 'task', record?.id),
   ],
 });

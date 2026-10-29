@@ -15,6 +15,7 @@ import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
 import { UNIT_PROCESS_LINK } from './grade-process-links';
 import { unitLocksPanel } from './unit-locks';
+import { unitStatusHistoryPanel } from './status-history';
 
 /**
  * The unit's own configuration — `modules.setting.unit` on the backend, paired
@@ -160,6 +161,9 @@ export const UNIT = defineLookup({
     ...unitLinkPanels(comp, record?.id),
     // The cases this unit is the subject of (units_processes).
     ...entityLinkPanels(comp, [UNIT_PROCESS_LINK], record?.id),
+    // The statuses the unit has taken, and since when (units_statusesid).
+    // Separate from its Unit Status Records under Unit Management.
+    unitStatusHistoryPanel(comp, record?.id),
     ...coreAttachmentPanels(comp, 'unit', record?.id),
   ],
 });
