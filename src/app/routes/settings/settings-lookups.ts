@@ -48,6 +48,7 @@ import { businessNameTinsPanel, personTinsPanel } from './tin-links';
 import { businessNameAddressPanel, personAddressPanel } from './contact-addresses';
 import { personDeclarationsPanel } from './person-declarations';
 import { billSettingPeoplePanel, personBillSettingsPanel } from './bill-setting-people';
+import { billSettingFinancialYearsPanel } from './bill-setting-financial-years';
 import { runRenewalsForNewNumberBtn, runRenewalsForReuseBtn } from './renewal-run';
 import {
   raiseQuantityBillForNewNumberBtn,
@@ -4062,9 +4063,11 @@ export const BILL_HEADERS_SETTING = defineLookup({
     approvedByUid: data?.approvedBy?.id,
     requestedByUid: data?.requestedBy?.id,
   }),
-  // Whom this setting raises bills for, how much of it for each
-  // (bill_headers_settings_quantities), and the penalties billed from it.
+  // The financial year its bills fall in (the active one), whom this setting
+  // raises bills for, how much of it for each (bill_headers_settings_quantities),
+  // and the penalties billed from it.
   extraContents: (comp, record) => [
+    billSettingFinancialYearsPanel(comp, record?.id),
     billSettingPeoplePanel(comp, record?.id),
     lookupChildPanel(
       comp,
