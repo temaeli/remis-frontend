@@ -238,6 +238,24 @@ export const ASSET = defineLookup({
     lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
       assetUid: record?.id,
     }),
+    // Add opens the form with this asset already chosen.
+    lookupChildPanel(
+      comp,
+      () => ASSET_VERIFICATION,
+      ASSET_VERIFICATIONS_BY_ASSET,
+      { assetUid: record?.id },
+      {
+        presetModel: { assetUid: record?.id },
+        keyColumns: [
+          'index',
+          outcomeColumn,
+          'verifiedBy.name as Verified By',
+          { field: 'verifiedAt', header: 'Verified' },
+          'description as Remarks',
+          'actions',
+        ],
+      },
+    ),
     lookupChildPanel(comp, () => ASSET_CONNECTION, ASSET_CONNECTIONS_BY_PARENT, {
       parentUid: record?.id,
     }),
@@ -312,11 +330,8 @@ export const LAND_REGISTRATION = defineLookup({
 });
 
 /**
- * How an asset entered the register: what it cost, when, and where.
- *
- * Carries the coordinate pair the location hierarchy uses, with the same
- * `numeric(9,6)` type and the same bounds, so the controls round to six places
- * to match rather than letting the database truncate.
+ * How an asset entered the register: what it cost and when. No coordinates —
+ * where the asset is is recorded once, on its land registration (V84).
  */
 export const ACQUISITION = defineLookup({
   slug: 'acquisitions',
@@ -330,8 +345,6 @@ export const ACQUISITION = defineLookup({
   extraGqlFields: `
   acquisitionValue
   acquisitionDate
-  latitude
-  longitude
   asset {
     ${lookupRefGqlFields}
     status
@@ -352,7 +365,6 @@ export const ACQUISITION = defineLookup({
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
-    ...coordinateFields(),
   ],
   extraColumns: [
     'asset.name as Asset',
@@ -407,7 +419,7 @@ const ALL_PEOPLE = gql`
 `;
 
 /**
- * What an asset has been valued at, by whom, where and when.
+ * What an asset has been valued at, by whom and when.
  *
  * Unlike an acquisition or a disposal this does not point at an asset: which
  * assets a valuation covers is `assets_valuations`, so one valuation can cover
@@ -425,8 +437,6 @@ export const VALUATION = defineLookup({
   extraGqlFields: `
   value
   valuedAt
-  latitude
-  longitude
   valuer {
     id
     uid: id
@@ -448,7 +458,6 @@ export const VALUATION = defineLookup({
       validations: [VALIDATOR_REQUIRED],
     },
     parentSelect('valuerUid', 'Valuer', ALL_PEOPLE),
-    ...coordinateFields(),
   ],
   extraColumns: [
     'valuer.name as Valuer',
@@ -491,6 +500,50 @@ export const LAND_USE = defineLookup({
   extraContents: (comp, record) => recordLinkPanels(comp, 'LandUse', record?.id),
 });
 
+/** The result of a verification — mirrors `VerificationOutcome` on the backend. */
+export enum VerificationOutcome {
+  PASSED = 'PASSED',
+  FAILED = 'FAILED',
+  NEEDS_CORRECTION = 'NEEDS_CORRECTION',
+}
+
+export const VERIFICATION_OUTCOME_OPTIONS: Option[] = Object.values(VerificationOutcome).map(
+  (value) => ({ value, label: getDisplayName(value) as string }),
+);
+
+/** Green for passed, red for failed, amber for anything to fix. */
+const outcomeClass = (outcome?: string): string =>
+  outcome === VerificationOutcome.PASSED
+    ? 'text-success'
+    : outcome === VerificationOutcome.FAILED
+      ? 'text-danger'
+      : 'text-warning';
+
+const verificationGqlFields = `
+  verifiedAt
+  outcome
+  asset {
+    ${lookupRefGqlFields}
+  }
+  verifiedBy {
+    id
+    uid: id
+    name
+  }
+`;
+
+const outcomeColumn: GridKeyColumn = {
+  field: 'outcome',
+  header: 'Outcome',
+  valueFn: (row) => getDisplayName(row?.outcome),
+  valueClassMapper: (row) => outcomeClass(row?.outcome),
+};
+
+/**
+ * One check of an asset: who checked it, when, and what they found. The
+ * description holds the verifier's remarks. Usually added from the asset's own
+ * page, where the asset is already filled in.
+ */
 export const ASSET_VERIFICATION = defineLookup({
   slug: 'asset-verifications',
   entity: 'AssetVerification',
@@ -498,10 +551,48 @@ export const ASSET_VERIFICATION = defineLookup({
   permission: 'ASSET_VERIFICATION',
   label: 'Asset Verification',
   pluralLabel: 'Asset Verifications',
-  subtitle: 'Verifications recorded against assets',
+  subtitle: 'Who checked each asset, when, and what they found',
   icon: 'check',
-  extraColumns: ['createdAt'],
+  extraGqlFields: verificationGqlFields,
+  extraFields: [
+    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    {
+      key: 'outcome',
+      label: 'Outcome',
+      type: FieldType.select,
+      options: VERIFICATION_OUTCOME_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+    parentSelect('verifiedByUid', 'Verified By', ALL_PEOPLE),
+    {
+      key: 'verifiedAt',
+      label: 'Verified At',
+      type: FieldType.dateTime,
+      hint: 'Defaults to now when left blank',
+    },
+  ],
+  extraColumns: [
+    'asset.name as Asset',
+    outcomeColumn,
+    'verifiedBy.name as Verified By',
+    { field: 'verifiedAt', header: 'Verified' },
+  ],
+  toModel: (data) => ({
+    assetUid: data?.asset?.id,
+    verifiedByUid: data?.verifiedBy?.id,
+  }),
 });
+
+/** An asset's verifications, newest first, for the tab on the asset's own page. */
+export const ASSET_VERIFICATIONS_BY_ASSET = gql`
+  query assetVerificationsByAsset($assetUid: String) {
+    assetVerificationsByAsset(assetUid: $assetUid) {
+      ${lookupChildGqlFields}
+      ${verificationGqlFields}
+    }
+  }
+`;
 
 //  The queries and the mutation that are this module's own. Exported so they can
 //  be checked against the schema alongside the generated ones.
