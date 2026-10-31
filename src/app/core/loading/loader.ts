@@ -1,13 +1,12 @@
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
+// Dots styles live in src/styles/custom/_app-loader.scss (.app-dots).
 @Component({
   selector: 'app-loading-overlay',
-  standalone: true,
-  imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="loading-overlay">
-      <div class="spinner"></div>
+    <div class="loading-overlay" role="status" aria-label="Loading">
+      <div class="app-dots"><span></span><span></span><span></span></div>
     </div>
   `,
   styles: [
@@ -18,31 +17,12 @@ import { Component } from '@angular/core';
         left: 0;
         right: 0;
         bottom: 0;
-        // opacity: 0.5;
         background-color: var(--color-white-faded);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 1000;
         border-radius: var(--border-radius);
-      }
-
-      .spinner {
-        width: 30px;
-        height: 30px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--color-primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
       }
     `,
   ],

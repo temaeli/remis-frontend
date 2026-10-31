@@ -27,6 +27,12 @@ export class LoadingDirective implements OnChanges {
   private createSpinner() {
     this.spinnerEl = this.renderer.createElement('div');
     this.renderer.addClass(this.spinnerEl, 'app-loader-spinner');
+    this.renderer.addClass(this.spinnerEl, 'app-dots');
+    this.renderer.addClass(this.spinnerEl, 'app-dots--sm');
+    this.renderer.setAttribute(this.spinnerEl, 'aria-hidden', 'true');
+    for (let i = 0; i < 3; i++) {
+      this.renderer.appendChild(this.spinnerEl, this.renderer.createElement('span'));
+    }
     this.renderer.appendChild(this.el.nativeElement, this.spinnerEl);
   }
 
