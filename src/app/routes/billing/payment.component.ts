@@ -107,8 +107,8 @@ export class PaymentComponent extends BaseComponent implements OnInit {
 
   /**
    * The receipt for one transaction, as the GePG guide lays it out. It says what
-   * GePG reported and nothing more: the amount paid, what is left, and the bill
-   * line it was paid against. Issued in the name of whoever prints it.
+   * GePG reported and nothing more: the amount paid, what is left, and the lines
+   * of the bill it was paid against. Issued in the name of whoever prints it.
    */
   printReceiptBtn(): ActionButton {
     return {
@@ -117,7 +117,8 @@ export class PaymentComponent extends BaseComponent implements OnInit {
       toolTip: 'Print the government receipt for this transaction',
       permissions: PAYMENT_VIEW_PERMISSIONS,
       click: async (row: any) => {
-        const line = row?.billItem;
+        // A transaction pays the whole bill: every line of it goes on the receipt.
+        const lines: any[] = row?.billItems ?? [];
         await printReceipt(
           {
             institution: row?.spCode?.name ?? '',
@@ -125,14 +126,10 @@ export class PaymentComponent extends BaseComponent implements OnInit {
             receivedFrom: row?.payerName ?? '',
             amount: row?.paidAmount ?? 0,
             outstandingBalance: row?.balance ?? 0,
-            items: line
-              ? [
-                  {
-                    description: [line.gfsCode?.name, line.name].filter(Boolean).join(' - '),
-                    amount: line.finalBillItemAmt ?? row?.billAmount ?? 0,
-                  },
-                ]
-              : [],
+            items: lines.map((line) => ({
+              description: [line.gfsCode?.name, line.name].filter(Boolean).join(' - '),
+              amount: line.finalBillItemAmt ?? 0,
+            })),
             totalBilled: row?.billAmount ?? 0,
             currencyCode: row?.currency?.assignedNumber ?? '',
             currencyName: row?.currency?.name ?? '',

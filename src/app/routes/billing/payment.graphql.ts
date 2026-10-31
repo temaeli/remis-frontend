@@ -62,7 +62,7 @@ export const paymentTransactionGqlFields = `
   spCode { ${refFields} }
   billPayOption { ${refFields} }
   paymentServiceProvider { ${refFields} }
-  billItem { ${refFields} finalBillItemAmt finalBillItemEqvAmt gfsCode { ${refFields} } }
+  billItems { ${refFields} finalBillItemAmt finalBillItemEqvAmt gfsCode { ${refFields} } }
 `;
 
 export const paymentTotalGqlFields = `
