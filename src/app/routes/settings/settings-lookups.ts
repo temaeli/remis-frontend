@@ -57,6 +57,7 @@ import {
 import { CORE_ATTACHMENT, coreAttachmentPanels } from './attachment-lookups';
 import { bioDataTypeColumn, bioDataTypeField, localField, mobileNumberField } from './party-types';
 import { gracePeriodBillSettingsPanel, renewBillSettingsPanel } from './grace-period-bill-settings';
+import { billPayOptionStatusesPanel } from './bill-pay-option-statuses';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import { checklistTypeColumn, checklistTypeField, DEFAULT_CHECKLIST_TYPE } from './checklist-types';
 import {
@@ -972,8 +973,11 @@ export const BILL_PAY_OPTION = defineLookup({
   pluralLabel: 'Bill Pay Options',
   subtitle: 'How a bill may be paid',
   icon: 'payment',
-  // The join read from this side — which units this applies to.
-  extraContents: (comp, record) => recordLinkPanels(comp, 'BillPayOption', record?.id),
+  // Its statuses, then the join read from this side — which units this applies to.
+  extraContents: (comp, record) => [
+    billPayOptionStatusesPanel(comp, record?.id, CORE_STATUS_OPTIONS),
+    ...recordLinkPanels(comp, 'BillPayOption', record?.id),
+  ],
 });
 
 export const BILL_PAYMENT_PLAN = defineLookup({
