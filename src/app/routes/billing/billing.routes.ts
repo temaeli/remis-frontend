@@ -8,6 +8,7 @@ import { CHARGE_LOOKUPS } from './charge-lookups';
 import { BILL_RAISE_PERMISSIONS, BILL_VIEW_PERMISSIONS } from './bill.form';
 import { PAYMENT_VIEW_PERMISSIONS } from './payment.form';
 import { BILL_ITEMS_REPORT_PERMISSIONS } from './bill-items-report.graphql';
+import { BILLING_SEARCH_PERMISSIONS } from './billing-search/billing-search.config';
 import { permissionGuard } from '../auth/permission.guard';
 
 export const BILLING_ROUTES: TypedRoutes = [
@@ -92,6 +93,24 @@ export const BILLING_ROUTES: TypedRoutes = [
     },
     loadComponent: () =>
       import('./bill-items-report.component').then((m) => m.BillItemsReportComponent),
+  },
+
+  /**
+   * Search any of the six billing tables by one column — the DBA's findBy… and
+   * countBy… methods, one per column. One menu item; the table is chosen on the
+   * page, and only tables the user may read are offered.
+   */
+  {
+    path: 'search',
+    canActivate: [permissionGuard],
+    data: {
+      isMenu: true,
+      name: 'Search',
+      icon: 'search',
+      permissions: BILLING_SEARCH_PERMISSIONS,
+    },
+    loadComponent: () =>
+      import('./billing-search/billing-search.component').then((m) => m.BillingSearchComponent),
   },
 
   /**
