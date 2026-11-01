@@ -1,19 +1,16 @@
 import { gql } from '@apollo/client/core';
-import { Subject } from 'rxjs';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
-import { FormComponent } from '@shared/components/generic-form/form.component';
-import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
-import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
-import { responseGqlFields } from '@shared/fetch/graphql.constants';
 import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import { ParcelMapComponent } from './parcel-map.component';
 import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import { registerAssetBtn } from './asset-register';
+import { assetActions } from './asset-actions';
+import { ContentParameter } from '@shared/components/view-component/view-interface';
 import {
   coordinateFields,
   encumbranceFields,
@@ -36,7 +33,6 @@ import {
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
-  Lookup,
   LookupModule,
 } from '@shared/lookup';
 
@@ -195,96 +191,149 @@ export const ASSET = defineLookup({
     }
   }
 `,
+  // No Reserved toggle: reserved is a status, set through Change Status, and a
+  // second control for the same fact would let the two disagree.
   extraFields: [
     parentSelect('assetSubcategoryUid', 'Asset Subcategory', ASSET_SUBCATEGORY.gql.all),
-    {
-      key: 'reserved',
-      label: 'Reserved',
-      type: FieldType.toggle,
-      class: 'col-span-full',
-    },
   ],
   extraColumns: [
     'assetSubcategory.name as Sub Category',
-    { field: 'status', header: 'Status', valueFn: (row) => getDisplayName(row?.status) },
-    flagColumn('reserved'),
+    {
+      field: 'status',
+      header: 'Status',
+      valueFn: (row) => getDisplayName(row?.status),
+      valueClassMapper: (row) => statusClass(row?.status),
+    },
   ],
   toModel: (data) => ({ assetSubcategoryUid: data?.assetSubcategory?.id }),
-  extraActions: (comp, lookup) => [assetStatusBtn(comp, lookup)],
+  // A disposed asset is closed: the backend refuses edits, so say so up front.
+  lockedWhen: (record) => record?.['status'] === 'DISPOSED',
+  lockedReason: 'This asset is disposed and can no longer be changed',
+  extraActions: (comp, lookup) =>
+    assetActions(comp, lookup, {
+      verification: ASSET_VERIFICATION,
+      disposal: DISPOSE,
+      landRegistration: LAND_REGISTRATION,
+    }),
+  // One way in: Register Asset replaces the plain Create on the list.
   listActions: (comp, lookup) => [registerAssetBtn(comp, lookup)],
-  // Everything recorded against an asset is added here, where each tab's Add
-  // opens its form with this asset already chosen. The lists under Records are
-  // for looking across assets.
-  extraContents: (comp, record) => [
-    ...recordLinkPanels(comp, 'Asset', record?.id),
-    lookupChildPanel(
-      comp,
-      () => LAND_REGISTRATION,
-      LAND_REGISTRATIONS_BY_ASSET,
-      { assetUid: record?.id },
-      { presetModel: { assetUid: record?.id } },
-    ),
-    lookupChildPanel(
-      comp,
-      () => ACQUISITION,
-      ACQUISITIONS_BY_ASSET,
-      { assetUid: record?.id },
-      {
-        presetModel: { assetUid: record?.id },
-        keyColumns: [
-          'index',
-          'acquisitionValue as Value',
-          { field: 'acquisitionDate', header: 'Acquired' },
-          'description',
-          'actions',
-        ],
-      },
-    ),
-    lookupChildPanel(
-      comp,
-      () => ASSET_VERIFICATION,
-      ASSET_VERIFICATIONS_BY_ASSET,
-      { assetUid: record?.id },
-      {
-        presetModel: { assetUid: record?.id },
-        keyColumns: [
-          'index',
-          outcomeColumn,
-          'verifiedBy.name as Verified By',
-          { field: 'verifiedAt', header: 'Verified' },
-          'description as Remarks',
-          'actions',
-        ],
-      },
-    ),
-    lookupChildPanel(
-      comp,
-      () => DISPOSE,
-      DISPOSES_BY_ASSET,
-      { assetUid: record?.id },
-      {
-        presetModel: { assetUid: record?.id },
-        keyColumns: [
-          'index',
-          { field: 'disposedAt', header: 'Disposed' },
-          'name',
-          'description',
-          'actions',
-        ],
-      },
-    ),
-    lookupChildPanel(
-      comp,
-      () => ASSET_CONNECTION,
-      ASSET_CONNECTIONS_BY_PARENT,
-      { parentUid: record?.id },
-      { presetModel: { parentUid: record?.id } },
-    ),
-    assetProjectsPanel(comp, record?.id),
-    ...assetLinkPanels(comp, record?.id),
-    ...coreAttachmentPanels(comp, 'asset', record?.id),
-  ],
+  replaceCreate: true,
+  /**
+   * Grouped so the page reads as a handful of questions rather than eighteen
+   * tabs: where is it (Land), what is it worth (Money), what has happened to it
+   * (History), its papers (Documents), and the rest (More).
+   *
+   * Verifying and disposing are header buttons, so their tabs only list. Each
+   * other tab's Add opens its form with this asset already chosen.
+   */
+  extraContents: (comp, record) => {
+    const assetUid = record?.id;
+    const forLand = !!record?.['assetSubcategory']?.assetCategory?.assetType?.forLand;
+
+    return [
+      ...(forLand
+        ? [
+            tabGroup('Land', 'land_administration', [
+              lookupChildPanel(
+                comp,
+                () => LAND_REGISTRATION,
+                LAND_REGISTRATIONS_BY_ASSET,
+                { assetUid },
+                { presetModel: { assetUid, name: record?.name, description: record?.description } },
+              ),
+              ...assetLinkPanels(comp, assetUid, ['AssetLandUse']),
+            ]),
+          ]
+        : []),
+      tabGroup('Money', 'payments', [
+        lookupChildPanel(
+          comp,
+          () => ACQUISITION,
+          ACQUISITIONS_BY_ASSET,
+          { assetUid },
+          {
+            presetModel: { assetUid, name: record?.name },
+            keyColumns: [
+              'index',
+              'acquisitionValue as Value',
+              { field: 'acquisitionDate', header: 'Acquired' },
+              'description',
+              'actions',
+            ],
+          },
+        ),
+        ...assetLinkPanels(comp, assetUid, ['AssetValuation', 'AssetCost', 'ExpenseAsset']),
+      ]),
+      tabGroup('History', 'history', [
+        lookupChildPanel(
+          comp,
+          () => ASSET_VERIFICATION,
+          ASSET_VERIFICATIONS_BY_ASSET,
+          { assetUid },
+          {
+            keyColumns: [
+              'index',
+              outcomeColumn,
+              'verifiedBy.name as Verified By',
+              { field: 'verifiedAt', header: 'Verified' },
+              'description as Remarks',
+              'actions',
+            ],
+          },
+        ),
+        lookupChildPanel(
+          comp,
+          () => DISPOSE,
+          DISPOSES_BY_ASSET,
+          { assetUid },
+          {
+            keyColumns: [
+              'index',
+              { field: 'disposedAt', header: 'Disposed' },
+              'name',
+              'description',
+              'actions',
+            ],
+          },
+        ),
+      ]),
+      tabGroup('Documents', 'attachment', coreAttachmentPanels(comp, 'asset', assetUid)),
+      tabGroup('More', 'more_horiz', [
+        lookupChildPanel(
+          comp,
+          () => ASSET_CONNECTION,
+          ASSET_CONNECTIONS_BY_PARENT,
+          { parentUid: assetUid },
+          { presetModel: { parentUid: assetUid } },
+        ),
+        assetProjectsPanel(comp, assetUid),
+        ...recordLinkPanels(comp, 'Asset', assetUid),
+        ...assetLinkPanels(comp, assetUid, [
+          'AssetMasterPlan',
+          'InventoryAsset',
+          'AssetTask',
+          'AssetQualitativeParameter',
+          'AssetQualitativeParameterValue',
+          'AssetQuantitativeParameter',
+          'AssetQuantitativeParameterValue',
+        ]),
+      ]),
+    ];
+  },
 });
+
+/** A tab that holds other tabs. */
+function tabGroup(name: string, icon: string, children: ContentParameter[]): ContentParameter {
+  return { name, label: name, icon, children };
+}
+
+/** Where an asset stands, at a glance: green in use, amber on its way, red out. */
+function statusClass(status?: string): string {
+  if (['AVAILABLE', 'ALLOCATED', 'RESERVED', 'VERIFIED'].includes(status ?? ''))
+    return 'text-success';
+  if (['DISPOSED', 'DISPUTED', 'INACTIVE'].includes(status ?? '')) return 'text-danger';
+  return 'text-warning';
+}
 
 export const LAND_REGISTRATION = defineLookup({
   slug: 'land-registrations',
@@ -669,58 +718,6 @@ export const DISPOSES_BY_ASSET = gql`
   }
 `;
 
-export const UPDATE_ASSET_STATUS = gql`
-  mutation updateAssetStatus($uid: String, $status: AssetStatus) {
-    updateAssetStatus(uid: $uid, status: $status) {
-      ${responseGqlFields(lookupChildGqlFields)}
-    }
-  }
-`;
-
-/**
- * An asset's status moves through a lifecycle rather than being edited, so the
- * backend gives it a mutation of its own and the screen a button of its own.
- */
-function assetStatusBtn(comp: BaseComponent, lookup: LookupModule): ActionButton {
-  return {
-    icon: 'sync',
-    label: 'Change Status',
-    click: (data: Lookup) => {
-      const close$ = new Subject<void>();
-      const formParameter: FormParameters = {
-        model: { status: data?.status },
-        title: `Change Status — ${data?.name ?? ''}`,
-        fields: [
-          {
-            key: 'status',
-            label: 'Status',
-            type: FieldType.select,
-            options: ASSET_STATUS_OPTIONS,
-            validations: [VALIDATOR_REQUIRED],
-            class: 'col-span-full',
-          },
-        ],
-        closeAction$: close$,
-
-        onSubmit: async (value: any) => {
-          await comp.fs.fetch({
-            notify: true,
-            variables: { uid: data?.id, status: value?.status },
-            mutation: UPDATE_ASSET_STATUS,
-            successFn: (res) => {
-              lookup.changed$.next(res?.data);
-              close$.next();
-            },
-          });
-        },
-      };
-
-      comp.vs?.openModal(FormComponent, formParameter, '40%');
-    },
-    permissions: lookup.upsertPermissions,
-  };
-}
-
 /**
  * The far sides of the asset link tables.
  *
@@ -820,9 +817,11 @@ const allMasterPlans = gql`
  * mapped and driven by attachAssetToProject. Those three are unmapped on the
  * backend until the DBA confirms which model wins.
  */
-export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
+export const assetLinkPanels = (comp: BaseComponent, assetUid?: string, only?: string[]) =>
   entityLinkPanels(
     comp,
+    // `only` picks panels by entity, so the asset page can spread them across
+    // its tab groups; without it every panel is returned.
     [
       {
         entity: 'AssetMasterPlan',
@@ -956,7 +955,7 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string) =>
         permission: 'ASSET_QUANTITATIVE_PARAMETER_VALUE',
         optionsQuery: allQuantitativeParameterValues,
       },
-    ],
+    ].filter((config) => !only || only.includes(config.entity)),
     assetUid,
   );
 

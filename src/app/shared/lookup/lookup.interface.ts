@@ -226,6 +226,12 @@ export interface LookupConfig {
    * Not shown on a record's own page or in its row menu.
    */
   listActions?: (comp: BaseComponent, lookup: LookupModule) => ActionButton[];
+
+  /**
+   * The list page's header shows only {@link listActions}: they replace Create,
+   * so there is one way to add a record. Edit is unaffected.
+   */
+  replaceCreate?: boolean;
 }
 
 /** A config with everything derived from it — what the screens actually consume. */

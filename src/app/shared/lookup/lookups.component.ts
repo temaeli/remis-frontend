@@ -30,7 +30,7 @@ export class LookupsComponent extends BaseComponent {
   override subtitle = this.lookup.subtitle;
   override actionButtons: ActionButton[] = [
     ...(this.lookup.listActions?.(this, this.lookup) ?? []),
-    ...lookupHeaderBtns(this, this.lookup),
+    ...(this.lookup.replaceCreate ? [] : lookupHeaderBtns(this, this.lookup)),
   ];
 
   gridParameter: GridParameter = {
