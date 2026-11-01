@@ -97,6 +97,7 @@ const flagColumn = (field: string, header?: string): GridKeyColumn => ({
 
 export const ASSET_TYPE = defineLookup({
   slug: 'asset-types',
+  generatedNumber: true,
   entity: 'AssetType',
   entityPlural: 'AssetTypes',
   permission: 'ASSET_TYPE',
@@ -126,6 +127,7 @@ export const ASSET_TYPE = defineLookup({
 
 export const ASSET_CATEGORY = defineLookup({
   slug: 'asset-categories',
+  generatedNumber: true,
   entity: 'AssetCategory',
   entityPlural: 'AssetCategories',
   permission: 'ASSET_CATEGORY',
@@ -151,6 +153,7 @@ export const ASSET_CATEGORY = defineLookup({
 
 export const ASSET_SUBCATEGORY = defineLookup({
   slug: 'asset-subcategories',
+  generatedNumber: true,
   entity: 'AssetSubcategory',
   entityPlural: 'AssetSubcategories',
   permission: 'ASSET_SUBCATEGORY',
@@ -180,6 +183,7 @@ export const ASSET_SUBCATEGORY = defineLookup({
 
 export const ASSET = defineLookup({
   slug: 'assets',
+  generatedNumber: true,
   entity: 'Asset',
   entityPlural: 'Assets',
   permission: 'ASSET',
@@ -495,6 +499,7 @@ function statusClass(status?: string): string {
 
 export const LAND_REGISTRATION = defineLookup({
   slug: 'land-registrations',
+  generatedNumber: true,
   entity: 'LandRegistration',
   entityPlural: 'LandRegistrations',
   permission: 'LAND_REGISTRATION',
@@ -563,6 +568,7 @@ export const LAND_REGISTRATION = defineLookup({
  */
 export const ACQUISITION = defineLookup({
   slug: 'acquisitions',
+  generatedNumber: true,
   entity: 'Acquisition',
   entityPlural: 'Acquisitions',
   permission: 'ACQUISITION',
@@ -609,6 +615,7 @@ export const ACQUISITION = defineLookup({
  */
 export const DISPOSE = defineLookup({
   slug: 'disposes',
+  generatedNumber: true,
   entity: 'Dispose',
   entityPlural: 'Disposes',
   permission: 'DISPOSE',
@@ -655,6 +662,7 @@ const ALL_PEOPLE = gql`
  */
 export const VALUATION = defineLookup({
   slug: 'valuations',
+  generatedNumber: true,
   entity: 'Valuation',
   entityPlural: 'Valuations',
   permission: 'VALUATION',
@@ -704,6 +712,7 @@ export const VALUATION = defineLookup({
  */
 export const LAND_USE = defineLookup({
   slug: 'land-uses',
+  generatedNumber: true,
   entity: 'LandUse',
   entityPlural: 'LandUses',
   permission: 'LAND_USE',
@@ -774,6 +783,7 @@ const outcomeColumn: GridKeyColumn = {
  */
 export const ASSET_VERIFICATION = defineLookup({
   slug: 'asset-verifications',
+  generatedNumber: true,
   entity: 'AssetVerification',
   entityPlural: 'AssetVerifications',
   permission: 'ASSET_VERIFICATION',
@@ -1131,6 +1141,7 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string, only?: s
  */
 export const ASSET_CONNECTION = defineLookup({
   slug: 'asset-connections',
+  generatedNumber: true,
   entity: 'AssetToAssetConnection',
   entityPlural: 'AssetToAssetConnections',
   permission: 'ASSET_CONNECTION',
