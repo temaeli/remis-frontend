@@ -207,7 +207,7 @@ const ownerFormFields = (unallocated: string): FieldConfig[] => [
  * backend refuses anything that would take the total over 100 either way; this
  * is so the user knows before submitting rather than after.
  */
-function openOwnerForm(comp: BaseComponent, registrationUid?: string, row?: Lookup) {
+export function openOwnerForm(comp: BaseComponent, registrationUid?: string, row?: Lookup) {
   return async () => {
     const unallocated = await comp.fs.fetch({
       query: UNALLOCATED_SHARE,
