@@ -507,7 +507,7 @@ export const landRegistrationSteps = (): FormStepper[] => [
   {
     name: 'Asset',
     icon: 'home_work',
-    keys: ['id', 'assetUid', 'name', 'assignedNumber', 'description'],
+    keys: ['id', 'assetUid', 'name', 'description'],
   },
   {
     name: 'Location',

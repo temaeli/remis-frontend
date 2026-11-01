@@ -23,12 +23,17 @@ import { Lookup, LookupModule } from './lookup.interface';
  *
  * `assignedNumber` is optional: leave it blank and the backend generates one, so
  * it is only worth filling in when the number comes from an existing record.
+ * Where the backend always issues it (`generatedNumber`), there is no control
+ * for it at all.
  *
  * The first control is a hidden carrier for the identifier, seeded when editing
  * and left blank when creating. Without it the backend cannot tell an update from
  * a create, and every edit would save as a new record.
  */
-export const namedLookupFields = (idKey: 'id' | 'uid' = 'id'): FieldConfig[] => [
+export const namedLookupFields = (
+  idKey: 'id' | 'uid' = 'id',
+  withAssignedNumber = true,
+): FieldConfig[] => [
   { key: idKey, type: FieldType.input, visible: false },
   {
     key: 'name',
@@ -37,13 +42,17 @@ export const namedLookupFields = (idKey: 'id' | 'uid' = 'id'): FieldConfig[] => 
     validations: [VALIDATOR_REQUIRED],
     class: 'col-span-full',
   },
-  {
-    key: 'assignedNumber',
-    label: 'Assigned Number',
-    type: FieldType.input,
-    hint: 'Leave blank to generate automatically',
-    class: 'col-span-full',
-  },
+  ...(withAssignedNumber
+    ? [
+        {
+          key: 'assignedNumber',
+          label: 'Assigned Number',
+          type: FieldType.input,
+          hint: 'Leave blank to generate automatically',
+          class: 'col-span-full',
+        } as FieldConfig,
+      ]
+    : []),
   {
     key: 'description',
     label: 'Description',
@@ -67,9 +76,10 @@ export const lookupFields = (lookup: LookupModule): FieldConfig[] =>
   // — the upload field parks the saved attachment on `field.attachment` so it
   // can offer a preview — and a config handed straight from the module would
   // carry one record's file into the next record's form.
-  [...(lookup.baseFields ?? namedLookupFields(lookup.idKey)), ...(lookup.extraFields ?? [])].map(
-    (field) => ({ ...field }) as FieldConfig,
-  );
+  [
+    ...(lookup.baseFields ?? namedLookupFields(lookup.idKey, !lookup.generatedNumber)),
+    ...(lookup.extraFields ?? []),
+  ].map((field) => ({ ...field }) as FieldConfig);
 
 /** The columns a list shows, with the config's own between the base block and `active`. */
 export const lookupColumns = (lookup: LookupModule): GridKeyColumn[] => [

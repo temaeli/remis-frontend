@@ -120,6 +120,12 @@ export interface LookupConfig {
   /** Controls for those columns. Defaults to match `descriptiveGqlFields`. */
   baseFields?: FieldConfig[];
 
+  /**
+   * The backend always issues `assignedNumber` and refuses one from the client,
+   * so the form has no control for it. The list still shows it.
+   */
+  generatedNumber?: boolean;
+
   /** Columns for them, shown before `active`. Defaults to match. */
   baseColumns?: GridKeyColumn[];
 
