@@ -112,11 +112,8 @@ export function assetActions(
       label: 'Verify',
       toolTip: 'Record a check of this asset — a pass moves a pending asset to Verified',
       hideFunction: (a?: Lookup) => !a || isDisposed(a),
-      click: (a: Lookup) =>
-        openOnAsset(lookups.verification, {
-          assetUid: a?.id,
-          name: `Verification of ${a?.name} ${stamp()}`,
-        }),
+      // Only the asset: the backend names the record and fills in the rest.
+      click: (a: Lookup) => openOnAsset(lookups.verification, { assetUid: a?.id }),
       permissions: lookups.verification.upsertPermissions,
     },
     {
