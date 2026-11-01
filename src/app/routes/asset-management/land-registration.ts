@@ -296,6 +296,30 @@ export const encumbranceFields = (): FieldConfig => ({
 
 const HALF = 'col-span-full md:col-span-1';
 
+/**
+ * The parcel's survey point. Both are required and stored as `numeric(9,6)`, so
+ * the controls round to six places to match rather than letting the database
+ * truncate, and the hints mirror the CHECK constraints.
+ */
+export const coordinateFields = (): FieldConfig[] => [
+  {
+    key: 'latitude',
+    label: 'Latitude',
+    hint: 'Between -90 and 90',
+    type: FieldType.decimal,
+    decimals: 6,
+    validations: [VALIDATOR_REQUIRED],
+  },
+  {
+    key: 'longitude',
+    label: 'Longitude',
+    hint: 'Between -180 and 180',
+    type: FieldType.decimal,
+    decimals: 6,
+    validations: [VALIDATOR_REQUIRED],
+  },
+];
+
 /** The parcel's identifiers and extent — step three. */
 export const parcelFields = (): FieldConfig[] => [
   { key: 'parcelNumber', label: 'Parcel Number', type: FieldType.input, validations: [VALIDATOR_REQUIRED], class: HALF },

@@ -28,7 +28,10 @@ export class LookupsComponent extends BaseComponent {
 
   override title = this.lookup.pluralLabel;
   override subtitle = this.lookup.subtitle;
-  override actionButtons: ActionButton[] = lookupHeaderBtns(this, this.lookup);
+  override actionButtons: ActionButton[] = [
+    ...(this.lookup.listActions?.(this, this.lookup) ?? []),
+    ...lookupHeaderBtns(this, this.lookup),
+  ];
 
   gridParameter: GridParameter = {
     title: this.lookup.pluralLabel,

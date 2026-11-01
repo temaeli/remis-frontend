@@ -219,6 +219,13 @@ export interface LookupConfig {
    * act on.
    */
   rowActions?: (comp: BaseComponent, lookup: LookupModule) => ActionButton[];
+
+  /**
+   * Buttons for the list page's header only, placed before Create — things the
+   * screen does that are about no one record, such as a guided registration.
+   * Not shown on a record's own page or in its row menu.
+   */
+  listActions?: (comp: BaseComponent, lookup: LookupModule) => ActionButton[];
 }
 
 /** A config with everything derived from it — what the screens actually consume. */
