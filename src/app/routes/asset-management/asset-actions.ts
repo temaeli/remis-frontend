@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client/core';
-import { Subject, take } from 'rxjs';
+import { Observable, Subject, take } from 'rxjs';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
@@ -27,6 +27,19 @@ export interface AssetActionLookups {
   verification: LookupModule;
   disposal: LookupModule;
   landRegistration: LookupModule;
+  /** What "Link to…" offers. */
+  linkTargets: AssetLinkTarget[];
+}
+
+/** One kind of link "Link to…" can make. */
+export interface AssetLinkTarget {
+  label: string;
+  icon: string;
+  /** Opens the link form with this asset as the owning side. */
+  open: (assetUid: string) => void;
+  /** Emits when such a link is saved — the asset then reloads, so its tab appears. */
+  saved$: Observable<unknown>;
+  permissions?: string[];
 }
 
 /** Mirrors AssetStatusFlow on the backend: the statuses a disposal may follow. */
@@ -128,6 +141,21 @@ export function assetActions(
       hideFunction: (a?: Lookup) => !a || isDisposed(a),
       click: (a: Lookup) => openStatusForm(comp, asset, a),
       permissions: asset.upsertPermissions,
+    },
+    {
+      icon: 'link',
+      label: 'Link to…',
+      toolTip: 'Tie this asset to a project, unit, cost, task or another asset',
+      hideFunction: (a?: Lookup) => !a || isDisposed(a),
+      buttons: lookups.linkTargets.map((target) => ({
+        icon: target.icon,
+        label: target.label,
+        permissions: target.permissions,
+        click: (a: Lookup) => {
+          target.saved$.pipe(take(1)).subscribe(() => asset.changed$.next(undefined));
+          target.open(a?.id as string);
+        },
+      })),
     },
     {
       icon: 'delete_sweep',

@@ -261,6 +261,18 @@ const defaultColumns = (config: EntityLinkConfig): GridKeyColumn[] => [
   'actions',
 ];
 
+/**
+ * The link form for one config, opened from somewhere other than its panel — a
+ * "Link to…" menu, where the panel may not be showing yet.
+ */
+export const openEntityLinkForm = (
+  comp: BaseComponent,
+  config: EntityLinkConfig,
+  ownerUid?: string,
+): void => {
+  linkBtn(comp, config, buildGql(config), ownerUid).click?.();
+};
+
 /** One panel per config, for the owning record's detail page. */
 export const entityLinkPanels = (
   comp: BaseComponent,

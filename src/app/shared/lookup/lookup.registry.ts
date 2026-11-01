@@ -27,6 +27,7 @@ export const defineLookup = (config: LookupConfig): LookupModule => {
       auditGqlFields: config.auditGqlFields,
       descriptiveGqlFields: config.descriptiveGqlFields,
       extraGqlFields: config.extraGqlFields,
+      detailGqlFields: config.detailGqlFields,
     }),
     changed$: new Subject(),
     idKey: config.schema === 'uaa' ? 'uid' : 'id',
