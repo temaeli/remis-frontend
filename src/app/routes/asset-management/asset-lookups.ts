@@ -777,9 +777,12 @@ const outcomeColumn: GridKeyColumn = {
 };
 
 /**
- * One check of an asset: who checked it, when, and what they found. The
- * description holds the verifier's remarks. Usually added from the asset's own
- * page, where the asset is already filled in.
+ * One check of an asset: what was found, and optionally who, when and why.
+ *
+ * Recorded from the asset's own page (Verify), so the asset is carried in a
+ * hidden control rather than picked. The backend names the record and writes a
+ * remark when none is given, so the form asks only for the outcome — the rest
+ * is optional, with sensible defaults: the signed-in user, now.
  */
 export const ASSET_VERIFICATION = defineLookup({
   slug: 'asset-verifications',
@@ -792,8 +795,10 @@ export const ASSET_VERIFICATION = defineLookup({
   subtitle: 'Who checked each asset, when, and what they found',
   icon: 'check',
   extraGqlFields: verificationGqlFields,
+  // No name or number: the backend issues both.
+  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
   extraFields: [
-    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    { key: 'assetUid', type: FieldType.input, visible: false },
     {
       key: 'outcome',
       label: 'Outcome',
@@ -802,12 +807,28 @@ export const ASSET_VERIFICATION = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
-    parentSelect('verifiedByUid', 'Verified By', ALL_PEOPLE),
+    {
+      key: 'verifiedByUid',
+      label: 'Verified By',
+      hint: 'Leave blank if it was you',
+      type: FieldType.select,
+      optionsVariables: { labelKey: 'name', valueKey: 'id', fetchParameter: { query: ALL_PEOPLE } },
+      class: 'col-span-full md:col-span-1',
+    },
     {
       key: 'verifiedAt',
       label: 'Verified At',
       type: FieldType.dateTime,
       hint: 'Defaults to now when left blank',
+      class: 'col-span-full md:col-span-1',
+    },
+    {
+      key: 'description',
+      label: 'Remarks',
+      hint: 'Optional — what was found, especially when it did not pass',
+      type: FieldType.textarea,
+      rows: 3,
+      class: 'col-span-full',
     },
   ],
   extraColumns: [
