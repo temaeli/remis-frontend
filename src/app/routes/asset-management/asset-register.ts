@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client/core';
 import { Subject } from 'rxjs';
 import { FormComponent } from '@shared/components/generic-form/form.component';
-import { FormParameters } from '@shared/components/generic-form/form.interface';
+import { FormParameters, ShowWhen } from '@shared/components/generic-form/form.interface';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import {
@@ -24,16 +24,18 @@ import {
 } from './land-registration';
 
 /**
- * Register Asset: an asset, its land registration when it is land, and how it
- * was acquired, saved in one go by `registerAsset`.
+ * Register Asset: one stepped form that saves the asset, its land registration
+ * when it is land, and how it was acquired, in one go through `registerAsset`.
  *
- * Two dialogs rather than one form with a land-only step. The first asks what
- * is being registered, its name and description. A non-land asset is saved
- * right there, with its acquisition if one is given. A land asset goes on to the
- * second, which is the land registration's own steps plus the acquisition.
+ *   Asset → Location → Parcel → Tenure → Owners → Acquisition
  *
- * One form could not do it: a hidden step's required fields still hold the form
- * invalid, so a non-land asset could never be submitted.
+ * The four land steps appear only once a subcategory under a land type is
+ * picked, so anything else goes straight from Asset to Acquisition.
+ *
+ * A hidden step's fields would still be required, so each land field is also
+ * given a show-condition on `forLand`. The form clears a hidden field's
+ * validators, which is what lets a non-land asset be submitted. `forLand` is a
+ * hidden control the subcategory picker sets.
  *
  * The land registration and the acquisition take their name and description
  * from the asset, so they are typed once.
@@ -72,7 +74,25 @@ interface SubcategoryRow {
   assetCategory?: { name?: string; assetType?: { name?: string; forLand?: boolean } };
 }
 
+const ASSET_KEYS = ['assetSubcategoryUid', 'name', 'description'];
 const ACQUISITION_KEYS = ['acquisitionValue', 'acquisitionDate'];
+
+/** Shown only for land. Steps read the control's value; fields use the checker. */
+const LAND_STEP: ShowWhen[] = [{ key: 'forLand', value: true }];
+const IS_LAND: ShowWhen = {
+  key: 'forLand',
+  checker: (v: unknown) => v === true,
+  combination: 'and',
+};
+
+/** The field, hidden unless the asset is land — and unless its own condition holds too. */
+const landOnly = (field: FieldConfig): FieldConfig => ({
+  ...field,
+  showWhen: [
+    IS_LAND,
+    ...(field.showWhen ?? []).map((when) => ({ ...when, combination: 'and' as const })),
+  ],
+});
 
 const acquisitionFields = (): FieldConfig[] => [
   {
@@ -95,13 +115,12 @@ export function registerAssetBtn(comp: BaseComponent, lookup: LookupModule): Act
     icon: 'add',
     label: 'Register Asset',
     class: 'btn-add-primary',
-    click: () => openClassifyStep(comp, lookup),
+    click: () => openRegisterForm(comp, lookup),
     permissions: ['ROLE_CREATE_ASSET'],
   };
 }
 
-/** First dialog: what it is, what it is called, and — when not land — how it was acquired. */
-async function openClassifyStep(comp: BaseComponent, lookup: LookupModule): Promise<void> {
+async function openRegisterForm(comp: BaseComponent, lookup: LookupModule): Promise<void> {
   const rows: SubcategoryRow[] =
     (await comp.fs.fetch({ query: REGISTER_ASSET_SUBCATEGORIES, loadingOn: 'content' })) ?? [];
 
@@ -116,23 +135,78 @@ async function openClassifyStep(comp: BaseComponent, lookup: LookupModule): Prom
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
-  const isOther = (v: unknown) => !!v && !landIds.has(v as string);
+  // Clears the location cascade, which outlives any one form.
+  const landModel = landRegistrationToModel(undefined);
   const close$ = new Subject<void>();
+
+  const steps: FormStepper[] = [
+    { name: 'Asset', icon: 'home_work', keys: [...ASSET_KEYS, 'forLand'] },
+    {
+      name: 'Location',
+      icon: 'location_on',
+      keys: [
+        'regionUid',
+        'districtUid',
+        'councilUid',
+        'wardUid',
+        'streetUid',
+        'latitude',
+        'longitude',
+      ],
+      showWhen: LAND_STEP,
+    },
+    {
+      name: 'Parcel',
+      icon: 'straighten',
+      keys: [
+        'parcelNumber',
+        'titleNumber',
+        'plotNumber',
+        'blockNumber',
+        'surveyPlanNumber',
+        'grossArea',
+        'netArea',
+      ],
+      showWhen: LAND_STEP,
+    },
+    {
+      name: 'Tenure',
+      icon: 'gavel',
+      keys: ['tenureType', 'permittedUse', 'leaseStartDate', 'leaseEndDate', 'leaseTermYears'],
+      showWhen: LAND_STEP,
+    },
+    {
+      name: 'Owners',
+      icon: 'users',
+      keys: ['owners'],
+      optional: true,
+      showWhen: LAND_STEP,
+    },
+    {
+      name: 'Acquisition',
+      icon: 'shopping_cart',
+      keys: ACQUISITION_KEYS,
+      optional: true,
+      submitLabel: 'Register Asset',
+    },
+  ];
 
   const formParameter: FormParameters = {
     title: 'Register Asset',
-    model: {},
+    model: { owners: landModel['owners'] },
     closeAction$: close$,
     fields: [
       {
         key: 'assetSubcategoryUid',
         label: 'What are you registering?',
-        hint: 'Type to search. Land continues to the parcel details.',
+        hint: 'Type to search. Land adds location, parcel, tenure and owner steps.',
         type: FieldType.select,
         options,
         searchKeys: ['label'],
         validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
+        onChange: (value: unknown, form?: any) =>
+          form?.get('forLand')?.setValue(landIds.has(value as string)),
       },
       {
         key: 'name',
@@ -149,110 +223,30 @@ async function openClassifyStep(comp: BaseComponent, lookup: LookupModule): Prom
         validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },
-      // For land these are asked on the last land step instead.
-      ...acquisitionFields().map((f) => ({
-        ...f,
-        showWhen: [{ key: 'assetSubcategoryUid', checker: isOther }],
-      })),
-    ],
-    onSubmit: async (value: Record<string, unknown>) => {
-      const asset = {
-        name: value['name'],
-        description: value['description'],
-        assetSubcategoryUid: value['assetSubcategoryUid'],
-      };
-
-      if (landIds.has(value['assetSubcategoryUid'] as string)) {
-        close$.next();
-        openLandSteps(comp, lookup, asset);
-        return;
-      }
-
-      await register(comp, lookup, { ...asset, ...pick(value, ACQUISITION_KEYS) }, close$);
-    },
-  };
-
-  comp.vs?.openModal(FormComponent, formParameter, '40%');
-}
-
-/** Second dialog, land only: where it is, the parcel, the tenure, its owners and its acquisition. */
-function openLandSteps(
-  comp: BaseComponent,
-  lookup: LookupModule,
-  asset: Record<string, unknown>,
-): void {
-  // Clears the location cascade, which outlives any one form.
-  const model = landRegistrationToModel(undefined);
-  const close$ = new Subject<void>();
-
-  const steps: FormStepper[] = [
-    {
-      name: 'Location',
-      icon: 'location_on',
-      keys: [
-        'regionUid',
-        'districtUid',
-        'councilUid',
-        'wardUid',
-        'streetUid',
-        'latitude',
-        'longitude',
-      ],
-    },
-    {
-      name: 'Parcel',
-      icon: 'straighten',
-      keys: [
-        'parcelNumber',
-        'titleNumber',
-        'plotNumber',
-        'blockNumber',
-        'surveyPlanNumber',
-        'grossArea',
-        'netArea',
-      ],
-    },
-    {
-      name: 'Tenure',
-      icon: 'gavel',
-      keys: ['tenureType', 'permittedUse', 'leaseStartDate', 'leaseEndDate', 'leaseTermYears'],
-    },
-    {
-      name: 'Owners',
-      icon: 'users',
-      keys: ['owners'],
-      optional: true,
-      submitLabel: 'Register Asset',
-    },
-    {
-      name: 'Acquisition',
-      icon: 'shopping_cart',
-      keys: ACQUISITION_KEYS,
-      optional: true,
-      submitLabel: 'Register Asset',
-    },
-  ];
-
-  const formParameter: FormParameters = {
-    title: `Register Asset — ${asset['name'] ?? ''}`,
-    model: { owners: model['owners'] },
-    closeAction$: close$,
-    fields: [
-      ...locationCascadeFields(),
-      ...coordinateFields(),
-      ...parcelFields(),
-      ...tenureFields(),
-      ownerFields(),
+      // Set by the picker above; drives which steps show. Never sent.
+      { key: 'forLand', type: FieldType.toggle, visible: false, ignoreOnSubmit: true },
+      ...locationCascadeFields().map(landOnly),
+      ...coordinateFields().map(landOnly),
+      ...parcelFields().map(landOnly),
+      ...tenureFields().map(landOnly),
+      landOnly(ownerFields()),
       ...acquisitionFields(),
     ],
     formSteppers: steps,
     stepperAppearance: 'fill',
     onSubmit: async (value: Record<string, unknown>) => {
-      const acquisition = pick(value, ACQUISITION_KEYS);
-      const land = { ...value };
-      ACQUISITION_KEYS.forEach((key) => delete land[key]);
-
-      await register(comp, lookup, { ...asset, ...acquisition, land }, close$);
+      const isLand = landIds.has(value['assetSubcategoryUid'] as string);
+      const input: Record<string, unknown> = {
+        ...pick(value, ASSET_KEYS),
+        ...pick(value, ACQUISITION_KEYS),
+      };
+      if (isLand) {
+        // Whatever is left after the asset and acquisition keys is the parcel.
+        const land = { ...value };
+        [...ASSET_KEYS, ...ACQUISITION_KEYS].forEach((key) => delete land[key]);
+        input['land'] = land;
+      }
+      await register(comp, lookup, input, close$);
     },
   };
 

@@ -212,12 +212,34 @@ export const ASSET = defineLookup({
   toModel: (data) => ({ assetSubcategoryUid: data?.assetSubcategory?.id }),
   extraActions: (comp, lookup) => [assetStatusBtn(comp, lookup)],
   listActions: (comp, lookup) => [registerAssetBtn(comp, lookup)],
+  // Everything recorded against an asset is added here, where each tab's Add
+  // opens its form with this asset already chosen. The lists under Records are
+  // for looking across assets.
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'Asset', record?.id),
-    lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
-      assetUid: record?.id,
-    }),
-    // Add opens the form with this asset already chosen.
+    lookupChildPanel(
+      comp,
+      () => LAND_REGISTRATION,
+      LAND_REGISTRATIONS_BY_ASSET,
+      { assetUid: record?.id },
+      { presetModel: { assetUid: record?.id } },
+    ),
+    lookupChildPanel(
+      comp,
+      () => ACQUISITION,
+      ACQUISITIONS_BY_ASSET,
+      { assetUid: record?.id },
+      {
+        presetModel: { assetUid: record?.id },
+        keyColumns: [
+          'index',
+          'acquisitionValue as Value',
+          { field: 'acquisitionDate', header: 'Acquired' },
+          'description',
+          'actions',
+        ],
+      },
+    ),
     lookupChildPanel(
       comp,
       () => ASSET_VERIFICATION,
@@ -235,9 +257,29 @@ export const ASSET = defineLookup({
         ],
       },
     ),
-    lookupChildPanel(comp, () => ASSET_CONNECTION, ASSET_CONNECTIONS_BY_PARENT, {
-      parentUid: record?.id,
-    }),
+    lookupChildPanel(
+      comp,
+      () => DISPOSE,
+      DISPOSES_BY_ASSET,
+      { assetUid: record?.id },
+      {
+        presetModel: { assetUid: record?.id },
+        keyColumns: [
+          'index',
+          { field: 'disposedAt', header: 'Disposed' },
+          'name',
+          'description',
+          'actions',
+        ],
+      },
+    ),
+    lookupChildPanel(
+      comp,
+      () => ASSET_CONNECTION,
+      ASSET_CONNECTIONS_BY_PARENT,
+      { parentUid: record?.id },
+      { presetModel: { parentUid: record?.id } },
+    ),
     assetProjectsPanel(comp, record?.id),
     ...assetLinkPanels(comp, record?.id),
     ...coreAttachmentPanels(comp, 'asset', record?.id),
@@ -608,6 +650,25 @@ export const LAND_REGISTRATIONS_BY_ASSET = gql`
   }
 `;
 
+export const ACQUISITIONS_BY_ASSET = gql`
+  query acquisitionsByAsset($assetUid: String) {
+    acquisitionsByAsset(assetUid: $assetUid) {
+      ${lookupChildGqlFields}
+      acquisitionValue
+      acquisitionDate
+    }
+  }
+`;
+
+export const DISPOSES_BY_ASSET = gql`
+  query disposesByAsset($assetUid: String) {
+    disposesByAsset(assetUid: $assetUid) {
+      ${lookupChildGqlFields}
+      disposedAt
+    }
+  }
+`;
+
 export const UPDATE_ASSET_STATUS = gql`
   mutation updateAssetStatus($uid: String, $status: AssetStatus) {
     updateAssetStatus(uid: $uid, status: $status) {
@@ -963,14 +1024,19 @@ export const ASSET_CONNECTIONS_BY_PARENT = gql`
 `;
 
 /** The operational screens, which lead the menu. */
-export const ASSET_LOOKUPS: LookupModule[] = [
-  ASSET,
-  ASSET_CONNECTION,
+export const ASSET_LOOKUPS: LookupModule[] = [ASSET];
+
+/**
+ * What is recorded against assets. Each is added from a tab on the asset's page;
+ * these lists, grouped under Records, are for looking across all assets.
+ */
+export const ASSET_RECORD_LOOKUPS: LookupModule[] = [
   LAND_REGISTRATION,
   ASSET_VERIFICATION,
   ACQUISITION,
   DISPOSE,
   VALUATION,
+  ASSET_CONNECTION,
 ];
 
 /** The taxonomy that classifies them, grouped behind one menu and kept last. */

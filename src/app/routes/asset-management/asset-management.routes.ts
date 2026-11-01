@@ -1,7 +1,17 @@
 import { TypedRoutes } from '@core';
 import { lookupRoutes } from '@shared/lookup';
 
-import { ASSET_CONFIGURATION_LOOKUPS, ASSET_LOOKUPS } from './asset-lookups';
+import { ASSET_CONFIGURATION_LOOKUPS, ASSET_LOOKUPS, ASSET_RECORD_LOOKUPS } from './asset-lookups';
+
+/**
+ * The record lists' detail routes, at this level as well as under Records.
+ *
+ * A tab on an asset's page opens a record at assets/<id>/<slug>/<id>, which only
+ * a detail route at this level can match. Under Records alone, every View on
+ * those tabs would lead nowhere.
+ */
+const recordDetailRoutes = () =>
+  lookupRoutes(ASSET_RECORD_LOOKUPS).filter((route) => !!route.matcher);
 
 export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
   {
@@ -15,8 +25,10 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
     loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard),
   },
 
-  // The register itself — assets, the registrations against them, their verifications.
+  // The register itself. Everything recorded against an asset is done from the
+  // asset's own page; the lists of those records sit under Records below.
   ...lookupRoutes(ASSET_LOOKUPS),
+  ...recordDetailRoutes(),
 
   // Every registered parcel on one map, drawn from the boundaries the database
   // builds out of each registration's corners.
@@ -29,6 +41,27 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
       permissions: ['ROLE_VIEW_ALL_LAND_REGISTRATION', 'ROLE_VIEW_LAND_REGISTRATION'],
     },
     loadComponent: () => import('./parcels-map.component').then((m) => m.ParcelsMapComponent),
+  },
+
+  /**
+   * Every land registration, verification, acquisition, disposal, valuation and
+   * connection across all assets — for looking things up and reporting. Adding
+   * one is done from the asset's page, where the asset is already chosen.
+   *
+   * No permissions of its own, like Configurations: the group appears when a
+   * user can reach at least one of its lists.
+   */
+  {
+    path: 'records',
+    data: {
+      isMenu: true,
+      name: 'Records',
+      icon: 'list',
+    },
+    children: [
+      { path: '', redirectTo: 'land-registrations', pathMatch: 'full' },
+      ...lookupRoutes(ASSET_RECORD_LOOKUPS),
+    ],
   },
 
   /**
