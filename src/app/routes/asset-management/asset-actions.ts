@@ -53,8 +53,6 @@ const now = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
 };
-/** "2026-11-01 09:30", to keep the names it suggests distinct. */
-const stamp = () => now().slice(0, 16).replace('T', ' ');
 
 const ASSET_NEXT_STATUSES = gql`
   query assetNextStatuses($uid: String) {
@@ -216,7 +214,8 @@ function openValueForm(comp: BaseComponent, asset: LookupModule, a: Lookup) {
   const close$ = new Subject<void>();
   const formParameter: FormParameters = {
     title: `Value — ${a?.name ?? ''}`,
-    model: { name: `Valuation of ${a?.name} ${stamp()}`, valuedAt: now() },
+    // No name: the backend issues it ("Valuation VAL-… · asset").
+    model: { valuedAt: now() },
     fields: [
       {
         key: 'value',
@@ -241,13 +240,6 @@ function openValueForm(comp: BaseComponent, asset: LookupModule, a: Lookup) {
           valueKey: 'id',
           fetchParameter: { query: ALL_PEOPLE },
         },
-        validations: [VALIDATOR_REQUIRED],
-        class: 'col-span-full',
-      },
-      {
-        key: 'name',
-        label: 'Name',
-        type: FieldType.input,
         validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },

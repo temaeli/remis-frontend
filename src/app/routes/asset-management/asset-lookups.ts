@@ -679,6 +679,19 @@ export const VALUATION = defineLookup({
     name
   }
 `,
+  // No name or number: the backend issues both.
+  baseFields: [
+    { key: 'id', type: FieldType.input, visible: false },
+    {
+      key: 'description',
+      label: 'Description',
+      hint: 'How it was valued — the method or the basis',
+      type: FieldType.textarea,
+      rows: 2,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
   extraFields: [
     {
       key: 'value',
