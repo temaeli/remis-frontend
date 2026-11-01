@@ -3299,6 +3299,10 @@ export const unitLinkPanels = (comp: BaseComponent, unitUid?: string): ContentPa
  * from that side. Returns nothing for a record with no join table, so a lookup
  * can call it unconditionally.
  */
+/** The link configs behind {@link recordLinkPanels}, for a "Link to…" menu. */
+export const recordLinkConfigs = (record: string): EntityLinkConfig[] =>
+  LINKS_BY_RECORD[record] ?? [];
+
 export const recordLinkPanels = (
   comp: BaseComponent,
   record: string,

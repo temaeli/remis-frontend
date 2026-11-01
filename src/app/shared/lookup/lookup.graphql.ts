@@ -49,6 +49,8 @@ export interface LookupGqlOptions {
   auditGqlFields?: string;
   descriptiveGqlFields?: string;
   extraGqlFields?: string;
+  /** Asked for by `find` only — fields too costly to read for every row of a list. */
+  detailGqlFields?: string;
 }
 
 /**
@@ -93,7 +95,7 @@ export const buildLookupGql = (
     find: gql`
       query find${entity}($uid: String) {
         find${entity}(uid: $uid) {
-          ${responseGqlFields(fields)}
+          ${responseGqlFields(`${fields}${options.detailGqlFields ?? ''}`)}
         }
       }
     `,

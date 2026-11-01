@@ -26,6 +26,9 @@ import { Lookup, LookupModule } from './lookup.interface';
         [actionButtons]="actionButtons"
         [data]="record"
       />
+      @if (lookup.summary && record) {
+        <ng-container *ngComponentOutlet="lookup.summary; inputs: { record: record }" />
+      }
       <contents-view class="block grow" [contents]="contents" />
     </div>
   `,

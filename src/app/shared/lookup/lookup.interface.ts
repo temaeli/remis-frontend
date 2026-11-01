@@ -1,3 +1,4 @@
+import { Type } from '@angular/core';
 import { Subject } from 'rxjs';
 import { DocumentNode } from '@apollo/client/core';
 import { FieldConfig, FormStepper } from '@shared/components/generic-form/field.interface';
@@ -124,6 +125,19 @@ export interface LookupConfig {
 
   /** Selection appended to the descriptive columns. */
   extraGqlFields?: string;
+
+  /**
+   * Selection asked for on the detail page only — computed fields, related
+   * records — so the list stays one cheap query.
+   */
+  detailGqlFields?: string;
+
+  /**
+   * Shown on the detail page between the header and the tabs: the few facts a
+   * reader wants without clicking. The component receives the record as its
+   * `record` input.
+   */
+  summary?: Type<unknown>;
 
   /** Controls appended to the base block. */
   extraFields?: FieldConfig[];

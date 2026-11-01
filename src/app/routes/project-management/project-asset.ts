@@ -213,6 +213,15 @@ export const projectAssetsPanel = (comp: BaseComponent, projectUid?: string): Co
   fetchParameter: { query: ASSETS_OF_PROJECT, variables: { projectUid } },
 });
 
+/** Attach this asset to a project, from outside the panel — the asset's "Link to…" menu. */
+export const openAttachProjectForm = (comp: BaseComponent, assetUid?: string): void => {
+  attachBtn(
+    comp,
+    { assetUid },
+    { key: 'projectUid', label: 'Project', query: ALL_PROJECTS_FOR_LINK },
+  ).click?.();
+};
+
 /** The projects one asset is attached to, shown on the asset's detail page. */
 export const assetProjectsPanel = (comp: BaseComponent, assetUid?: string): ContentParameter => ({
   type: 'table',

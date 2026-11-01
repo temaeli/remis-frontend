@@ -74,7 +74,28 @@ interface SubcategoryRow {
   assetCategory?: { name?: string; assetType?: { name?: string; forLand?: boolean } };
 }
 
-const ASSET_KEYS = ['assetSubcategoryUid', 'name', 'description'];
+const ASSET_KEYS = ['assetSubcategoryUid', 'name', 'description', 'forDevelopment', 'forSelling'];
+
+/**
+ * What the asset is meant for — the two flags the assets table requires. Here
+ * rather than in asset-lookups, which imports this file, so both forms share it.
+ */
+export function intendedUseFields(): FieldConfig[] {
+  return [
+    {
+      key: 'forDevelopment',
+      label: 'Intended for development',
+      type: FieldType.toggle,
+      class: 'col-span-full md:col-span-1',
+    },
+    {
+      key: 'forSelling',
+      label: 'Intended for sale',
+      type: FieldType.toggle,
+      class: 'col-span-full md:col-span-1',
+    },
+  ];
+}
 const ACQUISITION_KEYS = ['acquisitionValue', 'acquisitionDate'];
 
 /** Shown only for land. Steps read the control's value; fields use the checker. */
@@ -223,6 +244,7 @@ async function openRegisterForm(comp: BaseComponent, lookup: LookupModule): Prom
         validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },
+      ...intendedUseFields(),
       // Set by the picker above; drives which steps show. Never sent.
       { key: 'forLand', type: FieldType.toggle, visible: false, ignoreOnSubmit: true },
       ...locationCascadeFields().map(landOnly),

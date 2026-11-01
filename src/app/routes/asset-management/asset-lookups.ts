@@ -4,12 +4,17 @@ import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
 import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
-import { assetProjectsPanel } from '@routes/project-management/project-asset';
-import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import {
+  assetProjectsPanel,
+  openAttachProjectForm,
+  projectAsset$,
+} from '@routes/project-management/project-asset';
+import { recordLinkConfigs, recordLinkPanels } from '@routes/unit-management/unit-links';
 import { ParcelMapComponent } from './parcel-map.component';
 import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
-import { registerAssetBtn } from './asset-register';
-import { assetActions } from './asset-actions';
+import { intendedUseFields, registerAssetBtn } from './asset-register';
+import { AssetLinkTarget, assetActions } from './asset-actions';
+import { AssetSummaryComponent } from './asset-summary.component';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import {
   coordinateFields,
@@ -29,11 +34,16 @@ import {
 } from './land-registration-panels';
 import {
   defineLookup,
+  EntityLinkConfig,
+  entityLink$,
   entityLinkPanels,
+  openEntityLinkForm,
   lookupChildGqlFields,
   lookupChildPanel,
   lookupRefGqlFields,
+  Lookup,
   LookupModule,
+  openLookupForm,
 } from '@shared/lookup';
 
 /**
@@ -180,6 +190,8 @@ export const ASSET = defineLookup({
   extraGqlFields: `
   status
   reserved
+  forDevelopment
+  forSelling
   assetSubcategory {
     ${lookupRefGqlFields}
     assetCategory {
@@ -195,7 +207,36 @@ export const ASSET = defineLookup({
   // second control for the same fact would let the two disagree.
   extraFields: [
     parentSelect('assetSubcategoryUid', 'Asset Subcategory', ASSET_SUBCATEGORY.gql.all),
+    ...intendedUseFields(),
   ],
+  // The overview the summary and the tabs read. Computed per asset on the
+  // backend, so only the asset's own page asks for it.
+  detailGqlFields: `
+  linkedKinds
+  landRegistration {
+    ${lookupRefGqlFields}
+    parcelNumber
+    titleNumber
+    plotNumber
+    blockNumber
+    surveyPlanNumber
+    grossArea
+    netArea
+    latitude
+    longitude
+    tenureType
+    permittedUse
+    leaseStartDate
+    leaseEndDate
+    leaseTermYears
+    street { id name }
+  }
+  acquisition { id acquisitionValue acquisitionDate }
+  latestValuation { id value valuedAt valuer { id name } }
+  latestVerification { id outcome verifiedAt verifiedBy { id name } }
+  disposal { id disposedAt description }
+`,
+  summary: AssetSummaryComponent,
   extraColumns: [
     'assetSubcategory.name as Sub Category',
     {
@@ -214,37 +255,56 @@ export const ASSET = defineLookup({
       verification: ASSET_VERIFICATION,
       disposal: DISPOSE,
       landRegistration: LAND_REGISTRATION,
+      linkTargets: assetLinkTargets(comp),
     }),
   // One way in: Register Asset replaces the plain Create on the list.
   listActions: (comp, lookup) => [registerAssetBtn(comp, lookup)],
   replaceCreate: true,
   /**
    * Grouped so the page reads as a handful of questions rather than eighteen
-   * tabs: where is it (Land), what is it worth (Money), what has happened to it
-   * (History), its papers (Documents), and the rest (More).
+   * tabs: where is it (Land), what is it worth (Money), what state is it in
+   * (Condition), what has happened to it (History), its papers (Documents), and
+   * what it is tied to (Links).
    *
-   * Verifying and disposing are header buttons, so their tabs only list. Each
-   * other tab's Add opens its form with this asset already chosen.
+   * Only what applies is shown: Land for land, and a link kind only once the
+   * asset has one — new ones are added through the header's "Link to…". The land
+   * registration is shown in place, owners and map included, rather than as a
+   * list to open.
+   *
+   * Verifying and disposing are header buttons, so their tabs only list.
    */
   extraContents: (comp, record) => {
     const assetUid = record?.id;
     const forLand = !!record?.['assetSubcategory']?.assetCategory?.assetType?.forLand;
+    const linked: string[] = record?.['linkedKinds'] ?? [];
+    const has = (kind: string) => linked.includes(kind);
+    const linkedOf = (kinds: string[]) => assetLinkPanels(comp, assetUid, kinds.filter(has));
 
-    return [
-      ...(forLand
+    const condition = linkedOf([
+      'AssetQualitativeParameter',
+      'AssetQualitativeParameterValue',
+      'AssetQuantitativeParameter',
+      'AssetQuantitativeParameterValue',
+    ]);
+    const links = [
+      ...(has('Connection')
         ? [
-            tabGroup('Land', 'land_administration', [
-              lookupChildPanel(
-                comp,
-                () => LAND_REGISTRATION,
-                LAND_REGISTRATIONS_BY_ASSET,
-                { assetUid },
-                { presetModel: { assetUid, name: record?.name, description: record?.description } },
-              ),
-              ...assetLinkPanels(comp, assetUid, ['AssetLandUse']),
-            ]),
+            lookupChildPanel(
+              comp,
+              () => ASSET_CONNECTION,
+              ASSET_CONNECTIONS_BY_PARENT,
+              { parentUid: assetUid },
+              { presetModel: { parentUid: assetUid } },
+            ),
           ]
         : []),
+      ...(has('Project') ? [assetProjectsPanel(comp, assetUid)] : []),
+      ...(has('Unit') ? recordLinkPanels(comp, 'Asset', assetUid) : []),
+      ...linkedOf(['AssetMasterPlan', 'InventoryAsset', 'AssetTask']),
+    ];
+
+    return [
+      ...(forLand ? [landTab(comp, record, linkedOf(['AssetLandUse']))] : []),
       tabGroup('Money', 'payments', [
         lookupChildPanel(
           comp,
@@ -262,8 +322,11 @@ export const ASSET = defineLookup({
             ],
           },
         ),
-        ...assetLinkPanels(comp, assetUid, ['AssetValuation', 'AssetCost', 'ExpenseAsset']),
+        // Valuations always: Value adds to them. Costs and expenses once there are some.
+        ...assetLinkPanels(comp, assetUid, ['AssetValuation']),
+        ...linkedOf(['AssetCost', 'ExpenseAsset']),
       ]),
+      ...(condition.length ? [tabGroup('Condition', 'assessment', condition)] : []),
       tabGroup('History', 'history', [
         lookupChildPanel(
           comp,
@@ -281,43 +344,28 @@ export const ASSET = defineLookup({
             ],
           },
         ),
-        lookupChildPanel(
-          comp,
-          () => DISPOSE,
-          DISPOSES_BY_ASSET,
-          { assetUid },
-          {
-            keyColumns: [
-              'index',
-              { field: 'disposedAt', header: 'Disposed' },
-              'name',
-              'description',
-              'actions',
-            ],
-          },
-        ),
+        ...(record?.['disposal']
+          ? [
+              lookupChildPanel(
+                comp,
+                () => DISPOSE,
+                DISPOSES_BY_ASSET,
+                { assetUid },
+                {
+                  keyColumns: [
+                    'index',
+                    { field: 'disposedAt', header: 'Disposed' },
+                    'name',
+                    'description',
+                    'actions',
+                  ],
+                },
+              ),
+            ]
+          : []),
       ]),
       tabGroup('Documents', 'attachment', coreAttachmentPanels(comp, 'asset', assetUid)),
-      tabGroup('More', 'more_horiz', [
-        lookupChildPanel(
-          comp,
-          () => ASSET_CONNECTION,
-          ASSET_CONNECTIONS_BY_PARENT,
-          { parentUid: assetUid },
-          { presetModel: { parentUid: assetUid } },
-        ),
-        assetProjectsPanel(comp, assetUid),
-        ...recordLinkPanels(comp, 'Asset', assetUid),
-        ...assetLinkPanels(comp, assetUid, [
-          'AssetMasterPlan',
-          'InventoryAsset',
-          'AssetTask',
-          'AssetQualitativeParameter',
-          'AssetQualitativeParameterValue',
-          'AssetQuantitativeParameter',
-          'AssetQuantitativeParameterValue',
-        ]),
-      ]),
+      ...(links.length ? [tabGroup('Links', 'link', links)] : []),
     ];
   },
 });
@@ -325,6 +373,116 @@ export const ASSET = defineLookup({
 /** A tab that holds other tabs. */
 function tabGroup(name: string, icon: string, children: ContentParameter[]): ContentParameter {
   return { name, label: name, icon, children };
+}
+
+/**
+ * The Land tab. With a registration, the registration itself — its parcel, its
+ * owners, encumbrances, map and corners — rather than a list to open. Without
+ * one, the list with its Add, the asset already chosen.
+ */
+function landTab(
+  comp: BaseComponent,
+  asset: Lookup | undefined,
+  landUses: ContentParameter[],
+): ContentParameter {
+  const registration: Lookup | undefined = asset?.['landRegistration'];
+  const registrations = lookupChildPanel(
+    comp,
+    () => LAND_REGISTRATION,
+    LAND_REGISTRATIONS_BY_ASSET,
+    { assetUid: asset?.id },
+    registration
+      ? {}
+      : {
+          presetModel: { assetUid: asset?.id, name: asset?.name, description: asset?.description },
+        },
+  );
+
+  if (!registration) return tabGroup('Land', 'land_administration', [registrations, ...landUses]);
+
+  return tabGroup('Land', 'land_administration', [
+    {
+      type: 'details',
+      name: 'Parcel',
+      label: 'Parcel',
+      icon: 'straighten',
+      entity: {
+        street: registration['street']?.name,
+        parcelNumber: registration['parcelNumber'],
+        titleNumber: registration['titleNumber'],
+        plotNumber: registration['plotNumber'],
+        blockNumber: registration['blockNumber'],
+        surveyPlanNumber: registration['surveyPlanNumber'],
+        grossArea: registration['grossArea'],
+        netArea: registration['netArea'],
+        tenureType: getDisplayName(registration['tenureType']),
+        permittedUse: getDisplayName(registration['permittedUse']),
+        leaseStartDate: registration['leaseStartDate'],
+        leaseEndDate: registration['leaseEndDate'],
+        leaseTermYears: registration['leaseTermYears'],
+      },
+    },
+    // Owners, encumbrances, map and corners: the registration's own tabs.
+    ...(LAND_REGISTRATION.extraContents?.(comp, registration) ?? []),
+    ...landUses,
+    // The record itself, for editing the parcel.
+    { ...registrations, name: 'Registration', label: 'Registration' },
+  ]);
+}
+
+/**
+ * What "Link to…" offers: each kind of link an asset can have, opening its link
+ * form on this asset. Whatever a link emits on save reloads the asset, so a
+ * kind's tab appears as soon as it has a first link.
+ */
+function assetLinkTargets(comp: BaseComponent): AssetLinkTarget[] {
+  const byEntity = (entity: string) => ASSET_LINK_CONFIGS.find((c) => c.entity === entity);
+  const entityTarget = (entity: string): AssetLinkTarget[] => {
+    const config = byEntity(entity);
+    if (!config) return [];
+    return [
+      {
+        label: config.label,
+        icon: config.icon,
+        saved$: entityLink$,
+        permissions: [`ROLE_CREATE_${config.permission}`, `ROLE_UPDATE_${config.permission}`],
+        open: (assetUid) => openEntityLinkForm(comp, config, assetUid),
+      },
+    ];
+  };
+
+  return [
+    {
+      label: 'Project',
+      icon: 'project',
+      saved$: projectAsset$,
+      open: (assetUid) => openAttachProjectForm(comp, assetUid),
+    },
+    ...recordLinkConfigs('Asset').map((config) => ({
+      label: config.label,
+      icon: config.icon,
+      saved$: entityLink$,
+      permissions: [`ROLE_CREATE_${config.permission}`, `ROLE_UPDATE_${config.permission}`],
+      open: (assetUid: string) => openEntityLinkForm(comp, config, assetUid),
+    })),
+    {
+      label: 'Another Asset',
+      icon: 'link',
+      saved$: ASSET_CONNECTION.changed$,
+      permissions: ASSET_CONNECTION.upsertPermissions,
+      open: (assetUid) => openLookupForm(comp, ASSET_CONNECTION, { parentUid: assetUid }),
+    },
+    ...entityTarget('AssetCost'),
+    ...entityTarget('ExpenseAsset'),
+    ...entityTarget('AssetLandUse'),
+    ...entityTarget('AssetMasterPlan'),
+    ...entityTarget('InventoryAsset'),
+    ...entityTarget('AssetTask'),
+    ...entityTarget('AssetQualitativeParameter'),
+    ...entityTarget('AssetQualitativeParameterValue'),
+    ...entityTarget('AssetQuantitativeParameter'),
+    ...entityTarget('AssetQuantitativeParameterValue'),
+  ];
 }
 
 /** Where an asset stands, at a glance: green in use, amber on its way, red out. */
@@ -817,145 +975,150 @@ const allMasterPlans = gql`
  * mapped and driven by attachAssetToProject. Those three are unmapped on the
  * backend until the DBA confirms which model wins.
  */
+export const ASSET_LINK_CONFIGS: EntityLinkConfig[] = [
+  {
+    entity: 'AssetMasterPlan',
+    byOwnerQuery: 'assetMasterPlansByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'masterPlanUid',
+    field: 'masterPlan',
+    label: 'Master Plan',
+    pluralLabel: 'Master Plans',
+    icon: 'map',
+    permission: 'ASSET_MASTER_PLAN',
+    optionsQuery: allMasterPlans,
+  },
+  {
+    entity: 'AssetCost',
+    byOwnerQuery: 'assetCostsByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'costUid',
+    field: 'cost',
+    label: 'Cost',
+    pluralLabel: 'Costs',
+    icon: 'receipt',
+    permission: 'ASSET_COST',
+    optionsQuery: allCosts,
+  },
+  {
+    entity: 'AssetValuation',
+    byOwnerQuery: 'assetValuationsByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'valuationUid',
+    field: 'valuation',
+    label: 'Valuation',
+    pluralLabel: 'Valuations',
+    icon: 'linear_scale',
+    permission: 'ASSET_VALUATION',
+    optionsQuery: VALUATION.gql.all,
+  },
+  {
+    entity: 'AssetLandUse',
+    byOwnerQuery: 'assetLandUsesByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'landUseUid',
+    field: 'landUse',
+    label: 'Land Use',
+    pluralLabel: 'Land Uses',
+    icon: 'land_administration',
+    permission: 'ASSET_LAND_USE',
+    optionsQuery: LAND_USE.gql.all,
+  },
+  {
+    entity: 'ExpenseAsset',
+    byOwnerQuery: 'expenseAssetsByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'expenseUid',
+    field: 'expense',
+    label: 'Expense',
+    pluralLabel: 'Expenses',
+    icon: 'receipt',
+    permission: 'EXPENSE_ASSET',
+    optionsQuery: allExpenses,
+  },
+  {
+    entity: 'InventoryAsset',
+    byOwnerQuery: 'inventoryAssetsByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'inventoryUid',
+    field: 'inventory',
+    label: 'Inventory',
+    pluralLabel: 'Inventories',
+    icon: 'store',
+    permission: 'INVENTORY_ASSET',
+    optionsQuery: allInventories,
+  },
+  {
+    entity: 'AssetTask',
+    byOwnerQuery: 'assetTasksByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'taskUid',
+    field: 'task',
+    label: 'Task',
+    pluralLabel: 'Tasks',
+    icon: 'assignment',
+    permission: 'ASSET_TASK',
+    optionsQuery: allTasks,
+  },
+  {
+    entity: 'AssetQualitativeParameter',
+    byOwnerQuery: 'assetQualitativeParametersByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'qualitativeParameterUid',
+    field: 'qualitativeParameter',
+    label: 'Qualitative Parameter',
+    pluralLabel: 'Qualitative Parameters',
+    icon: 'assessment',
+    permission: 'ASSET_QUALITATIVE_PARAMETER',
+    optionsQuery: allQualitativeParameters,
+  },
+  {
+    entity: 'AssetQualitativeParameterValue',
+    byOwnerQuery: 'assetQualitativeParameterValuesByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'qualitativeParameterValueUid',
+    field: 'qualitativeParameterValue',
+    label: 'Qualitative Judgement',
+    pluralLabel: 'Qualitative Judgements',
+    icon: 'assessment',
+    permission: 'ASSET_QUALITATIVE_PARAMETER_VALUE',
+    optionsQuery: allQualitativeParameterValues,
+  },
+  {
+    entity: 'AssetQuantitativeParameter',
+    byOwnerQuery: 'assetQuantitativeParametersByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'quantitativeParameterUid',
+    field: 'quantitativeParameter',
+    label: 'Quantitative Parameter',
+    pluralLabel: 'Quantitative Parameters',
+    icon: 'poll',
+    permission: 'ASSET_QUANTITATIVE_PARAMETER',
+    optionsQuery: allQuantitativeParameters,
+  },
+  {
+    entity: 'AssetQuantitativeParameterValue',
+    byOwnerQuery: 'assetQuantitativeParameterValuesByAsset',
+    ownerArg: 'assetUid',
+    targetArg: 'quantitativeParameterValueUid',
+    field: 'quantitativeParameterValue',
+    label: 'Quantitative Measurement',
+    pluralLabel: 'Quantitative Measurements',
+    icon: 'poll',
+    permission: 'ASSET_QUANTITATIVE_PARAMETER_VALUE',
+    optionsQuery: allQuantitativeParameterValues,
+  },
+];
+
+/**
+ * The link panels for one asset. `only` picks them by entity, so the asset page
+ * can spread them across its tab groups and leave out the empty ones; without
+ * it every panel is returned.
+ */
 export const assetLinkPanels = (comp: BaseComponent, assetUid?: string, only?: string[]) =>
   entityLinkPanels(
     comp,
-    // `only` picks panels by entity, so the asset page can spread them across
-    // its tab groups; without it every panel is returned.
-    [
-      {
-        entity: 'AssetMasterPlan',
-        byOwnerQuery: 'assetMasterPlansByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'masterPlanUid',
-        field: 'masterPlan',
-        label: 'Master Plan',
-        pluralLabel: 'Master Plans',
-        icon: 'map',
-        permission: 'ASSET_MASTER_PLAN',
-        optionsQuery: allMasterPlans,
-      },
-      {
-        entity: 'AssetCost',
-        byOwnerQuery: 'assetCostsByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'costUid',
-        field: 'cost',
-        label: 'Cost',
-        pluralLabel: 'Costs',
-        icon: 'receipt',
-        permission: 'ASSET_COST',
-        optionsQuery: allCosts,
-      },
-      {
-        entity: 'AssetValuation',
-        byOwnerQuery: 'assetValuationsByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'valuationUid',
-        field: 'valuation',
-        label: 'Valuation',
-        pluralLabel: 'Valuations',
-        icon: 'linear_scale',
-        permission: 'ASSET_VALUATION',
-        optionsQuery: VALUATION.gql.all,
-      },
-      {
-        entity: 'AssetLandUse',
-        byOwnerQuery: 'assetLandUsesByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'landUseUid',
-        field: 'landUse',
-        label: 'Land Use',
-        pluralLabel: 'Land Uses',
-        icon: 'land_administration',
-        permission: 'ASSET_LAND_USE',
-        optionsQuery: LAND_USE.gql.all,
-      },
-      {
-        entity: 'ExpenseAsset',
-        byOwnerQuery: 'expenseAssetsByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'expenseUid',
-        field: 'expense',
-        label: 'Expense',
-        pluralLabel: 'Expenses',
-        icon: 'receipt',
-        permission: 'EXPENSE_ASSET',
-        optionsQuery: allExpenses,
-      },
-      {
-        entity: 'InventoryAsset',
-        byOwnerQuery: 'inventoryAssetsByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'inventoryUid',
-        field: 'inventory',
-        label: 'Inventory',
-        pluralLabel: 'Inventories',
-        icon: 'store',
-        permission: 'INVENTORY_ASSET',
-        optionsQuery: allInventories,
-      },
-      {
-        entity: 'AssetTask',
-        byOwnerQuery: 'assetTasksByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'taskUid',
-        field: 'task',
-        label: 'Task',
-        pluralLabel: 'Tasks',
-        icon: 'assignment',
-        permission: 'ASSET_TASK',
-        optionsQuery: allTasks,
-      },
-      {
-        entity: 'AssetQualitativeParameter',
-        byOwnerQuery: 'assetQualitativeParametersByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'qualitativeParameterUid',
-        field: 'qualitativeParameter',
-        label: 'Qualitative Parameter',
-        pluralLabel: 'Qualitative Parameters',
-        icon: 'assessment',
-        permission: 'ASSET_QUALITATIVE_PARAMETER',
-        optionsQuery: allQualitativeParameters,
-      },
-      {
-        entity: 'AssetQualitativeParameterValue',
-        byOwnerQuery: 'assetQualitativeParameterValuesByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'qualitativeParameterValueUid',
-        field: 'qualitativeParameterValue',
-        label: 'Qualitative Judgement',
-        pluralLabel: 'Qualitative Judgements',
-        icon: 'assessment',
-        permission: 'ASSET_QUALITATIVE_PARAMETER_VALUE',
-        optionsQuery: allQualitativeParameterValues,
-      },
-      {
-        entity: 'AssetQuantitativeParameter',
-        byOwnerQuery: 'assetQuantitativeParametersByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'quantitativeParameterUid',
-        field: 'quantitativeParameter',
-        label: 'Quantitative Parameter',
-        pluralLabel: 'Quantitative Parameters',
-        icon: 'poll',
-        permission: 'ASSET_QUANTITATIVE_PARAMETER',
-        optionsQuery: allQuantitativeParameters,
-      },
-      {
-        entity: 'AssetQuantitativeParameterValue',
-        byOwnerQuery: 'assetQuantitativeParameterValuesByAsset',
-        ownerArg: 'assetUid',
-        targetArg: 'quantitativeParameterValueUid',
-        field: 'quantitativeParameterValue',
-        label: 'Quantitative Measurement',
-        pluralLabel: 'Quantitative Measurements',
-        icon: 'poll',
-        permission: 'ASSET_QUANTITATIVE_PARAMETER_VALUE',
-        optionsQuery: allQuantitativeParameterValues,
-      },
-    ].filter((config) => !only || only.includes(config.entity)),
+    ASSET_LINK_CONFIGS.filter((config) => !only || only.includes(config.entity)),
     assetUid,
   );
 
