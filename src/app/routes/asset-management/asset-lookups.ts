@@ -316,7 +316,7 @@ export const ASSET = defineLookup({
           ACQUISITIONS_BY_ASSET,
           { assetUid },
           {
-            presetModel: { assetUid, name: record?.name },
+            presetModel: { assetUid },
             keyColumns: [
               'index',
               'acquisitionValue as Value',
@@ -395,11 +395,7 @@ function landTab(
     () => LAND_REGISTRATION,
     LAND_REGISTRATIONS_BY_ASSET,
     { assetUid: asset?.id },
-    registration
-      ? {}
-      : {
-          presetModel: { assetUid: asset?.id, name: asset?.name, description: asset?.description },
-        },
+    registration ? {} : { presetModel: { assetUid: asset?.id } },
   );
 
   if (!registration) return tabGroup('Land', 'land_administration', [registrations, ...landUses]);
@@ -508,10 +504,11 @@ export const LAND_REGISTRATION = defineLookup({
   subtitle: 'Registered parcels — their title, tenure, owners and encumbrances',
   icon: 'land_administration',
   extraGqlFields: landRegistrationGqlFields,
+  // No name, number or asset to type: the backend names it from the parcel, and
+  // the asset comes from the page it is registered on.
+  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
   extraFields: [
-    // Every asset is listed, but the backend rejects any whose type is not
-    // flagged forLand — the error comes back on submit.
-    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    { key: 'assetUid', type: FieldType.input, visible: false },
     ...locationCascadeFields(),
     ...coordinateFields(),
     ...parcelFields(),
@@ -584,20 +581,24 @@ export const ACQUISITION = defineLookup({
     status
   }
 `,
+  // Only the value and date: the backend writes the name and description, and
+  // the asset comes from the page.
+  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
   extraFields: [
-    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    { key: 'assetUid', type: FieldType.input, visible: false },
     {
       key: 'acquisitionValue',
       label: 'Acquisition Value',
       type: FieldType.decimal,
       validations: [VALIDATOR_REQUIRED],
-      class: 'col-span-full',
+      class: 'col-span-full md:col-span-1',
     },
     {
       key: 'acquisitionDate',
       label: 'Acquisition Date',
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full md:col-span-1',
     },
   ],
   extraColumns: [
@@ -687,11 +688,10 @@ export const VALUATION = defineLookup({
     { key: 'id', type: FieldType.input, visible: false },
     {
       key: 'description',
-      label: 'Description',
-      hint: 'How it was valued — the method or the basis',
+      label: 'Remarks',
+      hint: 'Optional — how it was valued, the method or the basis',
       type: FieldType.textarea,
       rows: 2,
-      validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
   ],
@@ -1172,9 +1172,10 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string, only?: s
 /**
  * A directed edge between two assets: the child hangs off the parent.
  *
- * A record in its own right rather than a link panel — it carries a name, a
- * description and who connected the two — so it gets a screen like any other
- * lookup, with a panel on the parent asset reading the same rows.
+ * Made from the parent asset's page ("Link to… → Another Asset"), so the
+ * parent is carried in a hidden control and only the child is picked. The
+ * backend writes the name and description and, left blank, takes the signed-in
+ * user as who connected them.
  */
 export const ASSET_CONNECTION = defineLookup({
   slug: 'asset-connections',
@@ -1200,15 +1201,24 @@ export const ASSET_CONNECTION = defineLookup({
     name
   }
 `,
+  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
   extraFields: [
-    parentSelect('parentUid', 'Parent Asset', ASSET.gql.all),
-    parentSelect('childUid', 'Child Asset', ASSET.gql.all),
-    parentSelect('connectedByUid', 'Connected By', ALL_PEOPLE),
+    { key: 'parentUid', type: FieldType.input, visible: false },
+    parentSelect('childUid', 'Connected Asset', ASSET.gql.all, 'The asset that hangs off this one'),
+    {
+      key: 'connectedByUid',
+      label: 'Connected By',
+      hint: 'Leave blank if it was you',
+      type: FieldType.select,
+      optionsVariables: { labelKey: 'name', valueKey: 'id', fetchParameter: { query: ALL_PEOPLE } },
+      class: 'col-span-full md:col-span-1',
+    },
     {
       key: 'connectedAt',
       label: 'Connected At',
       type: FieldType.dateTime,
       hint: 'Defaults to now when left blank',
+      class: 'col-span-full md:col-span-1',
     },
   ],
   extraColumns: [

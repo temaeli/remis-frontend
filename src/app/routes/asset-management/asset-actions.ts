@@ -241,11 +241,10 @@ function openValueForm(comp: BaseComponent, asset: LookupModule, a: Lookup) {
       },
       {
         key: 'description',
-        label: 'Description',
-        hint: 'How it was valued — the method or the basis',
+        label: 'Remarks',
+        hint: 'Optional — how it was valued, the method or the basis',
         type: FieldType.textarea,
         rows: 2,
-        validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },
     ],
@@ -284,11 +283,7 @@ async function addOwner(
   if (!registrations.length) {
     comp.notify.info(`Register the land for ${a?.name} first — its owners go on the registration.`);
     landRegistration.changed$.pipe(take(1)).subscribe(() => asset.changed$.next(undefined));
-    openLookupForm(comp, landRegistration, {
-      assetUid: a?.id,
-      name: a?.name,
-      description: a?.description,
-    });
+    openLookupForm(comp, landRegistration, { assetUid: a?.id });
     return;
   }
 

@@ -504,15 +504,22 @@ export const landRegistrationToModel = (data?: Lookup): Record<string, unknown> 
  * nowhere, so the user could never fill it in.
  */
 export const landRegistrationSteps = (): FormStepper[] => [
-  {
-    name: 'Asset',
-    icon: 'home_work',
-    keys: ['id', 'assetUid', 'name', 'description'],
-  },
+  // No Asset step: the asset comes from the page and the backend names the
+  // registration. The record and asset ids ride along, hidden, on the first step.
   {
     name: 'Location',
     icon: 'location_on',
-    keys: ['regionUid', 'districtUid', 'councilUid', 'wardUid', 'streetUid', 'latitude', 'longitude'],
+    keys: [
+      'id',
+      'assetUid',
+      'regionUid',
+      'districtUid',
+      'councilUid',
+      'wardUid',
+      'streetUid',
+      'latitude',
+      'longitude',
+    ],
   },
   {
     name: 'Parcel',
