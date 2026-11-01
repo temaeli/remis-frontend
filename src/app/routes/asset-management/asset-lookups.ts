@@ -13,7 +13,9 @@ import { assetProjectsPanel } from '@routes/project-management/project-asset';
 import { recordLinkPanels } from '@routes/unit-management/unit-links';
 import { ParcelMapComponent } from './parcel-map.component';
 import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
+import { registerAssetBtn } from './asset-register';
 import {
+  coordinateFields,
   encumbranceFields,
   landRegistrationGqlFields,
   landRegistrationSteps,
@@ -76,30 +78,6 @@ const parentSelect = (key: string, label: string, query: unknown, hint?: string)
   validations: [VALIDATOR_REQUIRED],
   class: 'col-span-full',
 });
-
-/**
- * The survey point the located tables carry. Both are required and stored as
- * `numeric(9,6)`, so the controls round to six places to match rather than
- * letting the database truncate, and the hints mirror the CHECK constraints.
- */
-const coordinateFields = (): FieldConfig[] => [
-  {
-    key: 'latitude',
-    label: 'Latitude',
-    hint: 'Between -90 and 90',
-    type: FieldType.decimal,
-    decimals: 6,
-    validations: [VALIDATOR_REQUIRED],
-  },
-  {
-    key: 'longitude',
-    label: 'Longitude',
-    hint: 'Between -180 and 180',
-    type: FieldType.decimal,
-    decimals: 6,
-    validations: [VALIDATOR_REQUIRED],
-  },
-];
 
 /** A yes/no column, the shape the registry's flags take on a list. */
 const flagColumn = (field: string, header?: string): GridKeyColumn => ({
@@ -233,6 +211,7 @@ export const ASSET = defineLookup({
   ],
   toModel: (data) => ({ assetSubcategoryUid: data?.assetSubcategory?.id }),
   extraActions: (comp, lookup) => [assetStatusBtn(comp, lookup)],
+  listActions: (comp, lookup) => [registerAssetBtn(comp, lookup)],
   extraContents: (comp, record) => [
     ...recordLinkPanels(comp, 'Asset', record?.id),
     lookupChildPanel(comp, () => LAND_REGISTRATION, LAND_REGISTRATIONS_BY_ASSET, {
