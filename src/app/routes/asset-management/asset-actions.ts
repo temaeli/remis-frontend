@@ -157,12 +157,8 @@ export function assetActions(
       label: 'Dispose',
       toolTip: 'Take this asset out of the register for good',
       hideFunction: (a?: Lookup) => !a || !DISPOSABLE.includes(a?.['status']),
-      click: (a: Lookup) =>
-        openOnAsset(lookups.disposal, {
-          assetUid: a?.id,
-          name: `Disposal of ${a?.name}`,
-          disposedAt: now(),
-        }),
+      // Only the asset and the date: the backend writes the rest.
+      click: (a: Lookup) => openOnAsset(lookups.disposal, { assetUid: a?.id, disposedAt: now() }),
       permissions: lookups.disposal.upsertPermissions,
     },
   ];

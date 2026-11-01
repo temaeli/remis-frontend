@@ -609,9 +609,9 @@ export const ACQUISITION = defineLookup({
 });
 
 /**
- * How an asset left the register. The counterpart to {@link ACQUISITION}, but
- * without its value or coordinate pair — the table records only when, and which
- * asset. Nothing here moves the asset's own status; that stays a separate action.
+ * How an asset left the register: when. Recorded from the asset's own page
+ * (Dispose), so the asset is carried in a hidden control, and the backend
+ * writes the name, description and code. Saving it disposes the asset.
  */
 export const DISPOSE = defineLookup({
   slug: 'disposes',
@@ -630,13 +630,16 @@ export const DISPOSE = defineLookup({
     status
   }
 `,
+  // Only the date: no name, description or code to type.
+  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
   extraFields: [
-    parentSelect('assetUid', 'Asset', ASSET.gql.all),
+    { key: 'assetUid', type: FieldType.input, visible: false },
     {
       key: 'disposedAt',
       label: 'Disposed At',
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
     },
   ],
   extraColumns: ['asset.name as Asset', { field: 'disposedAt', header: 'Disposed' }],
