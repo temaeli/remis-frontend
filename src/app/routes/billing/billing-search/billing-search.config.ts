@@ -174,6 +174,7 @@ const BILL_DETAILS: SearchTable = {
   key: 'bill-details',
   label: 'Bills',
   permissions: ['ROLE_VIEW_ALL_BILL_DETAIL', 'ROLE_VIEW_BILL_DETAIL'],
+  // No billId field: on a bill the billid column is mapped as assignedNumber.
   ...queries(
     'billDetailsBy',
     'countBillDetailsBy',
@@ -182,7 +183,6 @@ const BILL_DETAILS: SearchTable = {
     assignedNumber
     name
     description
-    billId
     generatedAt
     approvedAt
     expiredAt
@@ -240,9 +240,8 @@ const BILL_DETAILS: SearchTable = {
   ],
   keyColumns: [
     'index',
-    'assignedNumber as Number',
+    'assignedNumber as Bill Id',
     'name',
-    'billId as Bill Id',
     'billHeader.name as Bill Header',
     'bioData.name as Payer',
     'currency.name as Currency',
