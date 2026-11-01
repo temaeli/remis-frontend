@@ -26,16 +26,17 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
   },
 
   // The register itself. Everything recorded against an asset is done from the
-  // asset's own page; the lists of those records sit under Records below.
+  // asset's own page.
   ...lookupRoutes(ASSET_LOOKUPS),
   ...recordDetailRoutes(),
 
   // Every registered parcel on one map, drawn from the boundaries the database
-  // builds out of each registration's corners.
+  // builds out of each registration's corners. Off the menu: each asset's Land
+  // tab has its own map. Still reachable at /plots-map.
   {
     path: 'plots-map',
     data: {
-      isMenu: true,
+      isMenu: false,
       name: 'Plots Map',
       icon: 'map',
       permissions: ['ROLE_VIEW_ALL_LAND_REGISTRATION', 'ROLE_VIEW_LAND_REGISTRATION'],
@@ -45,16 +46,13 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
 
   /**
    * Every land registration, verification, acquisition, disposal, valuation and
-   * connection across all assets — for looking things up and reporting. Adding
-   * one is done from the asset's page, where the asset is already chosen.
-   *
-   * No permissions of its own, like Configurations: the group appears when a
-   * user can reach at least one of its lists.
+   * connection across all assets. Off the menu: all of it is done and seen from
+   * the asset's own page. The lists are still reachable at /records/<slug>.
    */
   {
     path: 'records',
     data: {
-      isMenu: true,
+      isMenu: false,
       name: 'Records',
       icon: 'list',
     },
