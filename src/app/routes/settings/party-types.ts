@@ -47,6 +47,8 @@ export const BIO_DATA_TYPES = [
   'LEGAL_ENTITY',
   'OTHER',
   'FOREIGN_COMPANY',
+  'EXPORTER',
+  'IMPORTER',
 ] as const;
 
 export const BIO_DATA_TYPE_OPTIONS: Option[] = BIO_DATA_TYPES.map((value) => ({
