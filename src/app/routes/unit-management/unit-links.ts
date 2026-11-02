@@ -3294,6 +3294,21 @@ const LINKS_BY_RECORD: Record<string, EntityLinkConfig[]> = {
 export const unitLinkPanels = (comp: BaseComponent, unitUid?: string): ContentParameter[] =>
   entityLinkPanels(comp, UNIT_LINKS, unitUid);
 
+/** The panels for these link kinds only (by entity, e.g. `UnitBooking`), in their usual order. */
+export const unitLinkPanelsOf = (
+  comp: BaseComponent,
+  unitUid: string | undefined,
+  entities: string[],
+): ContentParameter[] =>
+  entityLinkPanels(
+    comp,
+    UNIT_LINKS.filter((config) => entities.includes(config.entity)),
+    unitUid,
+  );
+
+/** Every kind of link a unit can have, for its "Link to…" menu. */
+export const unitLinkConfigs = (): EntityLinkConfig[] => UNIT_LINKS;
+
 /**
  * The panel appended to one record's detail page, listing what it is linked to
  * from that side. Returns nothing for a record with no join table, so a lookup
