@@ -126,7 +126,6 @@ export const UNIT = defineLookup({
   area
   netArea
   grossArea
-  ${coordinateGqlFields}
   floor {
     ${lookupRefGqlFields}
   }
@@ -142,7 +141,7 @@ export const UNIT = defineLookup({
       UNIT_AREA_DECIMALS,
     ),
     decimalField('grossArea', 'Gross Area', 'Not less than the net area', UNIT_AREA_DECIMALS),
-    ...coordinateFields(),
+    // No latitude or longitude: the DBA dropped both from `units`.
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
   ],
   // The overview the summary and the tabs read. Computed per unit on the
