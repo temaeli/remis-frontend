@@ -18,8 +18,10 @@ import {
   unitLinkConfigs,
   unitLinkPanelsOf,
 } from '@routes/unit-management/unit-links';
-import { unitActions } from '@routes/unit-management/unit-actions';
+import { UNIT_RECORD_SLUGS, unitActions } from '@routes/unit-management/unit-actions';
 import { UnitSummaryComponent } from '@routes/unit-management/unit-summary.component';
+import { UnitHistoryComponent } from '@routes/unit-management/unit-history.component';
+import { navigateRelativeTo } from '@shared/components/view-component/view.helpers';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
 import { UNIT_PROCESS_LINK } from './grade-process-links';
@@ -154,6 +156,9 @@ export const UNIT = defineLookup({
   currentStatus { id status createdAt }
   latestStatusChange { id status since }
   recentActivity { kind uid name at }
+  history { kind uid name at }
+  stage { code label after since next }
+  money { rentAmount rentSince bills billedAmount payments lastPaymentAt }
 `,
   summary: UnitSummaryComponent,
   // No status: `units` no longer carries one. The statuses a unit has taken are
@@ -164,7 +169,8 @@ export const UNIT = defineLookup({
   // form each, saved and linked to the unit in one go.
   extraActions: (comp, lookup) => unitActions(comp, lookup),
   /**
-   * Grouped so the page reads as a few questions rather than sixty panels: who
+   * Opens on History, everything that happened as one list. Then grouped so
+   * the page reads as a few questions rather than sixty panels: who
    * has it (Occupancy), how it is kept (Care), how a tenancy ends (Closing),
    * what it earns and costs (Money), where it stands (Status), how it is set up
    * (Setup), its papers (Documents), and what else it is tied to (Links).
@@ -275,6 +281,20 @@ function unitTabs(comp: BaseComponent, record?: Lookup): ContentParameter[] {
   ];
 
   return [
+    // Everything that happened, as one list, first: most visits to a unit are
+    // to see what is going on with it.
+    {
+      type: 'component',
+      name: 'History',
+      label: 'History',
+      icon: 'timeline',
+      componentType: UnitHistoryComponent,
+      componentInputs: {
+        history: record?.['history'] ?? [],
+        open: (kind: string, uid: string) =>
+          UNIT_RECORD_SLUGS[kind] && navigateRelativeTo(comp, UNIT_RECORD_SLUGS[kind], uid),
+      },
+    },
     ...groups.map((g) => tabGroup(g.name, g.icon, g.panels)),
     // The statuses the unit has taken, and since when (units_statusesid).
     tabGroup('Status', 'history', [unitStatusHistoryPanel(comp, unitUid)]),
