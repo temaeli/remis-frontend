@@ -33,13 +33,16 @@ import { Lookup, LookupModule } from './lookup.interface';
 export const namedLookupFields = (
   idKey: 'id' | 'uid' = 'id',
   withAssignedNumber = true,
+  writtenName = false,
 ): FieldConfig[] => [
   { key: idKey, type: FieldType.input, visible: false },
   {
     key: 'name',
     label: 'Name',
     type: FieldType.input,
-    validations: [VALIDATOR_REQUIRED],
+    ...(writtenName
+      ? { hint: 'Optional — leave blank to have it written for you' }
+      : { validations: [VALIDATOR_REQUIRED] }),
     class: 'col-span-full',
   },
   ...(withAssignedNumber
@@ -58,7 +61,9 @@ export const namedLookupFields = (
     label: 'Description',
     type: FieldType.textarea,
     rows: 3,
-    validations: [VALIDATOR_REQUIRED],
+    ...(writtenName
+      ? { hint: 'Optional — leave blank to have it written for you' }
+      : { validations: [VALIDATOR_REQUIRED] }),
     class: 'col-span-full',
   },
 ];
@@ -77,7 +82,8 @@ export const lookupFields = (lookup: LookupModule): FieldConfig[] =>
   // can offer a preview — and a config handed straight from the module would
   // carry one record's file into the next record's form.
   [
-    ...(lookup.baseFields ?? namedLookupFields(lookup.idKey, !lookup.generatedNumber)),
+    ...(lookup.baseFields ??
+      namedLookupFields(lookup.idKey, !lookup.generatedNumber, !!lookup.writtenName)),
     ...(lookup.extraFields ?? []),
   ].map((field) => ({ ...field }) as FieldConfig);
 

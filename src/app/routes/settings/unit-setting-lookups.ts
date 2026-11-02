@@ -7,10 +7,19 @@ import {
   entityLinkPanels,
   lookupChildGqlFields,
   lookupChildPanel,
+  Lookup,
   lookupRefGqlFields,
   LookupModule,
 } from '@shared/lookup';
-import { recordLinkPanels, unitLinkPanels } from '@routes/unit-management/unit-links';
+import { BaseComponent } from '@shared/components/base-componet/base-component';
+import { ContentParameter } from '@shared/components/view-component/view-interface';
+import {
+  recordLinkPanels,
+  unitLinkConfigs,
+  unitLinkPanelsOf,
+} from '@routes/unit-management/unit-links';
+import { unitActions } from '@routes/unit-management/unit-actions';
+import { UnitSummaryComponent } from '@routes/unit-management/unit-summary.component';
 import { coreAttachmentPanels } from './attachment-lookups';
 import { FLOOR } from './project-setting-lookups';
 import { UNIT_PROCESS_LINK } from './grade-process-links';
@@ -134,39 +143,162 @@ export const UNIT = defineLookup({
     ...coordinateFields(),
     refSelect('floorUid', 'Floor', FLOOR.gql.all),
   ],
+  // The overview the summary and the tabs read. Computed per unit on the
+  // backend, so only the unit's own page asks for it.
+  detailGqlFields: `
+  linkedKinds
+  floor {
+    ${lookupRefGqlFields}
+    asset { id name }
+  }
+  currentStatus { id status createdAt }
+  latestStatusChange { id status since }
+  recentActivity { kind uid name at }
+`,
+  summary: UnitSummaryComponent,
   // No status: `units` no longer carries one. The statuses a unit has taken are
   // Unit Status Records, under Unit Management.
   extraColumns: ['area', 'netArea as Net', 'grossArea as Gross', 'floor.name as Floor'],
   toModel: (data) => ({ floorUid: data?.floor?.id }),
-  // Everything a unit relates to hangs off its own join table with its own
-  // link/unlink pair. One panel each, declared in the unit module so this file
-  // does not have to know them.
-  extraContents: (comp, record) => [
-    // The share of the common property, which is a row in its own table rather
-    // than a field on the unit. Shown here so it can be read where it is asked
-    // about, with Add filling the unit in already.
-    lookupChildPanel(
-      comp,
-      () => UNIT_SHARE,
-      UNIT_SHARES_BY_UNIT,
-      { unitUid: record?.id },
-      {
-        keyColumns: ['index', 'assignedNumber', 'name', 'unitShares as Share', 'actions'],
-        presetModel: { unitUid: record?.id },
-      },
-    ),
-    // Locking the unit for a while (units_locks), for as long as a chosen Unit
-    // Lock Duration says.
-    unitLocksPanel(comp, record?.id),
-    ...unitLinkPanels(comp, record?.id),
-    // The cases this unit is the subject of (units_processes).
-    ...entityLinkPanels(comp, [UNIT_PROCESS_LINK], record?.id),
-    // The statuses the unit has taken, and since when (units_statusesid).
-    // Separate from its Unit Status Records under Unit Management.
-    unitStatusHistoryPanel(comp, record?.id),
-    ...coreAttachmentPanels(comp, 'unit', record?.id),
-  ],
+  // Reserve, book, lease, inspect and the rest, from the unit itself: one short
+  // form each, saved and linked to the unit in one go.
+  extraActions: (comp, lookup) => unitActions(comp, lookup),
+  /**
+   * Grouped so the page reads as a few questions rather than sixty panels: who
+   * has it (Occupancy), how it is kept (Care), how a tenancy ends (Closing),
+   * what it earns and costs (Money), where it stands (Status), how it is set up
+   * (Setup), its papers (Documents), and what else it is tied to (Links).
+   *
+   * Only what the unit has is shown: a kind of record gets its panel once there
+   * is one — new ones come through the header's buttons — and a group with
+   * nothing in it is left out. Status, Setup and Documents always show.
+   */
+  extraContents: (comp, record) => unitTabs(comp, record),
 });
+
+/** Every unit link kind is in exactly one group; Links takes what the others do not. */
+const UNIT_TAB_GROUPS: { name: string; icon: string; kinds: string[] }[] = [
+  {
+    name: 'Occupancy',
+    icon: 'key',
+    kinds: [
+      'UnitReservation',
+      'UnitBooking',
+      'UnitLease',
+      'UnitHandover',
+      'UnitEntry',
+      'UnitExit',
+      'UnitReturn',
+      'UnitAgreement',
+      'UnitBioData',
+      'UnitBusinessName',
+    ],
+  },
+  {
+    name: 'Care',
+    icon: 'build',
+    kinds: [
+      'UnitInspection',
+      'UnitMaintenance',
+      'UnitProblem',
+      'UnitVisit',
+      'UnitMeter',
+      'UnitConnection',
+      'UnitDisconnection',
+      'UnitServiceOffering',
+    ],
+  },
+  {
+    name: 'Closing',
+    icon: 'gavel',
+    kinds: ['UnitNotice', 'UnitNoticeDay', 'UnitTermination', 'UnitEviction'],
+  },
+  {
+    name: 'Money',
+    icon: 'payments',
+    kinds: [
+      'UnitSell',
+      'UnitPurchase',
+      'UnitValuation',
+      'UnitRent',
+      'UnitRentBillingCycle',
+      'UnitFee',
+      'UnitCharge',
+      'UnitDiscount',
+      'UnitPenalty',
+      'SecurityDepositUnit',
+      'UnitBillHeader',
+      'UnitBillPayOption',
+      'UnitGracePeriodBillHeadersSetting',
+      'UnitCost',
+      'UnitExpense',
+      'UnitCommission',
+      'UnitLiability',
+      'UnitLoan',
+      'UnitBankAccount',
+      'UnitGfsCode',
+      'UnitSpCode',
+      'UnitCollectionCenter',
+    ],
+  },
+];
+
+/** A tab that holds other tabs. */
+const tabGroup = (name: string, icon: string, children: ContentParameter[]): ContentParameter => ({
+  name,
+  label: name,
+  icon,
+  children,
+});
+
+function unitTabs(comp: BaseComponent, record?: Lookup): ContentParameter[] {
+  const unitUid: string | undefined = record?.id;
+  const linked: string[] = record?.['linkedKinds'] ?? [];
+  const has = (kind: string) => linked.includes(kind);
+
+  const grouped = new Set(UNIT_TAB_GROUPS.flatMap((g) => g.kinds));
+  const groups = UNIT_TAB_GROUPS.map((g) => ({
+    ...g,
+    panels: unitLinkPanelsOf(comp, unitUid, g.kinds.filter(has)),
+  })).filter((g) => g.panels.length);
+
+  const otherKinds = [
+    ...new Set(
+      unitLinkConfigs()
+        .map((config) => config.entity)
+        .filter((kind) => !grouped.has(kind) && has(kind)),
+    ),
+  ];
+  const links = [
+    ...unitLinkPanelsOf(comp, unitUid, otherKinds),
+    ...(has('UnitProcess') ? entityLinkPanels(comp, [UNIT_PROCESS_LINK], unitUid) : []),
+  ];
+
+  return [
+    ...groups.map((g) => tabGroup(g.name, g.icon, g.panels)),
+    // The statuses the unit has taken, and since when (units_statusesid).
+    tabGroup('Status', 'history', [unitStatusHistoryPanel(comp, unitUid)]),
+    tabGroup('Setup', 'tune', [
+      // The share of the common property, a row in its own table rather than
+      // a field on the unit. Add fills the unit in already.
+      lookupChildPanel(
+        comp,
+        () => UNIT_SHARE,
+        UNIT_SHARES_BY_UNIT,
+        { unitUid },
+        {
+          keyColumns: ['index', 'assignedNumber', 'name', 'unitShares as Share', 'actions'],
+          presetModel: { unitUid },
+        },
+      ),
+      // Locking the unit for a while (units_locks), for as long as a chosen
+      // Unit Lock Duration says.
+      unitLocksPanel(comp, unitUid),
+    ]),
+    tabGroup('Documents', 'attachment', coreAttachmentPanels(comp, 'unit', unitUid)),
+    ...(links.length ? [tabGroup('Links', 'link', links)] : []),
+  ];
+}
 
 /**
  * A unit's share of the common property.
