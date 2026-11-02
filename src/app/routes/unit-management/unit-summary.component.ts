@@ -52,9 +52,6 @@ interface Money {
             · {{ record()['grossArea'] | number: '1.0-2' }} gross
           }
         </p>
-        @if (hasPoint()) {
-          <p class="text-sm text-gray-700">{{ record()['latitude'] }}, {{ record()['longitude'] }}</p>
-        }
       </div>
 
       <div class="rounded-lg bg-white p-3 flex flex-col gap-1">
@@ -127,11 +124,6 @@ export class UnitSummaryComponent {
     const floor = this.record()['floor'];
     return [floor?.asset?.name, floor?.name].filter(Boolean).join(' › ');
   });
-
-  /** 0 is a real coordinate, so this checks for a value rather than truthiness. */
-  readonly hasPoint = computed(
-    () => this.record()['latitude'] != null && this.record()['longitude'] != null,
-  );
 
   /** Where the tenancy stands, read from the newest occupancy record. */
   readonly stage = computed((): Stage | null => this.record()['stage'] ?? null);

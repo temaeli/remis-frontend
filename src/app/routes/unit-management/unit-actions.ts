@@ -181,17 +181,10 @@ function nextStepButton(
 
 /**
  * Fields the short form leaves out: the descriptive three, which the backend
- * writes; the coordinates, which a handover, visit or title deed takes from the
- * unit; and the unit itself, which is carried hidden.
+ * writes, and the unit itself, which is carried hidden. A handover, visit or
+ * title deed still asks for its coordinates: the unit has none to lend it.
  */
-const LEFT_OUT = new Set([
-  'name',
-  'assignedNumber',
-  'description',
-  'latitude',
-  'longitude',
-  'unitUid',
-]);
+const LEFT_OUT = new Set(['name', 'assignedNumber', 'description', 'unitUid']);
 
 /** Offers a connection select only this unit's connections. */
 function ofThisUnit(field: FieldConfig, unitUid?: string): FieldConfig {
