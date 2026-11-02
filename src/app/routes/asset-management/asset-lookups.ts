@@ -207,8 +207,8 @@ export const ASSET = defineLookup({
     }
   }
 `,
-  // No Reserved toggle: reserved is a status, set through Change Status, and a
-  // second control for the same fact would let the two disagree.
+  // No Reserved toggle: reserved is a status, and a second control for the
+  // same fact would let the two disagree.
   extraFields: [
     parentSelect('assetSubcategoryUid', 'Asset Subcategory', ASSET_SUBCATEGORY.gql.all),
     ...intendedUseFields(),
