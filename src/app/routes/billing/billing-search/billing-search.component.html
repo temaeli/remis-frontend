@@ -1,0 +1,136 @@
+<div class="size-full flex-1 flex flex-col gap-3">
+  <page-header [title]="title" [subtitle]="subtitle" [actionButtons]="headerActions" />
+
+  <form
+    [formGroup]="form"
+    class="bg-white rounded-lg shadow-sm p-4 flex flex-col gap-2"
+    aria-label="Search a billing table by one column"
+    (ngSubmit)="search()"
+  >
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-3">
+      <mat-form-field appearance="outline">
+        <mat-label>Table</mat-label>
+        <mat-select
+          [value]="table()?.key"
+          (selectionChange)="chooseTable($event.value)"
+          aria-label="Table to search"
+        >
+          @for (t of tables; track t.key) {
+            <mat-option [value]="t.key">{{ t.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Search by</mat-label>
+        <mat-select
+          [value]="column()?.value"
+          (selectionChange)="chooseColumn($event.value)"
+          aria-label="Column to search by"
+        >
+          @for (c of table()?.columns ?? []; track c.value) {
+            <mat-option [value]="c.value">{{ c.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (column(); as c) {
+        @switch (c.kind) {
+          @case ('range') {
+            <mat-form-field appearance="outline" class="lg:col-span-2">
+              <mat-label>{{ c.label }} — from and to</mat-label>
+              <mat-date-range-input [rangePicker]="picker">
+                <input matStartDate formControlName="from" placeholder="From" aria-label="From" />
+                <input matEndDate formControlName="to" placeholder="To" aria-label="To" />
+              </mat-date-range-input>
+              <mat-datepicker-toggle matSuffix [for]="picker" />
+              <mat-date-range-picker #picker />
+            </mat-form-field>
+          }
+          @case ('bool') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }}</mat-label>
+              <mat-select formControlName="bool" [aria-label]="c.label">
+                <mat-option value="true">Yes</mat-option>
+                <mat-option value="false">No</mat-option>
+              </mat-select>
+            </mat-form-field>
+          }
+          @case ('number') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }}</mat-label>
+              <input matInput type="number" step="any" formControlName="number" />
+            </mat-form-field>
+          }
+          @case ('integer') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }}</mat-label>
+              <input matInput type="number" step="1" formControlName="number" />
+            </mat-form-field>
+          }
+          @case ('uuid') {
+            @if (c.options) {
+              <mat-form-field appearance="outline" class="lg:col-span-2">
+                <mat-label>{{ c.label }}</mat-label>
+                <mat-select formControlName="uuid" [aria-label]="c.label">
+                  <app-mat-select-search
+                    [reset]="false"
+                    placeholderLabel="Type to filter"
+                    [ngModel]="optionTerm()"
+                    (ngModelChange)="optionTerm.set($event ?? '')"
+                    [ngModelOptions]="{ standalone: true }"
+                    ngDefaultControl
+                  />
+                  @for (o of columnOptions(); track o.id) {
+                    <mat-option [value]="o.id">
+                      {{ o.name }}{{ o.assignedNumber ? ' (' + o.assignedNumber + ')' : '' }}
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <mat-form-field appearance="outline" class="lg:col-span-2">
+                <mat-label>{{ c.label }}</mat-label>
+                <input matInput formControlName="text" placeholder="Paste the record id" />
+              </mat-form-field>
+            }
+          }
+          @default {
+            <mat-form-field appearance="outline" class="lg:col-span-2">
+              <mat-label>{{ c.label }}</mat-label>
+              <input matInput formControlName="text" />
+              <mat-hint>Matches exactly</mat-hint>
+            </mat-form-field>
+          }
+        }
+      }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading() || !column()">
+        Search
+      </button>
+      <button mat-stroked-button type="button" [disabled]="loading()" (click)="clear()">
+        Clear
+      </button>
+      @if (found() !== null) {
+        <span class="text-sm font-medium" role="status" aria-live="polite">
+          {{ found() }} found
+        </span>
+      }
+      @if (problem()) {
+        <span class="text-red-700 text-sm" role="alert">{{ problem() }}</span>
+      }
+    </div>
+  </form>
+
+  @if (!tables.length) {
+    <p class="bg-white rounded-lg shadow-sm p-4 text-sm">
+      You do not have permission to search any billing table.
+    </p>
+  }
+
+  @for (gp of grids(); track gp.title) {
+    <data-grid class="billing-search grow flex flex-col" [gridParameter]="gp" />
+  }
+</div>
