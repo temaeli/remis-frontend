@@ -1,19 +1,18 @@
 import { gql } from '@apollo/client/core';
 import { Observable, Subject, take } from 'rxjs';
-import { getDisplayName } from '@shared/components/view-component/view.helpers';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
-import { FieldType, Option } from '@shared/components/generic-form/field.interface';
+import { FieldType } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
-import { Lookup, lookupChildGqlFields, LookupModule, openLookupForm } from '@shared/lookup';
+import { Lookup, LookupModule, openLookupForm } from '@shared/lookup';
 import { openOwnerForm } from './land-registration-panels';
 
 /**
  * What can be done to an asset, from its own page — and its row menu — with the
- * asset already chosen: Verify, Value, Dispose, Add Owner, Change Status.
+ * asset already chosen: Verify, Value, Add Owner, Link to…, Dispose.
  *
  * Each button shows only when it applies. A disposed asset shows none: it is
  * closed. Verifying and disposing move the status on the backend, so the page
@@ -53,20 +52,6 @@ const now = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
 };
-
-const ASSET_NEXT_STATUSES = gql`
-  query assetNextStatuses($uid: String) {
-    assetNextStatuses(uid: $uid)
-  }
-`;
-
-export const UPDATE_ASSET_STATUS = gql`
-  mutation updateAssetStatus($uid: String, $status: AssetStatus) {
-    updateAssetStatus(uid: $uid, status: $status) {
-      ${responseGqlFields(lookupChildGqlFields)}
-    }
-  }
-`;
 
 const VALUE_ASSET = gql`
   mutation valueAsset($assetUid: String, $input: ValuationDtoInput) {
@@ -131,13 +116,6 @@ export function assetActions(
       permissions: ['ROLE_CREATE_LAND_REGISTRATION', 'ROLE_UPDATE_LAND_REGISTRATION'],
     },
     {
-      icon: 'sync',
-      label: 'Change Status',
-      hideFunction: (a?: Lookup) => !a || isDisposed(a),
-      click: (a: Lookup) => openStatusForm(comp, asset, a),
-      permissions: asset.upsertPermissions,
-    },
-    {
       icon: 'link',
       label: 'Link to…',
       toolTip: 'Tie this asset to a project, unit, cost, task or another asset',
@@ -162,47 +140,6 @@ export function assetActions(
       permissions: lookups.disposal.upsertPermissions,
     },
   ];
-}
-
-/** Only the statuses the asset may move to next — the backend's AssetStatusFlow decides. */
-async function openStatusForm(comp: BaseComponent, asset: LookupModule, a: Lookup) {
-  const next: string[] =
-    (await comp.fs.fetch({ query: ASSET_NEXT_STATUSES, variables: { uid: a?.id } })) ?? [];
-  const options: Option[] = next.map((value) => ({
-    value,
-    label: getDisplayName(value) as string,
-  }));
-
-  const close$ = new Subject<void>();
-  const formParameter: FormParameters = {
-    title: `Change Status — ${a?.name ?? ''}`,
-    model: {},
-    fields: [
-      {
-        key: 'status',
-        label: `Now ${getDisplayName(a?.['status'])}. Move to`,
-        hint: 'Verifying and disposing set the status themselves.',
-        type: FieldType.select,
-        options,
-        validations: [VALIDATOR_REQUIRED],
-        class: 'col-span-full',
-      },
-    ],
-    closeAction$: close$,
-    onSubmit: async (value: Record<string, unknown>) => {
-      await comp.fs.fetch({
-        notify: true,
-        mutation: UPDATE_ASSET_STATUS,
-        variables: { uid: a?.id, status: value['status'] },
-        successFn: (res) => {
-          asset.changed$.next(res?.data);
-          close$.next();
-        },
-      });
-    },
-  };
-
-  comp.vs?.openModal(FormComponent, formParameter, '40%');
 }
 
 /** A valuation of this asset, recorded and linked in one save. */
