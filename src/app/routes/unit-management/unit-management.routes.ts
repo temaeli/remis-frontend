@@ -5,11 +5,13 @@ import { UNIT } from '@routes/settings/unit-setting-lookups';
 import { UNIT_LOOKUPS } from './unit-lookups';
 
 /**
- * The record lists' detail routes, at this level as well as under Records.
+ * Each record's own page — a booking, a lease, an inspection — with no list or
+ * menu entry of its own.
  *
- * A tab on a unit's page opens a record at units/<id>/<slug>/<id>, which only a
- * detail route at this level can match. Under Records alone, every View on
- * those tabs would lead nowhere.
+ * Records are made from a unit's page only, so each one belongs to a unit; a
+ * list of them across units, with its own Create, made records that belonged
+ * to none. What remains is the page a record opens on, which the unit's
+ * History tab and panels lead to at units/<id>/<slug>/<id>.
  */
 const recordDetailRoutes = () => lookupRoutes(UNIT_LOOKUPS).filter((route) => !!route.matcher);
 
@@ -17,11 +19,9 @@ const recordDetailRoutes = () => lookupRoutes(UNIT_LOOKUPS).filter((route) => !!
  * The unit module — `modules.unit` on the backend.
  *
  * Opens on the units themselves: everything that happens to a unit —
- * reserving, booking, leasing, inspecting, ending a tenancy — is done from the
- * unit's own page, with the unit already chosen. The unit is still defined
- * under Settings → Project as well.
- *
- * The record lists stay, grouped under Records, for looking across units.
+ * reserving, booking, leasing, inspecting, connecting a service, ending a
+ * tenancy — is done from the unit's own page, with the unit already chosen.
+ * The unit is still defined under Settings → Project as well.
  */
 export const UNIT_MANAGEMENT_ROUTES: TypedRoutes = [
   {
@@ -32,24 +32,6 @@ export const UNIT_MANAGEMENT_ROUTES: TypedRoutes = [
 
   ...lookupRoutes([UNIT]),
   ...recordDetailRoutes(),
-
-  /**
-   * Every reservation, booking, lease and the rest across all units. Grouped
-   * behind one menu entry, so the menu leads with the units. The parent
-   * declares no permissions: MenuService aggregates the children's.
-   */
-  {
-    path: 'records',
-    data: {
-      isMenu: true,
-      name: 'Records',
-      icon: 'list',
-    },
-    children: [
-      { path: '', redirectTo: 'reservations', pathMatch: 'full' },
-      ...lookupRoutes(UNIT_LOOKUPS),
-    ],
-  },
 ];
 
 export default UNIT_MANAGEMENT_ROUTES;

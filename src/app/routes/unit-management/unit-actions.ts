@@ -1,4 +1,5 @@
 import { take } from 'rxjs';
+import { gql } from '@apollo/client/core';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
@@ -19,25 +20,37 @@ import {
   HANDOVER,
   INSPECTION,
   LEASE,
+  LIABILITY,
+  LOAN,
   MAINTENANCE,
   NOTICE,
+  PROBLEM,
   PURCHASE,
+  READING,
   RESERVATION,
   RETURN,
   SELL,
+  SERVICE_CONNECTION,
+  SERVICE_DISCONNECTION,
   TERMINATION,
+  TITLE_DEED,
+  UNIT_FLAG,
+  UNIT_STATUS_RECORD,
+  VISIT,
 } from './unit-lookups';
 import { unitLinkConfigs } from './unit-links';
 
 /**
  * What can be done to a unit, from its own page and its row menu, with the unit
- * already chosen — the unit counterpart of asset-actions.
+ * already chosen — the unit counterpart of asset-actions. This is the only
+ * place unit records are made, so every one of them belongs to a unit.
  *
  * Grouped by what the user is doing rather than by table: who has it
- * (Occupancy), keeping it up (Care), ending a tenancy (Closing), and selling or
- * buying it (Sale). Each item opens a short form: only what the user knows. The
- * backend names the record and links it to the unit in the same save, and the
- * page reloads so the new record's tab and the activity list show it at once.
+ * (Occupancy), keeping it up (Care), its utilities (Services), ending a tenancy
+ * (Closing), who owns it and what it owes (Ownership), and how it is marked
+ * (Status). Each item opens a short form: only what the user knows. The
+ * backend names the record and ties it to the unit in the same save, and the
+ * page reloads so the new record shows at once.
  *
  * "Link to…" ties the unit to anything else that already exists.
  */
@@ -46,10 +59,18 @@ import { unitLinkConfigs } from './unit-links';
 interface UnitAction {
   verb: string;
   lookup: LookupModule;
-  /** The link entity the record joins the unit through — left out of "Link to…". */
+  /**
+   * The link entity the record joins the unit through — left out of "Link to…".
+   * Empty where the record holds the unit itself or reaches it another way.
+   */
   link: string;
   /** The record kind as the backend names it in a unit's stage and history ("Lease"). */
   kind: string;
+  /**
+   * Whether the save takes the unit. A reading does not: it belongs to a
+   * connection, which the form offers from this unit's own.
+   */
+  takesUnit?: false;
 }
 
 const OCCUPANCY: UnitAction[] = [
@@ -60,11 +81,24 @@ const OCCUPANCY: UnitAction[] = [
   { verb: 'Move In', lookup: ENTRY, link: 'UnitEntry', kind: 'Entry' },
   { verb: 'Move Out', lookup: EXIT, link: 'UnitExit', kind: 'Exit' },
   { verb: 'Return', lookup: RETURN, link: 'UnitReturn', kind: 'Return' },
+  { verb: 'Record Visit', lookup: VISIT, link: 'UnitVisit', kind: 'Visit' },
 ];
 
 const CARE: UnitAction[] = [
   { verb: 'Inspect', lookup: INSPECTION, link: 'UnitInspection', kind: 'Inspection' },
   { verb: 'Maintain', lookup: MAINTENANCE, link: 'UnitMaintenance', kind: 'Maintenance' },
+  { verb: 'Report Problem', lookup: PROBLEM, link: 'UnitProblem', kind: 'Problem' },
+];
+
+const SERVICES: UnitAction[] = [
+  { verb: 'Connect Service', lookup: SERVICE_CONNECTION, link: '', kind: 'ServiceConnection' },
+  {
+    verb: 'Disconnect Service',
+    lookup: SERVICE_DISCONNECTION,
+    link: 'UnitDisconnection',
+    kind: 'ServiceDisconnection',
+  },
+  { verb: 'Record Reading', lookup: READING, link: '', kind: 'Reading', takesUnit: false },
 ];
 
 const CLOSING: UnitAction[] = [
@@ -73,15 +107,33 @@ const CLOSING: UnitAction[] = [
   { verb: 'Evict', lookup: EVICTION, link: 'UnitEviction', kind: 'Eviction' },
 ];
 
-const SALE: UnitAction[] = [
+const OWNERSHIP: UnitAction[] = [
   { verb: 'Sell', lookup: SELL, link: 'UnitSell', kind: 'Sell' },
   { verb: 'Purchase', lookup: PURCHASE, link: 'UnitPurchase', kind: 'Purchase' },
+  { verb: 'Add Title Deed', lookup: TITLE_DEED, link: 'UnitTitleDeed', kind: 'TitleDeed' },
+  { verb: 'Add Liability', lookup: LIABILITY, link: 'UnitLiability', kind: 'Liability' },
+  { verb: 'Add Loan', lookup: LOAN, link: 'UnitLoan', kind: 'Loan' },
 ];
 
-const ALL_ACTIONS = [...OCCUPANCY, ...CARE, ...CLOSING, ...SALE];
+const STATUS: UnitAction[] = [
+  { verb: 'Set Status', lookup: UNIT_STATUS_RECORD, link: '', kind: 'UnitStatusRecord' },
+  { verb: 'Flag', lookup: UNIT_FLAG, link: '', kind: 'UnitFlag' },
+];
+
+const ALL_ACTIONS = [...OCCUPANCY, ...CARE, ...SERVICES, ...CLOSING, ...OWNERSHIP, ...STATUS];
 
 /** The link entities the actions above make, so "Link to…" does not offer them twice. */
-const ACTION_LINKS = new Set(ALL_ACTIONS.map((a) => a.link));
+const ACTION_LINKS = new Set(ALL_ACTIONS.map((a) => a.link).filter(Boolean));
+
+/** A unit's own connections: what a reading or a disconnection on its page is offered. */
+const SERVICE_CONNECTIONS_BY_UNIT = gql`
+  query serviceConnectionsByUnit($unitUid: String) {
+    serviceConnectionsByUnit(unitUid: $unitUid) {
+      id
+      name
+    }
+  }
+`;
 
 /** The record page each kind opens on, by the backend's kind name. */
 export const UNIT_RECORD_SLUGS: Record<string, string> = Object.fromEntries(
@@ -129,9 +181,29 @@ function nextStepButton(
 
 /**
  * Fields the short form leaves out: the descriptive three, which the backend
- * writes, and the coordinates, which a handover takes from the unit.
+ * writes; the coordinates, which a handover, visit or title deed takes from the
+ * unit; and the unit itself, which is carried hidden.
  */
-const LEFT_OUT = new Set(['name', 'assignedNumber', 'description', 'latitude', 'longitude']);
+const LEFT_OUT = new Set([
+  'name',
+  'assignedNumber',
+  'description',
+  'latitude',
+  'longitude',
+  'unitUid',
+]);
+
+/** Offers a connection select only this unit's connections. */
+function ofThisUnit(field: FieldConfig, unitUid?: string): FieldConfig {
+  if (field.key !== 'connectionUid') return field;
+  return {
+    ...field,
+    optionsVariables: {
+      ...field.optionsVariables,
+      fetchParameter: { query: SERVICE_CONNECTIONS_BY_UNIT, variables: { unitUid } },
+    },
+  } as FieldConfig;
+}
 
 export function unitActions(comp: BaseComponent, unit: LookupModule): ActionButton[] {
   const group = (
@@ -157,8 +229,10 @@ export function unitActions(comp: BaseComponent, unit: LookupModule): ActionButt
     nextStepButton(comp, unit, 1),
     group('Occupancy', 'key', 'Reserve, book, lease, hand over, move in or out', OCCUPANCY),
     group('Care', 'build', 'Inspect or maintain this unit', CARE),
+    group('Services', 'power', 'Connect or disconnect a service, record a reading', SERVICES),
     group('Closing', 'gavel', 'Give notice, terminate or evict', CLOSING),
-    group('Sale', 'local_offer', 'Sell or purchase this unit', SALE),
+    group('Ownership', 'account_balance', 'Sale, title deeds, liabilities and loans', OWNERSHIP),
+    group('Status', 'flag', 'Set the status or flag this unit', STATUS),
     {
       icon: 'link',
       label: 'Link to…',
@@ -192,11 +266,13 @@ function openShortForm(comp: BaseComponent, unit: LookupModule, action: UnitActi
     label: `${action.verb} — ${u?.name ?? 'Unit'}`,
     baseFields: [
       { key: 'id', type: FieldType.input, visible: false },
-      { key: 'unitUid', type: FieldType.input, visible: false },
+      ...(action.takesUnit === false
+        ? []
+        : [{ key: 'unitUid', type: FieldType.input, visible: false }]),
     ],
-    extraFields: (lookup.extraFields ?? []).filter(
-      (field: FieldConfig) => !LEFT_OUT.has(field.key as string),
-    ),
+    extraFields: (lookup.extraFields ?? [])
+      .filter((field: FieldConfig) => !LEFT_OUT.has(field.key as string))
+      .map((field: FieldConfig) => ofThisUnit(field, u?.id)),
     // A short form is never a stepper: its steps would name fields it no longer has.
     formSteppers: undefined,
   };

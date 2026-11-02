@@ -19,11 +19,13 @@ const FILTERS: Filter[] = [
   { name: 'All', kinds: null },
   {
     name: 'Tenancy',
-    kinds: ['Reservation', 'Booking', 'Lease', 'Handover', 'Entry', 'Exit', 'Return'],
+    kinds: ['Reservation', 'Booking', 'Lease', 'Handover', 'Entry', 'Exit', 'Return', 'Visit'],
   },
-  { name: 'Care', kinds: ['Inspection', 'Maintenance'] },
+  { name: 'Care', kinds: ['Inspection', 'Maintenance', 'Problem'] },
+  { name: 'Services', kinds: ['ServiceConnection', 'ServiceDisconnection', 'Reading'] },
   { name: 'Closing', kinds: ['Notice', 'Termination', 'Eviction'] },
-  { name: 'Sale', kinds: ['Sell', 'Purchase'] },
+  { name: 'Ownership', kinds: ['Sell', 'Purchase', 'TitleDeed', 'Liability', 'Loan'] },
+  { name: 'Status', kinds: ['UnitStatusRecord', 'UnitFlag'] },
 ];
 
 /**
