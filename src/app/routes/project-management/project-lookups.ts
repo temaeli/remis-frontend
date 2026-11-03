@@ -4,8 +4,18 @@ import { gql } from '@apollo/client/core';
 
 import { projectAssetsPanel } from './project-asset';
 import { projectPrioritiesPanel } from './priorities';
-import { CORE_STATUS_OPTIONS } from '@routes/settings/settings-lookups';
-import { recordLinkPanels } from '@routes/unit-management/unit-links';
+import {
+  openAddPersonForm,
+  PROJECT_STATUS_CHANGES_BY_PROJECT,
+  PROJECT_STATUS_OPTIONS,
+  projectActions,
+  projectPerson$,
+  projectStatus$,
+  projectStatusLabel,
+  projectTasksPanel,
+} from './project-actions';
+import { newProjectBtn } from './project-register';
+import { recordLinkConfigs, recordLinkPanels } from '@routes/unit-management/unit-links';
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
@@ -94,9 +104,13 @@ export const PROJECT_CATEGORY = defineLookup({
   subtitle: 'Top level of the project taxonomy',
   icon: 'category',
   extraContents: (comp, record) => [
-    lookupChildPanel(comp, () => PROJECT_SUBCATEGORY, PROJECT_SUBCATEGORIES_BY_CATEGORY, {
-      categoryUid: record?.id,
-    }),
+    lookupChildPanel(
+      comp,
+      () => PROJECT_SUBCATEGORY,
+      PROJECT_SUBCATEGORIES_BY_CATEGORY,
+      { categoryUid: record?.id },
+      { presetModel: { projectCategoryUid: record?.id } },
+    ),
   ],
 });
 
@@ -117,6 +131,7 @@ export const PROJECT_SUBCATEGORY = defineLookup({
   extraFields: [parentSelect('projectCategoryUid', 'Project Category', PROJECT_CATEGORY.gql.all)],
   extraColumns: ['projectCategory.name as Category'],
   toModel: (data) => ({ projectCategoryUid: data?.projectCategory?.id }),
+  // Projects are added through New Project, which asks for the rest.
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => REGISTRY_PROJECT, REGISTRY_PROJECTS_BY_SUBCATEGORY, {
       subcategoryUid: record?.id,
@@ -177,53 +192,110 @@ export const REGISTRY_PROJECT = defineLookup({
       // Required: v1 of the schema has ended_at NOT NULL, so a running project
       // still needs a date. v2 relaxes it to mean "still under way".
       key: 'endedAt',
-      label: 'End Date',
+      label: 'Planned End Date',
       type: FieldType.date,
-      hint: 'Required — does not yet allow an open-ended project',
+      hint: 'Can be changed later',
       validations: [VALIDATOR_REQUIRED],
     },
   ],
   extraColumns: ['projectSubcategory.name as Subcategory', 'days'],
   toModel: (data) => ({ projectSubcategoryUid: data?.projectSubcategory?.id }),
-  extraContents: (comp, record) => [
-    ...recordLinkPanels(comp, 'RegistryProject', record?.id),
-    lookupChildPanel(comp, () => PROJECT_CONNECTION, PROJECT_CONNECTIONS_BY_PARENT, {
-      parentUid: record?.id,
-    }),
-    projectAssetsPanel(comp, record?.id),
-    lookupChildPanel(
-      comp,
-      () => PROJECT_PERSON,
-      PROJECT_PEOPLE_BY_PROJECT,
-      { projectUid: record?.id },
-      {
-        presetModel: { projectUid: record?.id },
-        // The person is the point of the row; the code and the description say
-        // far less here than they do on a lookup of their own.
-        keyColumns: [
-          'index',
-          { field: 'person', header: 'Person', valueFn: (row: any) => personName(row?.person) },
-          {
-            field: 'subcategory',
-            header: 'Capacity',
-            valueFn: (row: any) => row?.subcategory?.name,
-          },
-          {
-            field: 'position',
-            header: 'Position',
-            valueFn: (row: any) => row?.position?.name,
-          },
-          'name',
-          'actions',
-        ],
-      },
-    ),
-    projectPrioritiesPanel(comp, record?.id),
-    projectStatusChangesPanel(comp, record?.id),
-    ...entityLinkPanels(comp, PROJECT_STREET_LINK, record?.id),
-    ...entityLinkPanels(comp, PROJECT_SP_CODE_LINK, record?.id),
-  ],
+  // One way in: New Project replaces the plain Create, and saves the team and
+  // the first status with the project.
+  listActions: (comp, lookup) => [newProjectBtn(comp, lookup)],
+  replaceCreate: true,
+  extraActions: (comp, lookup) => projectActions(comp, lookup),
+  /**
+   * Grouped so the page reads as a handful of questions rather than eleven flat
+   * tabs: what has to be done (Plan), who is on it (People), where it is
+   * (Places), what it costs (Money), and what has happened to it (History).
+   */
+  extraContents: (comp, record) => {
+    const projectUid = record?.id;
+    const links = recordLinkConfigs('RegistryProject');
+    const linksOf = (entities: string[]) =>
+      entityLinkPanels(
+        comp,
+        links.filter((config) => entities.includes(config.entity)),
+        projectUid,
+      );
+
+    return [
+      tabGroup('Plan', 'assignment', [projectTasksPanel(comp, record, 'tasks')]),
+      tabGroup('People', 'users', [projectPeoplePanel(comp, record)]),
+      tabGroup('Places', 'place', [
+        projectAssetsPanel(comp, projectUid),
+        ...entityLinkPanels(comp, PROJECT_STREET_LINK, projectUid),
+        ...linksOf(['UnitProject']),
+      ]),
+      tabGroup('Money', 'payments', [
+        ...linksOf(['ProjectExpense', 'ProjectBillHeader']),
+        ...entityLinkPanels(comp, PROJECT_SP_CODE_LINK, projectUid),
+      ]),
+      tabGroup('History', 'history', [
+        projectStatusChangesPanel(comp, projectUid),
+        projectPrioritiesPanel(comp, projectUid),
+        lookupChildPanel(
+          comp,
+          () => PROJECT_CONNECTION,
+          PROJECT_CONNECTIONS_BY_PARENT,
+          { parentUid: projectUid },
+          { presetModel: { parentUid: projectUid } },
+        ),
+      ]),
+    ];
+  },
 });
+
+/** A tab that holds other tabs. */
+function tabGroup(name: string, icon: string, children: ContentParameter[]): ContentParameter {
+  return { name, label: name, icon, children };
+}
+
+/**
+ * The project team. Add Person asks only for the person, the position and the
+ * capacity; the row's name and description are written for it.
+ */
+function projectPeoplePanel(comp: BaseComponent, record?: Record<string, any>): ContentParameter {
+  const panel = lookupChildPanel(
+    comp,
+    () => PROJECT_PERSON,
+    PROJECT_PEOPLE_BY_PROJECT,
+    { projectUid: record?.id },
+    {
+      keyColumns: [
+        'index',
+        { field: 'person', header: 'Person', valueFn: (row: any) => personName(row?.person) },
+        {
+          field: 'position',
+          header: 'Position',
+          valueFn: (row: any) => row?.position?.name,
+        },
+        {
+          field: 'subcategory',
+          header: 'Capacity',
+          valueFn: (row: any) => row?.subcategory?.name,
+        },
+        'actions',
+      ],
+    },
+  );
+  return {
+    ...panel,
+    name: 'Team',
+    label: 'Team',
+    headerButtons: [
+      {
+        icon: 'add',
+        label: 'Add Person',
+        class: 'btn-add-primary',
+        click: () => openAddPersonForm(comp, record as any),
+        permissions: PROJECT_PERSON.upsertPermissions,
+      },
+    ],
+    reloadActions$: [...(panel.reloadActions$ ?? []), projectPerson$],
+  };
+}
 
 const ALL_SP_CODES = gql`
   query allSpCodes {
@@ -415,7 +487,7 @@ export const PROJECT_STATUS_CHANGE = defineLookup({
       key: 'status',
       label: 'Status',
       type: FieldType.select,
-      options: CORE_STATUS_OPTIONS,
+      options: PROJECT_STATUS_OPTIONS,
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
@@ -429,20 +501,6 @@ export const PROJECT_STATUS_CHANGE = defineLookup({
     },
   ],
 });
-
-const statusLabel = (value?: string): string =>
-  CORE_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value ?? '';
-
-const PROJECT_STATUS_CHANGES_BY_PROJECT = gql`
-  query projectStatusChangesByProject($projectUid: String) {
-    projectStatusChangesByProject(projectUid: $projectUid) {
-      id
-      uid: id
-      status
-      changeDay
-    }
-  }
-`;
 
 /**
  * Newest first, as the backend returns them, so the top row is where the
@@ -463,7 +521,7 @@ function projectStatusChangesPanel(comp: BaseComponent, projectUid?: string): Co
     icon: lookup.icon,
     keyColumns: [
       'index',
-      { field: 'status', header: 'Status', valueFn: (row) => statusLabel(row?.status) },
+      { field: 'status', header: 'Status', valueFn: (row) => projectStatusLabel(row?.status) },
       { field: 'changeDay', header: 'Change Day' },
       'actions',
     ],
@@ -479,7 +537,7 @@ function projectStatusChangesPanel(comp: BaseComponent, projectUid?: string): Co
     actionButtons: [
       { ...MORE_BTN, buttons: [lookupUpsertBtn(comp, lookup), lookupDeleteBtn(comp, lookup)] },
     ],
-    reloadActions$: [lookup.changed$],
+    reloadActions$: [lookup.changed$, projectStatus$],
     fetchParameter: { query: PROJECT_STATUS_CHANGES_BY_PROJECT, variables: { projectUid } },
   };
 }
@@ -715,12 +773,16 @@ export const PROGRESS_REPORT = defineLookup({
 
 export const PROJECT_LOOKUPS: LookupModule[] = [
   REGISTRY_PROJECT,
-  PROJECT_PERSON,
-  PROJECT_CONNECTION,
   COST,
   REGISTRY_MASTER_PLAN,
   PROGRESS_REPORT,
 ];
+
+/**
+ * Worked on from the project page (its Team and History tabs), so they have no
+ * menu item. Their routes stay, so a row can still be opened.
+ */
+export const PROJECT_PAGE_ONLY_LOOKUPS: LookupModule[] = [PROJECT_PERSON, PROJECT_CONNECTION];
 
 /** The taxonomy that classifies them, grouped behind one menu and kept last. */
 export const PROJECT_CONFIGURATION_LOOKUPS: LookupModule[] = [
