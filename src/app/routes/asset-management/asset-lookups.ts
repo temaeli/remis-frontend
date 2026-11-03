@@ -15,6 +15,7 @@ import { coreAttachmentPanels } from '@routes/settings/attachment-lookups';
 import { intendedUseFields, registerAssetBtn } from './asset-register';
 import { AssetLinkTarget, assetActions } from './asset-actions';
 import { AssetSummaryComponent } from './asset-summary.component';
+import { AssetStatusHistoryComponent } from './asset-status-history.component';
 import { ContentParameter } from '@shared/components/view-component/view-interface';
 import {
   coordinateFields,
@@ -332,6 +333,14 @@ export const ASSET = defineLookup({
       ]),
       ...(condition.length ? [tabGroup('Condition', 'assessment', condition)] : []),
       tabGroup('History', 'history', [
+        {
+          type: 'component',
+          name: 'Status History',
+          label: 'Status History',
+          icon: 'timeline',
+          componentType: AssetStatusHistoryComponent,
+          componentInputs: { assetUid },
+        },
         lookupChildPanel(
           comp,
           () => ASSET_VERIFICATION,
