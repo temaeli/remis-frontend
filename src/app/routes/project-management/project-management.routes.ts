@@ -1,7 +1,11 @@
 import { TypedRoutes } from '@core';
 import { lookupRoutes } from '@shared/lookup';
 
-import { PROJECT_CONFIGURATION_LOOKUPS, PROJECT_LOOKUPS } from './project-lookups';
+import {
+  PROJECT_CONFIGURATION_LOOKUPS,
+  PROJECT_LOOKUPS,
+  PROJECT_PAGE_ONLY_LOOKUPS,
+} from './project-lookups';
 
 export const PROJECT_MANAGEMENT_ROUTES: TypedRoutes = [
   {
@@ -17,6 +21,12 @@ export const PROJECT_MANAGEMENT_ROUTES: TypedRoutes = [
 
   // The register itself — projects, the links between them, their costs and plans.
   ...lookupRoutes(PROJECT_LOOKUPS),
+
+  // The team and the links between projects: reached from the project page only.
+  ...lookupRoutes(PROJECT_PAGE_ONLY_LOOKUPS).map((route) => ({
+    ...route,
+    data: { ...route.data, isMenu: false },
+  })),
 
   /**
    * Reference data that classifies the register. Grouped behind one menu and kept
