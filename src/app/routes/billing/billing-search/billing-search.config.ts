@@ -2,6 +2,7 @@ import { DocumentNode, gql } from '@apollo/client/core';
 
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 
+import { CORE_STATUS_OPTIONS } from '../../settings/settings-lookups';
 import { BILL_OPTION_QUERIES } from '../bill-options.graphql';
 
 /**
@@ -13,8 +14,20 @@ import { BILL_OPTION_QUERIES } from '../bill-options.graphql';
  * offers exactly those columns and nothing more.
  */
 
-/** How a column is searched — decides which control the value is typed into. */
-export type SearchKind = 'range' | 'uuid' | 'text' | 'number' | 'integer' | 'bool';
+/**
+ * How a column is searched — decides which control the value is typed into.
+ * `status` is one of the CoreStatus labels; `amountRange` is an amount searched
+ * between amountFrom and amountTo (only on bill amounts).
+ */
+export type SearchKind =
+  | 'range'
+  | 'uuid'
+  | 'text'
+  | 'number'
+  | 'integer'
+  | 'bool'
+  | 'status'
+  | 'amountRange';
 
 export interface SearchColumn {
   /** The backend enum constant, e.g. APPLIED_DATE. */
@@ -66,26 +79,42 @@ const money = (value: unknown): string => {
     : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-/** The two queries for one table, from the backend's naming: xxxBy and countXxxBy. */
+/** A status label in words, e.g. WAITING_FOR_PAYMENT -> "Waiting For Payment". */
+export const statusLabel = (value: unknown): string =>
+  CORE_STATUS_OPTIONS.find((o) => o.value === value)?.label ?? (value ? String(value) : '');
+
+/**
+ * The two queries for one table, from the backend's naming: xxxBy and countXxxBy.
+ * With `amounts`, both also take amountFrom/amountTo (bill amounts only).
+ */
 const queries = (
   list: string,
   count: string,
   fieldEnum: string,
   fields: string,
-): { list: DocumentNode; count: DocumentNode } => ({
-  list: gql`
-    query ${list}($field: ${fieldEnum}, $value: String, $from: LocalDateTime, $to: LocalDateTime) {
-      ${list}(field: $field, value: $value, from: $from, to: $to) {
-        ${fields}
+  amounts = false,
+): { list: DocumentNode; count: DocumentNode } => {
+  const params = `$field: ${fieldEnum}, $value: String, $from: LocalDateTime, $to: LocalDateTime${
+    amounts ? ', $amountFrom: BigDecimal, $amountTo: BigDecimal' : ''
+  }`;
+  const args = `field: $field, value: $value, from: $from, to: $to${
+    amounts ? ', amountFrom: $amountFrom, amountTo: $amountTo' : ''
+  }`;
+  return {
+    list: gql`
+      query ${list}(${params}) {
+        ${list}(${args}) {
+          ${fields}
+        }
       }
-    }
-  `,
-  count: gql`
-    query ${count}($field: ${fieldEnum}, $value: String, $from: LocalDateTime, $to: LocalDateTime) {
-      ${count}(field: $field, value: $value, from: $from, to: $to)
-    }
-  `,
-});
+    `,
+    count: gql`
+      query ${count}(${params}) {
+        ${count}(${args})
+      }
+    `,
+  };
+};
 
 // ---------------------------------------------------------------- columns
 // Shared by several tables: the audit block every row carries.
@@ -464,11 +493,123 @@ const PAYMENT_TRANSACTIONS: SearchTable = {
   ],
 };
 
-/** The six tables, in the order the page offers them. */
+/**
+ * On header statuses and expiry dates the backend calls the number column
+ * ASSIGNED_CODE (it still reads the assignedNumber field).
+ */
+const namedColumns = (table: string): SearchColumn[] => [
+  { value: 'CREATED_AT', label: 'Created date', kind: 'range' },
+  { value: 'ID', label: `${table} id`, kind: 'uuid' },
+  { value: 'CREATED_BY', label: 'Created by', kind: 'uuid', options: 'people' },
+  { value: 'ASSIGNED_CODE', label: 'Assigned number', kind: 'text' },
+  { value: 'NAME', label: 'Name', kind: 'text' },
+  { value: 'DESCRIPTION', label: 'Description', kind: 'text' },
+  { value: 'ACTIVE', label: 'Active', kind: 'bool' },
+  { value: 'IS_DELETED', label: 'Deleted', kind: 'bool' },
+];
+
+const BILL_HEADER_STATUSES: SearchTable = {
+  key: 'bill-header-statuses',
+  label: 'Bill Header Statuses',
+  // No permission set of its own: it answers to the bill header's view roles.
+  permissions: ['ROLE_VIEW_ALL_BILL_HEADER', 'ROLE_VIEW_BILL_HEADER'],
+  ...queries(
+    'billHeaderStatusesBy',
+    'countBillHeaderStatusesBy',
+    'BillHeaderStatusSearchField',
+    `${audit}
+    assignedNumber
+    name
+    description
+    status
+    billHeader { ${ref} assignedNumber }`,
+  ),
+  columns: [
+    ...namedColumns('Header status'),
+    { value: 'BILL_HEADER', label: 'Bill header', kind: 'uuid', options: 'billHeaders' },
+    { value: 'STATUS', label: 'Status', kind: 'status' },
+  ],
+  keyColumns: [
+    'index',
+    'billHeader.assignedNumber as Header Number',
+    'billHeader.name as Bill Header',
+    { field: 'status', header: 'Status', valueFn: (r) => statusLabel(r?.status) },
+    'assignedNumber as Number',
+    'name',
+    { field: 'createdAt', header: 'Created', type: 'dateTime' },
+  ],
+};
+
+const BILL_AMOUNTS: SearchTable = {
+  key: 'bill-amounts',
+  label: 'Bill Amounts',
+  // Answers to the bill's view roles.
+  permissions: ['ROLE_VIEW_ALL_BILL_DETAIL', 'ROLE_VIEW_BILL_DETAIL'],
+  ...queries(
+    'billAmountsBy',
+    'countBillAmountsBy',
+    'BillAmountSearchField',
+    `${audit}
+    billAmt
+    billEqvAmt
+    billDetail { ${ref} assignedNumber }`,
+    true,
+  ),
+  columns: [
+    ...auditColumns('Bill amount', false),
+    { value: 'BILL_AMT', label: 'Amount', kind: 'amountRange' },
+    { value: 'BILL_EQV_AMT', label: 'Amount (equivalent)', kind: 'amountRange' },
+    { value: 'BILL_DETAIL', label: 'Bill (record id)', kind: 'uuid' },
+  ],
+  keyColumns: [
+    'index',
+    'billDetail.assignedNumber as Bill Id',
+    'billDetail.name as Bill',
+    { field: 'billAmt', header: 'Amount', valueFn: (r) => money(r?.billAmt) },
+    { field: 'billEqvAmt', header: 'Equivalent', valueFn: (r) => money(r?.billEqvAmt) },
+    { field: 'createdAt', header: 'Created', type: 'dateTime' },
+  ],
+};
+
+const BILL_EXPIRY_DATES: SearchTable = {
+  key: 'bill-expiry-dates',
+  label: 'Bill Expiry Dates',
+  permissions: ['ROLE_VIEW_ALL_BILL_EXPIRY_DATE', 'ROLE_VIEW_BILL_EXPIRY_DATE'],
+  ...queries(
+    'billExpiryDatesBy',
+    'countBillExpiryDatesBy',
+    'BillExpiryDateSearchField',
+    `${audit}
+    assignedNumber
+    name
+    description
+    expiryDate
+    billHeader { ${ref} assignedNumber }`,
+  ),
+  columns: [
+    ...namedColumns('Expiry date'),
+    { value: 'BILL_HEADER', label: 'Bill header', kind: 'uuid', options: 'billHeaders' },
+    { value: 'EXPIRY_DATE', label: 'Expiry date', kind: 'range' },
+  ],
+  keyColumns: [
+    'index',
+    'billHeader.assignedNumber as Header Number',
+    'billHeader.name as Bill Header',
+    { field: 'expiryDate', header: 'Expires', type: 'dateTime' },
+    'assignedNumber as Number',
+    'name',
+    { field: 'createdAt', header: 'Created', type: 'dateTime' },
+  ],
+};
+
+/** The nine tables, in the order the page offers them. */
 export const SEARCH_TABLES: SearchTable[] = [
   BILL_HEADERS,
   BILL_DETAILS,
   BILL_ITEMS,
+  BILL_HEADER_STATUSES,
+  BILL_AMOUNTS,
+  BILL_EXPIRY_DATES,
   CONTROL_NUMBERS,
   PAYMENT_HEADERS,
   PAYMENT_TRANSACTIONS,

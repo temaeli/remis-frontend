@@ -56,6 +56,26 @@
               </mat-select>
             </mat-form-field>
           }
+          @case ('status') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }}</mat-label>
+              <mat-select formControlName="status" [aria-label]="c.label">
+                @for (s of statuses; track s.value) {
+                  <mat-option [value]="s.value">{{ s.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          @case ('amountRange') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }} — from</mat-label>
+              <input matInput type="number" step="any" formControlName="amountFrom" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }} — to</mat-label>
+              <input matInput type="number" step="any" formControlName="amountTo" />
+            </mat-form-field>
+          }
           @case ('number') {
             <mat-form-field appearance="outline">
               <mat-label>{{ c.label }}</mat-label>

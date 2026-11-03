@@ -17,6 +17,7 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 import { MatSelectSearchComponent } from '@shared/components/generic-form/mat-select-search/mat-select-search.component';
 import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
 
+import { CORE_STATUS_OPTIONS } from '../../settings/settings-lookups';
 import { NamedOption } from '../bill-options.graphql';
 import {
   OPTION_QUERIES,
@@ -63,7 +64,8 @@ const toDateTime = (value: unknown, end: boolean): string | null => {
 })
 export class BillingSearchComponent extends BaseComponent {
   override title = 'Billing Search';
-  override subtitle = 'Find bills, items, control numbers and payments by any one column';
+  override subtitle =
+    'Find bills, items, statuses, amounts, expiry dates, control numbers and payments by any one column';
 
   private fb = inject(FormBuilder);
   private files = inject(FilesService);
@@ -95,14 +97,32 @@ export class BillingSearchComponent extends BaseComponent {
   /** Null until a search has run. */
   readonly found = signal<number | null>(null);
 
+  /** The CoreStatus labels, for a status column. */
+  readonly statuses = CORE_STATUS_OPTIONS;
+
   form = this.fb.group({
     text: [''],
     number: [null as number | null],
     bool: ['true'],
     uuid: [''],
+    status: [''],
     from: [null as Date | null],
     to: [null as Date | null],
+    amountFrom: [null as number | null],
+    amountTo: [null as number | null],
   });
+
+  private readonly emptyForm = {
+    text: '',
+    number: null,
+    bool: 'true',
+    uuid: '',
+    status: '',
+    from: null,
+    to: null,
+    amountFrom: null,
+    amountTo: null,
+  };
 
   private rows: unknown[] = [];
   private readonly rows$ = new BehaviorSubject<unknown[]>([]);
@@ -143,7 +163,7 @@ export class BillingSearchComponent extends BaseComponent {
     const column = this.table()?.columns.find((c) => c.value === value);
     this.column.set(column);
     this.optionTerm.set('');
-    this.form.reset({ text: '', number: null, bool: 'true', uuid: '', from: null, to: null });
+    this.form.reset(this.emptyForm);
     this.resetResults();
     if (column?.options) await this.loadOptions(column.options);
   }
@@ -184,7 +204,7 @@ export class BillingSearchComponent extends BaseComponent {
 
   clear(): void {
     this.column.set(undefined);
-    this.form.reset({ text: '', number: null, bool: 'true', uuid: '', from: null, to: null });
+    this.form.reset(this.emptyForm);
     this.resetResults();
   }
 
@@ -213,6 +233,25 @@ export class BillingSearchComponent extends BaseComponent {
       }
       case 'bool':
         return { ...base, value: v.bool ?? 'true' };
+      case 'status': {
+        if (!v.status) {
+          this.problem.set('Choose a status.');
+          return null;
+        }
+        return { ...base, value: v.status };
+      }
+      case 'amountRange': {
+        const blank = (n: unknown) => n === null || n === undefined || `${n}` === '';
+        if (blank(v.amountFrom) || blank(v.amountTo)) {
+          this.problem.set('Type both the From and To amounts.');
+          return null;
+        }
+        if (Number(v.amountTo) < Number(v.amountFrom)) {
+          this.problem.set('The To amount cannot be less than the From amount.');
+          return null;
+        }
+        return { ...base, amountFrom: v.amountFrom, amountTo: v.amountTo };
+      }
       case 'uuid': {
         const id = (column.options ? v.uuid : v.text)?.trim();
         if (!id) {
