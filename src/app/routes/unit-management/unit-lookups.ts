@@ -311,11 +311,10 @@ export const HANDOVER = defineLookup({
   writtenName: true,
   label: 'Handover',
   pluralLabel: 'Handovers',
-  subtitle: 'Who handed a unit over, to whom, and where',
+  subtitle: 'Who handed a unit over, and to whom',
   icon: 'swap_horiz',
+  // No coordinates and no handovers number: the DBA dropped them from the table.
   extraGqlFields: `
-  ${coordinateGqlFields}
-  handovers
   actor {
     id
     uid: id
@@ -334,8 +333,6 @@ export const HANDOVER = defineLookup({
   }
 `,
   extraFields: [
-    ...coordinateFields(),
-    numberField('handovers', 'Handovers'),
     refSelect('actorUid', 'Actor', ALL_BIO_DATA),
     {
       key: 'handedOverAt',
@@ -347,7 +344,6 @@ export const HANDOVER = defineLookup({
     refSelect('handoverToUid', 'Handover to', ALL_BIO_DATA),
   ],
   extraColumns: [
-    'handovers',
     'actor.name as Actor',
     { field: 'handedOverAt', header: 'Handed over at' },
     'handoverFrom.name as Handover from',

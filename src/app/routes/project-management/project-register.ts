@@ -57,8 +57,6 @@ const PROJECT_KEYS = [
   'projectSubcategoryUid',
   'name',
   'description',
-  'latitude',
-  'longitude',
   'startedAt',
   'endedAt',
 ];
@@ -87,11 +85,7 @@ async function openNewProjectForm(comp: BaseComponent, lookup: LookupModule): Pr
   const close$ = new Subject<void>();
   const steps: FormStepper[] = [
     { name: 'Project', icon: 'suitcase', keys: ['projectSubcategoryUid', 'name', 'description'] },
-    {
-      name: 'Where & when',
-      icon: 'location_on',
-      keys: ['latitude', 'longitude', 'startedAt', 'endedAt'],
-    },
+    { name: 'When', icon: 'calendar', keys: ['startedAt', 'endedAt'] },
     { name: 'Team', icon: 'users', keys: ['team'], optional: true, submitLabel: 'Create Project' },
   ];
 
@@ -126,24 +120,6 @@ async function openNewProjectForm(comp: BaseComponent, lookup: LookupModule): Pr
         type: FieldType.textarea,
         rows: 3,
         class: 'col-span-full',
-      },
-      {
-        key: 'latitude',
-        label: 'Latitude',
-        hint: 'Decimal degrees, e.g. -6.792354',
-        type: FieldType.decimal,
-        decimals: 6,
-        validations: [VALIDATOR_REQUIRED],
-        class: 'col-span-full md:col-span-1',
-      },
-      {
-        key: 'longitude',
-        label: 'Longitude',
-        hint: 'Decimal degrees, e.g. 39.208328',
-        type: FieldType.decimal,
-        decimals: 6,
-        validations: [VALIDATOR_REQUIRED],
-        class: 'col-span-full md:col-span-1',
       },
       {
         key: 'startedAt',

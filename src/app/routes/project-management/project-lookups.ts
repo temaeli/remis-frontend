@@ -51,7 +51,7 @@ const numberField = (key: string, label: string): FieldConfig => ({
 });
 
 /**
- * The latitude/longitude pair projects, cost types and master plans all carry.
+ * The latitude/longitude pair cost types and master plans carry.
  * Stored as numeric(9,6), so the controls take decimals and round to six places.
  */
 const coordinateFields = (): FieldConfig[] => [
@@ -170,8 +170,8 @@ export const REGISTRY_PROJECT = defineLookup({
   pluralLabel: 'Projects',
   subtitle: 'The central project register',
   icon: 'suitcase',
+  // No coordinates: the DBA dropped latitude and longitude from `projects`.
   extraGqlFields: `
-  ${coordinateGqlFields}
   startedAt
   endedAt
   days
@@ -181,7 +181,6 @@ export const REGISTRY_PROJECT = defineLookup({
 `,
   extraFields: [
     parentSelect('projectSubcategoryUid', 'Project Subcategory', PROJECT_SUBCATEGORY.gql.all),
-    ...coordinateFields(),
     {
       key: 'startedAt',
       label: 'Start Date',
