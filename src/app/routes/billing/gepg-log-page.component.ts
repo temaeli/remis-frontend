@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -31,13 +31,15 @@ import { findBillHeader, GepgLogComponent, GepgLogHeader } from './gepg-log.comp
       subtitle="What was sent to GePG for a bill, and what came back — print it or download it"
     />
 
+    <!-- [formGroup] makes Angular own the submit; a bare form reloads the page. -->
     <form
       class="mb-2 flex flex-wrap items-start gap-2 rounded-lg bg-white p-3"
+      [formGroup]="form"
       (ngSubmit)="find()"
     >
       <mat-form-field class="min-w-[280px] flex-1" subscriptSizing="dynamic">
         <mat-label>Bill header, group bill id or control number</mat-label>
-        <input matInput [formControl]="search" placeholder="e.g. BLHX-GAMK4-17NX-0971" />
+        <input matInput formControlName="search" placeholder="e.g. BLHX-GAMK4-17NX-0971" />
         <mat-hint>BLHX-…, WHI-… or the control number</mat-hint>
       </mat-form-field>
       <button mat-flat-button color="primary" type="submit" [disabled]="searching()">
@@ -57,13 +59,15 @@ import { findBillHeader, GepgLogComponent, GepgLogHeader } from './gepg-log.comp
 export class GepgLogPageComponent {
   private readonly fs = inject(FetchService);
 
-  protected readonly search = new FormControl('', { nonNullable: true });
+  protected readonly form = new FormGroup({
+    search: new FormControl('', { nonNullable: true }),
+  });
   protected readonly header = signal<GepgLogHeader | undefined>(undefined);
   protected readonly searching = signal(false);
   protected readonly problem = signal('');
 
   protected async find(): Promise<void> {
-    const text = this.search.value.trim();
+    const text = this.form.controls.search.value.trim();
     this.problem.set('');
     if (!text) {
       this.problem.set('Type a bill header number, a group bill id or a control number.');
