@@ -30,6 +30,7 @@ import { childBillPanels, lineAmountPanels } from './bill-amounts.panels';
 import { PAYMENTS_OF_BILL_HEADER } from './payment.graphql';
 import { PAYMENT_VIEW_PERMISSIONS, paymentViewBtnFrom } from './payment.form';
 import { gepgActionButtons, reuseControlNumberBtn } from './bill-gepg.actions';
+import { gepgLogBtn } from './gepg-log.component';
 import {
   BillPaper,
   CollectionAccount,
@@ -80,7 +81,19 @@ export class BillComponent extends BaseComponent implements OnInit {
    * closes over this component, and the header re-reads the array on every
    * change detection pass.
    */
-  gepgActions: ActionButton[] = [...gepgActionButtons(this), ...this.paperButtons()];
+  gepgActions: ActionButton[] = [
+    ...gepgActionButtons(this),
+    gepgLogBtn(this, () =>
+      this.bill?.billHeader?.id
+        ? {
+            id: this.bill.billHeader.id,
+            assignedNumber: this.bill.billHeader.assignedNumber,
+            grpBillId: this.bill.billHeader.grpBillId,
+          }
+        : undefined,
+    ),
+    ...this.paperButtons(),
+  ];
 
   /** The control number this bill is paid on, once GePG has issued one. */
   private controlNumber: string | null = null;

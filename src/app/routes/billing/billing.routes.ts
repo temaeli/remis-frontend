@@ -114,6 +114,24 @@ export const BILLING_ROUTES: TypedRoutes = [
   },
 
   /**
+   * A bill's whole exchange with GePG, found by its header number, group bill
+   * id or control number, to print or download. Read from the database, not
+   * from the server's log files.
+   */
+  {
+    path: 'gepg-log',
+    canActivate: [permissionGuard],
+    data: {
+      isMenu: true,
+      name: 'GePG Log',
+      icon: 'receipt_long',
+      permissions: ['ROLE_VIEW_ALL_BILL_HEADER', 'ROLE_VIEW_BILL_HEADER'],
+    },
+    loadComponent: () =>
+      import('./gepg-log-page.component').then((m) => m.GepgLogPageComponent),
+  },
+
+  /**
    * Raising a bill is its own screen rather than a modal: it carries a header, a
    * bill and any number of items, with the amounts recomputing as they are
    * chosen, which is more than a dialog can hold.
