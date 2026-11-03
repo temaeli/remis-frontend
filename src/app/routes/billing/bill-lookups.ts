@@ -6,6 +6,7 @@ import { defineLookup, entityLinkPanels, lookupRefGqlFields, LookupModule } from
 
 import { billHeaderRecordPanels } from './bill-header.panels';
 import { gepgFlowPanels } from './bill-gepg.panels';
+import { gepgLogBtn } from './gepg-log.component';
 import { billHeaderGepgRecordPanels } from './bill-header.records.panels';
 import {
   sendCancellationRequestToGepgBtn,
@@ -80,6 +81,13 @@ export const BILL_HEADER = defineLookup({
   pluralLabel: 'Bill Headers',
   subtitle: 'The codes a bill is raised under, and the window it is valid for',
   icon: 'bill_alt',
+  extraActions: (comp) => [
+    gepgLogBtn(comp, (header) =>
+      header?.id
+        ? { id: header.id, assignedNumber: header.assignedNumber, grpBillId: header.grpBillId }
+        : undefined,
+    ),
+  ],
   extraGqlFields: `
   reqId
   grpBillId

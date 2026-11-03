@@ -32,7 +32,7 @@ export const billGqlFields = `
   generatedAt
   approvedAt
   expiredAt
-  billHeader { ${refFields} assignedNumber }
+  billHeader { ${refFields} assignedNumber grpBillId }
   bioData { id name }
   identityType { ${refFields} }
   tinData { ${refFields} assignedNumber }
