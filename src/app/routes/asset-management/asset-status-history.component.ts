@@ -3,6 +3,8 @@ import { DatePipe } from '@angular/common';
 import { gql } from '@apollo/client/core';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
 import { FetchService } from '@shared/fetch/fetch.service';
+import { IconComponent } from '@shared/components/icon/icon.component';
+import { NoContentComponent } from '@shared/components/no-content/no-content.component';
 
 /** An asset's rows in `assets_statuses`, newest first. */
 export const STATUSES_BY_ASSET = gql`
@@ -35,6 +37,15 @@ const MEANING: Record<string, string> = {
   CANCELLED: 'Disposed',
 };
 
+const ICON: Record<string, string> = {
+  DRAFT: 'edit_note',
+  SUBMITTED: 'send',
+  PASSED: 'verified',
+  FAILED: 'error',
+  APPROVED: 'check_circle',
+  CANCELLED: 'delete',
+};
+
 /**
  * The steps an asset has been through, from `assets_statuses`, newest first.
  * Registering, verifying, making available and disposing each add a row;
@@ -42,35 +53,54 @@ const MEANING: Record<string, string> = {
  */
 @Component({
   selector: 'app-asset-status-history',
-  imports: [DatePipe],
+  imports: [DatePipe, IconComponent, NoContentComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section aria-label="Status history" class="flex flex-col gap-3 p-2">
-      @if (loading()) {
-        <p class="text-sm text-gray-700">Loading the status history…</p>
-      } @else if (error()) {
-        <p class="text-sm text-red-600" role="alert">{{ error() }}</p>
+    <section aria-label="Status history" class="rounded-lg bg-white p-3">
+      <h3 class="mb-1 text-xs font-semibold uppercase text-gray-600">
+        Status history · {{ rows().length }}
+      </h3>
+
+      @if (error()) {
+        <p class="px-2 py-2 text-sm text-danger" role="alert">{{ error() }}</p>
       } @else if (rows().length) {
-        <ol class="flex flex-col">
+        <ol class="flex flex-col divide-y divide-gray-100">
           @for (row of rows(); track row.id; let first = $first) {
-            <li class="flex gap-3 border-l-2 border-gray-300 pl-3 pb-3">
-              <span class="w-36 shrink-0 text-sm text-gray-700">
-                {{ row.since ? (row.since | date: 'd MMM y, HH:mm') : 'No date' }}
+            <li class="flex items-center gap-3 px-2 py-2">
+              <span
+                class="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                aria-hidden="true"
+              >
+                <app-icon [icon]="iconOf(row.status)" />
               </span>
-              <span>
-                <span class="font-medium">{{ meaning(row.status) }}</span>
-                <span class="text-gray-700"> · {{ label(row.status) }}</span>
-                @if (first) {
-                  <span class="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-white">Now</span>
-                }
+              <span class="flex min-w-0 flex-1 flex-col">
+                <span class="font-medium">
+                  {{ meaning(row.status) }}
+                  @if (first) {
+                    <span class="ms-2 rounded-full bg-primary px-2 py-0.5 text-xs text-white">
+                      Now
+                    </span>
+                  }
+                </span>
+                <span class="text-sm text-gray-700">{{ label(row.status) }}</span>
+              </span>
+              <span class="shrink-0 text-sm text-gray-600">
+                {{ row.since ? (row.since | date: 'd MMM y, HH:mm') : 'No date' }}
               </span>
             </li>
           }
         </ol>
       } @else {
-        <p class="text-sm text-gray-700">
-          No status recorded yet. Registering, verifying or disposing the asset adds one.
-        </p>
+        <no-content
+          icon="timeline"
+          [slim]="true"
+          outerClass="min-h-[160px] size-full"
+          [label]="
+            loading()
+              ? 'Loading'
+              : 'No status recorded yet. Registering, verifying or disposing the asset adds one.'
+          "
+        />
       }
     </section>
   `,
@@ -93,6 +123,10 @@ export class AssetStatusHistoryComponent {
 
   protected meaning(status: string): string {
     return MEANING[status] ?? this.label(status);
+  }
+
+  protected iconOf(status: string): string {
+    return ICON[status] ?? 'flag';
   }
 
   protected label(status: string): string {

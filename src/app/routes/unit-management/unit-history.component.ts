@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { getDisplayName } from '@shared/components/view-component/view.helpers';
+import {
+  ToggleButton,
+  ToggleButtonsComponent,
+} from '@shared/components/toggle-buttons/toggle-buttons.component';
+import { IconComponent } from '@shared/components/icon/icon.component';
+import { NoContentComponent } from '@shared/components/no-content/no-content.component';
 
 interface Activity {
   kind: string;
@@ -11,77 +18,98 @@ interface Activity {
 
 interface Filter {
   name: string;
+  icon: string;
   kinds: string[] | null;
 }
 
 /** The same groups as the action menus, so a reader finds a record where they made it. */
 const FILTERS: Filter[] = [
-  { name: 'All', kinds: null },
+  { name: 'All', icon: 'history', kinds: null },
   {
     name: 'Tenancy',
+    icon: 'key',
     kinds: ['Reservation', 'Booking', 'Lease', 'Handover', 'Entry', 'Exit', 'Return', 'Visit'],
   },
-  { name: 'Care', kinds: ['Inspection', 'Maintenance', 'Problem'] },
-  { name: 'Services', kinds: ['ServiceConnection', 'ServiceDisconnection', 'Reading'] },
-  { name: 'Closing', kinds: ['Notice', 'Termination', 'Eviction'] },
-  { name: 'Ownership', kinds: ['Sell', 'Purchase', 'TitleDeed', 'Liability', 'Loan'] },
-  { name: 'Status', kinds: ['UnitStatusRecord', 'UnitFlag'] },
+  { name: 'Care', icon: 'build', kinds: ['Inspection', 'Maintenance', 'Problem'] },
+  {
+    name: 'Services',
+    icon: 'electrical_services',
+    kinds: ['ServiceConnection', 'ServiceDisconnection', 'Reading'],
+  },
+  { name: 'Closing', icon: 'event_busy', kinds: ['Notice', 'Termination', 'Eviction'] },
+  {
+    name: 'Ownership',
+    icon: 'workspace_premium',
+    kinds: ['Sell', 'Purchase', 'TitleDeed', 'Liability', 'Loan'],
+  },
+  { name: 'Status', icon: 'flag', kinds: ['UnitStatusRecord', 'UnitFlag'] },
 ];
 
 /**
  * Everything that happened to a unit as one list, newest first: the
  * reservation, the lease, the inspections, the notice. Read in one place instead
- * of across a tab per kind of record; the chips narrow it down.
+ * of across a tab per kind of record; the filters narrow it down.
  *
- * Clicking an entry opens that record.
+ * Built from the app's own parts so it reads like the rest of the page: the
+ * filters are the tabs' toggle buttons, with a count badge, and the list sits in
+ * a white card like the summary cards. Clicking an entry opens that record.
  */
 @Component({
   selector: 'app-unit-history',
-  imports: [DatePipe],
+  imports: [DatePipe, ToggleButtonsComponent, IconComponent, NoContentComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section aria-label="Unit history" class="flex flex-col gap-3 p-2">
-      <div role="group" aria-label="Show" class="flex flex-wrap gap-2">
-        @for (f of filters; track f.name) {
-          <button
-            type="button"
-            class="rounded-full border px-3 py-1 text-sm"
-            [class.bg-primary]="f.name === filter()"
-            [class.text-white]="f.name === filter()"
-            [attr.aria-pressed]="f.name === filter()"
-            (click)="filter.set(f.name)"
-          >
-            {{ f.name }} ({{ count(f) }})
-          </button>
+    <section aria-label="Unit history" class="flex flex-col gap-2">
+      <toggle-buttons
+        class="p-2 bg-white rounded-lg inline-flex flex-wrap self-start max-w-full"
+        [toggleButtons]="buttons"
+        [initialValue]="'All'"
+        (value)="onFilter($event)"
+      />
+
+      <div class="rounded-lg bg-white p-3">
+        <h3 class="mb-1 text-xs font-semibold uppercase text-gray-600">
+          {{ filter() }} · {{ shown().length }}
+        </h3>
+
+        @if (shown().length) {
+          <ol class="flex flex-col divide-y divide-gray-100">
+            @for (a of shown(); track a.uid) {
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-primary"
+                  [attr.aria-label]="'Open ' + label(a.kind) + ' ' + (a.name || '')"
+                  (click)="openRecord(a)"
+                >
+                  <span
+                    class="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                    aria-hidden="true"
+                  >
+                    <app-icon [icon]="iconOf(a.kind)" />
+                  </span>
+                  <span class="flex min-w-0 flex-1 flex-col">
+                    <span class="font-medium">{{ label(a.kind) }}</span>
+                    @if (a.name) {
+                      <span class="truncate text-sm text-gray-700">{{ a.name }}</span>
+                    }
+                  </span>
+                  <span class="shrink-0 text-sm text-gray-600">
+                    {{ a.at ? (a.at | date: 'd MMM y') : 'No date' }}
+                  </span>
+                </button>
+              </li>
+            }
+          </ol>
+        } @else {
+          <no-content
+            icon="history"
+            [slim]="true"
+            outerClass="min-h-[160px] size-full"
+            label="Nothing recorded yet — the buttons at the top of the page add the first one."
+          />
         }
       </div>
-
-      @if (shown().length) {
-        <ol class="flex flex-col">
-          @for (a of shown(); track a.uid) {
-            <li class="flex gap-3 border-l-2 border-gray-300 pl-3 pb-3">
-              <span class="w-24 shrink-0 text-sm text-gray-700">
-                {{ a.at ? (a.at | date: 'd MMM y') : 'No date' }}
-              </span>
-              <button
-                type="button"
-                class="text-left hover:underline"
-                [attr.aria-label]="'Open ' + label(a.kind) + ' ' + (a.name || '')"
-                (click)="openRecord(a)"
-              >
-                <span class="font-medium">{{ label(a.kind) }}</span>
-                @if (a.name) {
-                  <span class="text-gray-700"> · {{ a.name }}</span>
-                }
-              </button>
-            </li>
-          }
-        </ol>
-      } @else {
-        <p class="text-sm text-gray-700">
-          Nothing recorded yet — the buttons at the top of the page add the first one.
-        </p>
-      }
     </section>
   `,
 })
@@ -89,7 +117,6 @@ export class UnitHistoryComponent {
   readonly history = input<Activity[]>([]);
   readonly open = input<(kind: string, uid: string) => void>();
 
-  readonly filters = FILTERS;
   readonly filter = signal('All');
 
   readonly shown = computed(() => {
@@ -97,6 +124,21 @@ export class UnitHistoryComponent {
     const history = this.history() ?? [];
     return f?.kinds ? history.filter((a) => f.kinds!.includes(a.kind)) : history;
   });
+
+  /**
+   * Made once: the toggle buttons keep their first list unless a label or icon
+   * changes, so each count is a live badge rather than a fixed number.
+   */
+  readonly buttons: ToggleButton[] = FILTERS.map((f) => ({
+    value: f.name,
+    label: f.name,
+    icon: f.icon,
+    badge: toObservable(computed(() => this.count(f))),
+  }));
+
+  onFilter(name?: string): void {
+    if (name) this.filter.set(name);
+  }
 
   count(f: Filter): number {
     const history = this.history() ?? [];
@@ -106,6 +148,11 @@ export class UnitHistoryComponent {
   label(kind?: string): string {
     if (kind === 'Sell') return 'Sale';
     return kind ? ((getDisplayName(kind) as string) ?? kind) : '';
+  }
+
+  /** The icon of the group a record belongs to. */
+  iconOf(kind: string): string {
+    return FILTERS.find((f) => f.kinds?.includes(kind))?.icon ?? 'history';
   }
 
   openRecord(a: Activity): void {
