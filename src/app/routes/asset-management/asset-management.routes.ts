@@ -1,7 +1,25 @@
 import { TypedRoutes } from '@core';
 import { lookupRoutes } from '@shared/lookup';
 
+import {
+  QUALITATIVE_PARAMETER,
+  QUALITATIVE_PARAMETER_VALUE,
+  QUANTITATIVE_PARAMETER,
+  QUANTITATIVE_PARAMETER_VALUE,
+} from '@routes/settings/project-setting-lookups';
+
 import { ASSET_CONFIGURATION_LOOKUPS, ASSET_LOOKUPS, ASSET_RECORD_LOOKUPS } from './asset-lookups';
+
+/**
+ * The lists an asset's "Link to…" picks its assessment from, kept here as well
+ * as under Settings → Project: the same screens and the same rows.
+ */
+const ASSET_ASSESSMENT_LOOKUPS = [
+  QUALITATIVE_PARAMETER,
+  QUALITATIVE_PARAMETER_VALUE,
+  QUANTITATIVE_PARAMETER,
+  QUANTITATIVE_PARAMETER_VALUE,
+];
 
 /**
  * The record lists' detail routes, at this level as well as under Records.
@@ -81,6 +99,14 @@ export const ASSET_MANAGEMENT_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'asset-types', pathMatch: 'full' },
       ...lookupRoutes(ASSET_CONFIGURATION_LOOKUPS),
+      {
+        path: 'assessment',
+        data: { isMenu: true, name: 'Assessment', icon: 'assignment' },
+        children: [
+          { path: '', redirectTo: 'qualitative-parameters', pathMatch: 'full' },
+          ...lookupRoutes(ASSET_ASSESSMENT_LOOKUPS),
+        ],
+      },
     ],
   },
 ];

@@ -9,6 +9,26 @@ import {
   PROJECT_LOOKUPS,
   PROJECT_PAGE_ONLY_LOOKUPS,
 } from './project-lookups';
+import {
+  ACTIVITY,
+  DELIVERABLE,
+  MILESTONE,
+  MITIGATION,
+  PHASE,
+  RISK,
+  SITE,
+  SNAG,
+  TASK,
+  TIMELINE,
+} from '@routes/settings/project-setting-lookups';
+
+/**
+ * The lists a project's work is planned and linked against, kept here as well
+ * as under Settings → Project: the same screens and the same rows.
+ */
+const PROJECT_PLANNING_LOOKUPS = [TASK, ACTIVITY, DELIVERABLE, MILESTONE, PHASE, SITE, TIMELINE];
+
+const PROJECT_RISK_LOOKUPS = [RISK, MITIGATION, SNAG];
 
 export const PROJECT_MANAGEMENT_ROUTES: TypedRoutes = [
   {
@@ -71,6 +91,22 @@ export const PROJECT_MANAGEMENT_ROUTES: TypedRoutes = [
     children: [
       { path: '', redirectTo: 'project-categories', pathMatch: 'full' },
       ...lookupRoutes(PROJECT_CONFIGURATION_LOOKUPS),
+      {
+        path: 'planning',
+        data: { isMenu: true, name: 'Planning', icon: 'calendar' },
+        children: [
+          { path: '', redirectTo: 'tasks', pathMatch: 'full' },
+          ...lookupRoutes(PROJECT_PLANNING_LOOKUPS),
+        ],
+      },
+      {
+        path: 'risk-management',
+        data: { isMenu: true, name: 'Risks', icon: 'warning' },
+        children: [
+          { path: '', redirectTo: 'risks', pathMatch: 'full' },
+          ...lookupRoutes(PROJECT_RISK_LOOKUPS),
+        ],
+      },
     ],
   },
 ];
