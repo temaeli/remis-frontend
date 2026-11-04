@@ -296,14 +296,6 @@ const ALL_SP_CODES = gql`
   }
 `;
 
-const ALL_SUBCATEGORIES = gql`
-  query allSubcategories {
-    allSubcategories {
-      id
-      name
-    }
-  }
-`;
 
 const ALL_POSITIONS = gql`
   query allPositions {
@@ -726,11 +718,11 @@ export const PROGRESS_REPORT = defineLookup({
   pluralLabel: 'Progress Reports',
   subtitle: 'What was done, what comes next, and which tasks and milestones it covers',
   icon: 'assessment',
+  // No subcategory: the DBA dropped progress_reports.subcategories_id (2026-11-04).
   extraGqlFields: `
   progressReportsDate
   progress
   plan
-  subcategory { ${lookupRefGqlFields} }
 `,
   extraFields: [
     {
@@ -740,15 +732,10 @@ export const PROGRESS_REPORT = defineLookup({
       type: FieldType.dateTime,
       validations: [VALIDATOR_REQUIRED],
     },
-    parentSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
     textArea('progress', 'Progress', 'What was done'),
     textArea('plan', 'Plan', 'What comes next'),
   ],
-  extraColumns: [
-    { field: 'progressReportsDate', header: 'Date' },
-    'subcategory.name as Subcategory',
-  ],
-  toModel: (data) => ({ subcategoryUid: data?.subcategory?.id }),
+  extraColumns: [{ field: 'progressReportsDate', header: 'Date' }],
   extraContents: (comp, record) => entityLinkPanels(comp, PROGRESS_REPORT_LINKS, record?.id),
 });
 
