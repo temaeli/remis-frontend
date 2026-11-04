@@ -5,9 +5,11 @@ import { FieldConfig, FieldType } from '@shared/components/generic-form/field.in
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
 import {
+  descriptionField,
   entityLink$,
   Lookup,
   LookupModule,
+  nameField,
   openEntityLinkForm,
   openLookupForm,
 } from '@shared/lookup';
@@ -48,9 +50,9 @@ import { unitLinkConfigs } from './unit-links';
  * Grouped by what the user is doing rather than by table: who has it
  * (Occupancy), keeping it up (Care), its utilities (Services), ending a tenancy
  * (Closing), who owns it and what it owes (Ownership), and how it is marked
- * (Status). Each item opens a short form: only what the user knows. The
- * backend names the record and ties it to the unit in the same save, and the
- * page reloads so the new record shows at once.
+ * (Status). Each item opens a short form: a name and description, then only
+ * what the user knows. The backend ties the record to the unit in the same save,
+ * and the page reloads so the new record shows at once.
  *
  * "Link to…" ties the unit to anything else that already exists.
  */
@@ -180,9 +182,9 @@ function nextStepButton(
 }
 
 /**
- * Fields the short form leaves out: the descriptive three, which the backend
- * writes, and the unit itself, which is carried hidden. A handover, visit or
- * title deed still asks for its coordinates: the unit has none to lend it.
+ * Fields the short form leaves out of the record's own: the assigned number,
+ * which the backend issues, and the unit itself, which is carried hidden. Name
+ * and description are asked for at the top of the form instead.
  */
 const LEFT_OUT = new Set(['name', 'assignedNumber', 'description', 'unitUid']);
 
@@ -262,6 +264,9 @@ function openShortForm(comp: BaseComponent, unit: LookupModule, action: UnitActi
       ...(action.takesUnit === false
         ? []
         : [{ key: 'unitUid', type: FieldType.input, visible: false }]),
+      // Typed by the user: the backend no longer writes either.
+      nameField(),
+      descriptionField(),
     ],
     extraFields: (lookup.extraFields ?? [])
       .filter((field: FieldConfig) => !LEFT_OUT.has(field.key as string))

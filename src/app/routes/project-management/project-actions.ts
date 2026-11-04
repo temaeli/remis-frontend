@@ -329,8 +329,7 @@ async function addTask(
   value: Record<string, unknown>,
 ): Promise<boolean> {
   const name = String(value['name'] ?? '').trim();
-  const description =
-    String(value['description'] ?? '').trim() || `${name} — a task on ${project?.name ?? 'project'}`;
+  const description = String(value['description'] ?? '').trim();
 
   const saved = await comp.fs.fetch({
     notify: false,
@@ -372,9 +371,9 @@ function openAddTaskForm(comp: BaseComponent, project: Lookup): void {
       {
         key: 'description',
         label: 'Details',
-        hint: 'Optional',
         type: FieldType.textarea,
         rows: 3,
+        validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },
     ],

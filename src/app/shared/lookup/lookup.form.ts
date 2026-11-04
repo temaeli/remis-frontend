@@ -33,18 +33,9 @@ import { Lookup, LookupModule } from './lookup.interface';
 export const namedLookupFields = (
   idKey: 'id' | 'uid' = 'id',
   withAssignedNumber = true,
-  writtenName = false,
 ): FieldConfig[] => [
   { key: idKey, type: FieldType.input, visible: false },
-  {
-    key: 'name',
-    label: 'Name',
-    type: FieldType.input,
-    ...(writtenName
-      ? { hint: 'Optional — leave blank to have it written for you' }
-      : { validations: [VALIDATOR_REQUIRED] }),
-    class: 'col-span-full',
-  },
+  nameField(),
   ...(withAssignedNumber
     ? [
         {
@@ -56,17 +47,27 @@ export const namedLookupFields = (
         } as FieldConfig,
       ]
     : []),
-  {
-    key: 'description',
-    label: 'Description',
-    type: FieldType.textarea,
-    rows: 3,
-    ...(writtenName
-      ? { hint: 'Optional — leave blank to have it written for you' }
-      : { validations: [VALIDATOR_REQUIRED] }),
-    class: 'col-span-full',
-  },
+  descriptionField(),
 ];
+
+/** The record's name, typed by the user. Required: the system never writes one. */
+export const nameField = (key = 'name', label = 'Name'): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.input,
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
+
+/** The record's description, typed by the user. Required: the system never writes one. */
+export const descriptionField = (key = 'description', label = 'Description'): FieldConfig => ({
+  key,
+  label,
+  type: FieldType.textarea,
+  rows: 3,
+  validations: [VALIDATOR_REQUIRED],
+  class: 'col-span-full',
+});
 
 /** Columns matching {@link namedLookupFields}. */
 export const namedLookupColumns: GridKeyColumn[] = [
@@ -83,7 +84,7 @@ export const lookupFields = (lookup: LookupModule): FieldConfig[] =>
   // carry one record's file into the next record's form.
   [
     ...(lookup.baseFields ??
-      namedLookupFields(lookup.idKey, !lookup.generatedNumber, !!lookup.writtenName)),
+      namedLookupFields(lookup.idKey, !lookup.generatedNumber)),
     ...(lookup.extraFields ?? []),
   ].map((field) => ({ ...field }) as FieldConfig);
 

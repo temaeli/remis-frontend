@@ -13,7 +13,7 @@ import {
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { navigateRelativeTo } from '@shared/components/view-component/view.helpers';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
-import { lookupChildGqlFields, LookupModule } from '@shared/lookup';
+import { descriptionField, lookupChildGqlFields, LookupModule, nameField } from '@shared/lookup';
 import {
   coordinateFields,
   landRegistrationToModel,
@@ -96,7 +96,15 @@ export function intendedUseFields(): FieldConfig[] {
     },
   ];
 }
-const ACQUISITION_KEYS = ['acquisitionValue', 'acquisitionDate'];
+const ACQUISITION_KEYS = [
+  'acquisitionName',
+  'acquisitionDescription',
+  'acquisitionValue',
+  'acquisitionDate',
+];
+
+/** The land registration's own name and description, typed on the Location step. */
+const LAND_NAME_KEYS = ['landName', 'landDescription'];
 
 /** Shown only for land. Steps read the control's value; fields use the checker. */
 const LAND_STEP: ShowWhen[] = [{ key: 'forLand', value: true }];
@@ -116,6 +124,21 @@ const landOnly = (field: FieldConfig): FieldConfig => ({
 });
 
 const acquisitionFields = (): FieldConfig[] => [
+  {
+    key: 'acquisitionName',
+    label: 'Acquisition Name',
+    hint: 'Needed when an acquisition value and date are given',
+    type: FieldType.input,
+    class: 'col-span-full',
+  },
+  {
+    key: 'acquisitionDescription',
+    label: 'Acquisition Description',
+    hint: 'Needed when an acquisition value and date are given',
+    type: FieldType.textarea,
+    rows: 2,
+    class: 'col-span-full',
+  },
   {
     key: 'acquisitionValue',
     label: 'Acquisition Value',
@@ -166,6 +189,7 @@ async function openRegisterForm(comp: BaseComponent, lookup: LookupModule): Prom
       name: 'Location',
       icon: 'location_on',
       keys: [
+        ...LAND_NAME_KEYS,
         'regionUid',
         'districtUid',
         'councilUid',
@@ -247,6 +271,8 @@ async function openRegisterForm(comp: BaseComponent, lookup: LookupModule): Prom
       ...intendedUseFields(),
       // Set by the picker above; drives which steps show. Never sent.
       { key: 'forLand', type: FieldType.toggle, visible: false, ignoreOnSubmit: true },
+      landOnly(nameField('landName', 'Land Registration Name')),
+      landOnly(descriptionField('landDescription', 'Land Registration Description')),
       ...locationCascadeFields().map(landOnly),
       ...coordinateFields().map(landOnly),
       ...parcelFields().map(landOnly),
@@ -263,9 +289,12 @@ async function openRegisterForm(comp: BaseComponent, lookup: LookupModule): Prom
         ...pick(value, ACQUISITION_KEYS),
       };
       if (isLand) {
-        // Whatever is left after the asset and acquisition keys is the parcel.
+        // Whatever is left after the asset and acquisition keys is the parcel,
+        // named and described by its own two fields.
         const land = { ...value };
-        [...ASSET_KEYS, ...ACQUISITION_KEYS].forEach((key) => delete land[key]);
+        [...ASSET_KEYS, ...ACQUISITION_KEYS, ...LAND_NAME_KEYS].forEach((key) => delete land[key]);
+        land['name'] = value['landName'];
+        land['description'] = value['landDescription'];
         input['land'] = land;
       }
       await register(comp, lookup, input, close$);
