@@ -44,6 +44,7 @@ import {
   lookupRefGqlFields,
   Lookup,
   LookupModule,
+  namedLookupFields,
   openLookupForm,
 } from '@shared/lookup';
 
@@ -513,9 +514,9 @@ export const LAND_REGISTRATION = defineLookup({
   subtitle: 'Registered parcels — their title, tenure, owners and encumbrances',
   icon: 'land_administration',
   extraGqlFields: landRegistrationGqlFields,
-  // No name, number or asset to type: the backend names it from the parcel, and
-  // the asset comes from the page it is registered on.
-  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
+  // The user names and describes it; the number is issued and the asset comes
+  // from the page it is registered on.
+  baseFields: namedLookupFields('id', false),
   extraFields: [
     { key: 'assetUid', type: FieldType.input, visible: false },
     ...locationCascadeFields(),
@@ -590,9 +591,9 @@ export const ACQUISITION = defineLookup({
     status
   }
 `,
-  // Only the value and date: the backend writes the name and description, and
-  // the asset comes from the page.
-  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
+  // Name, description, value and date; the number is issued and the asset comes
+  // from the page.
+  baseFields: namedLookupFields('id', false),
   extraFields: [
     { key: 'assetUid', type: FieldType.input, visible: false },
     {
@@ -640,8 +641,8 @@ export const DISPOSE = defineLookup({
     status
   }
 `,
-  // Only the date: no name, description or code to type.
-  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
+  // Name, description and date; the number is issued.
+  baseFields: namedLookupFields('id', false),
   extraFields: [
     { key: 'assetUid', type: FieldType.input, visible: false },
     {
@@ -692,18 +693,8 @@ export const VALUATION = defineLookup({
     name
   }
 `,
-  // No name or number: the backend issues both.
-  baseFields: [
-    { key: 'id', type: FieldType.input, visible: false },
-    {
-      key: 'description',
-      label: 'Remarks',
-      hint: 'Optional — how it was valued, the method or the basis',
-      type: FieldType.textarea,
-      rows: 2,
-      class: 'col-span-full',
-    },
-  ],
+  // Name and description typed by the user; the number is issued.
+  baseFields: namedLookupFields('id', false),
   extraFields: [
     {
       key: 'value',
@@ -783,6 +774,7 @@ const outcomeClass = (outcome?: string): string =>
 
 const verificationGqlFields = `
   verifiedAt
+  remarks
   outcome
   asset {
     ${lookupRefGqlFields}
@@ -805,9 +797,9 @@ const outcomeColumn: GridKeyColumn = {
  * One check of an asset: what was found, and optionally who, when and why.
  *
  * Recorded from the asset's own page (Verify), so the asset is carried in a
- * hidden control rather than picked. The backend names the record and writes a
- * remark when none is given, so the form asks only for the outcome — the rest
- * is optional, with sensible defaults: the signed-in user, now.
+ * hidden control rather than picked. The form asks for a name, a description and
+ * the outcome; the rest is optional, with sensible defaults: the signed-in user,
+ * now, and a remark written by the backend when none is given.
  */
 export const ASSET_VERIFICATION = defineLookup({
   slug: 'asset-verifications',
@@ -820,8 +812,8 @@ export const ASSET_VERIFICATION = defineLookup({
   subtitle: 'Who checked each asset, when, and what they found',
   icon: 'check',
   extraGqlFields: verificationGqlFields,
-  // No name or number: the backend issues both.
-  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
+  // Name and description typed by the user; the number is issued.
+  baseFields: namedLookupFields('id', false),
   extraFields: [
     { key: 'assetUid', type: FieldType.input, visible: false },
     {
@@ -848,7 +840,8 @@ export const ASSET_VERIFICATION = defineLookup({
       class: 'col-span-full md:col-span-1',
     },
     {
-      key: 'description',
+      // The table's remarks column; description is now its own field above.
+      key: 'remarks',
       label: 'Remarks',
       hint: 'Optional — what was found, especially when it did not pass',
       type: FieldType.textarea,
@@ -1182,9 +1175,9 @@ export const assetLinkPanels = (comp: BaseComponent, assetUid?: string, only?: s
  * A directed edge between two assets: the child hangs off the parent.
  *
  * Made from the parent asset's page ("Link to… → Another Asset"), so the
- * parent is carried in a hidden control and only the child is picked. The
- * backend writes the name and description and, left blank, takes the signed-in
- * user as who connected them.
+ * parent is carried in a hidden control and the child is picked. The user types
+ * the name and description; left blank, the backend takes the signed-in user as
+ * who connected them.
  */
 export const ASSET_CONNECTION = defineLookup({
   slug: 'asset-connections',
@@ -1210,7 +1203,8 @@ export const ASSET_CONNECTION = defineLookup({
     name
   }
 `,
-  baseFields: [{ key: 'id', type: FieldType.input, visible: false }],
+  // Name and description typed by the user; the number is issued.
+  baseFields: namedLookupFields('id', false),
   extraFields: [
     { key: 'parentUid', type: FieldType.input, visible: false },
     parentSelect('childUid', 'Connected Asset', ASSET.gql.all, 'The asset that hangs off this one'),

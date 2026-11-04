@@ -126,12 +126,6 @@ export interface LookupConfig {
    */
   generatedNumber?: boolean;
 
-  /**
-   * The backend writes `name` and `description` when they are left blank, so
-   * the form asks for them as optional.
-   */
-  writtenName?: boolean;
-
   /** Columns for them, shown before `active`. Defaults to match. */
   baseColumns?: GridKeyColumn[];
 

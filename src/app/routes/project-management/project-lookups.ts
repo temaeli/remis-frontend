@@ -51,7 +51,7 @@ const numberField = (key: string, label: string): FieldConfig => ({
 });
 
 /**
- * The latitude/longitude pair cost types and master plans carry.
+ * The latitude/longitude pair master plans carry.
  * Stored as numeric(9,6), so the controls take decimals and round to six places.
  */
 const coordinateFields = (): FieldConfig[] => [
@@ -148,11 +148,7 @@ export const COST_TYPE = defineLookup({
   pluralLabel: 'Cost Types',
   subtitle: 'Classification for recorded costs',
   icon: 'list',
-  extraGqlFields: `
-  costTypes
-  ${coordinateGqlFields}
-`,
-  extraFields: [numberField('costTypes', 'Cost Types Value'), ...coordinateFields()],
+  // A plain lookup: the DBA dropped its cost_types number and its coordinates.
   extraContents: (comp, record) => [
     lookupChildPanel(comp, () => COST, COSTS_BY_COST_TYPE, { costTypeUid: record?.id }),
   ],

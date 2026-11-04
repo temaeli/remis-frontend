@@ -91,17 +91,6 @@ const numberField = (key: string, label: string): FieldConfig => ({
   validations: [VALIDATOR_REQUIRED],
 });
 
-/** The survey point the located tables all carry. */
-const coordinateFields = (): FieldConfig[] => [
-  numberField('latitude', 'Latitude'),
-  numberField('longitude', 'Longitude'),
-];
-
-const coordinateGqlFields = `
-  latitude
-  longitude
-`;
-
 /**
  * A select over another table, all of which key on `id`. `labelKey` is the field
  * shown in the list — `name` for everything that has one, overridden where the
@@ -170,7 +159,6 @@ export const BOOKING = defineLookup({
   entity: 'Booking',
   entityPlural: 'Bookings',
   permission: 'BOOKING',
-  writtenName: true,
   label: 'Booking',
   pluralLabel: 'Bookings',
   subtitle: 'Holds placed on a unit before it is taken',
@@ -205,7 +193,6 @@ export const ENTRY = defineLookup({
   entity: 'Entry',
   entityPlural: 'Entries',
   permission: 'ENTRY',
-  writtenName: true,
   label: 'Entry',
   pluralLabel: 'Entries',
   subtitle: 'Move-ins recorded against a unit',
@@ -234,7 +221,6 @@ export const EVICTION = defineLookup({
   entity: 'Eviction',
   entityPlural: 'Evictions',
   permission: 'EVICTION',
-  writtenName: true,
   label: 'Eviction',
   pluralLabel: 'Evictions',
   subtitle: 'Evictions carried out, and what was owed',
@@ -279,7 +265,6 @@ export const EXIT = defineLookup({
   entity: 'Exit',
   entityPlural: 'Exits',
   permission: 'EXIT',
-  writtenName: true,
   label: 'Exit',
   pluralLabel: 'Exits',
   subtitle: 'Move-outs recorded against a unit',
@@ -308,7 +293,6 @@ export const HANDOVER = defineLookup({
   entity: 'Handover',
   entityPlural: 'Handovers',
   permission: 'HANDOVER',
-  writtenName: true,
   label: 'Handover',
   pluralLabel: 'Handovers',
   subtitle: 'Who handed a unit over, and to whom',
@@ -363,7 +347,6 @@ export const INSPECTION = defineLookup({
   entity: 'Inspection',
   entityPlural: 'Inspections',
   permission: 'INSPECTION',
-  writtenName: true,
   label: 'Inspection',
   pluralLabel: 'Inspections',
   subtitle: 'Inspections carried out on a unit',
@@ -394,7 +377,6 @@ export const LEASE = defineLookup({
   entity: 'Lease',
   entityPlural: 'Leases',
   permission: 'LEASE',
-  writtenName: true,
   label: 'Lease',
   pluralLabel: 'Leases',
   subtitle: 'Leases granted over a unit',
@@ -420,7 +402,6 @@ export const LIABILITY = defineLookup({
   entity: 'Liability',
   entityPlural: 'Liabilities',
   permission: 'LIABILITY',
-  writtenName: true,
   label: 'Liability',
   pluralLabel: 'Liabilities',
   subtitle: 'What is owed against a unit',
@@ -474,7 +455,6 @@ export const LOAN = defineLookup({
   entity: 'Loan',
   entityPlural: 'Loans',
   permission: 'LOAN',
-  writtenName: true,
   label: 'Loan',
   pluralLabel: 'Loans',
   subtitle: 'Borrowing recorded against a unit',
@@ -522,7 +502,6 @@ export const MAINTENANCE = defineLookup({
   entity: 'Maintenance',
   entityPlural: 'Maintenances',
   permission: 'MAINTENANCE',
-  writtenName: true,
   label: 'Maintenance',
   pluralLabel: 'Maintenance',
   subtitle: 'Work done on a unit, and what it cost',
@@ -567,7 +546,6 @@ export const NOTICE = defineLookup({
   entity: 'Notice',
   entityPlural: 'Notices',
   permission: 'NOTICE',
-  writtenName: true,
   label: 'Notice',
   pluralLabel: 'Notices',
   subtitle: 'Notices served in relation to a unit',
@@ -616,7 +594,6 @@ export const PROBLEM = defineLookup({
   entity: 'Problem',
   entityPlural: 'Problems',
   permission: 'PROBLEM',
-  writtenName: true,
   label: 'Problem',
   pluralLabel: 'Problems',
   subtitle: 'Faults raised against a unit',
@@ -642,7 +619,6 @@ export const PURCHASE = defineLookup({
   entity: 'Purchase',
   entityPlural: 'Purchases',
   permission: 'PURCHASE',
-  writtenName: true,
   label: 'Purchase',
   pluralLabel: 'Purchases',
   subtitle: 'Units bought, and for how much',
@@ -670,7 +646,6 @@ export const READING = defineLookup({
   entity: 'Reading',
   entityPlural: 'Readings',
   permission: 'READING',
-  writtenName: true,
   label: 'Reading',
   pluralLabel: 'Readings',
   subtitle: 'Meter readings taken on a connection',
@@ -733,7 +708,6 @@ export const RESERVATION = defineLookup({
   entity: 'Reservation',
   entityPlural: 'Reservations',
   permission: 'RESERVATION',
-  writtenName: true,
   label: 'Reservation',
   pluralLabel: 'Reservations',
   subtitle: 'Reservations held over a unit',
@@ -769,7 +743,6 @@ export const RETURN = defineLookup({
   entity: 'Return',
   entityPlural: 'Returns',
   permission: 'RETURN',
-  writtenName: true,
   label: 'Return',
   pluralLabel: 'Returns',
   subtitle: 'Units handed back',
@@ -795,7 +768,6 @@ export const SELL = defineLookup({
   entity: 'Sell',
   entityPlural: 'Sells',
   permission: 'SELL',
-  writtenName: true,
   label: 'Sell',
   pluralLabel: 'Sales',
   subtitle: 'Units sold, and for how much',
@@ -814,7 +786,6 @@ export const SERVICE_CONNECTION = defineLookup({
   entity: 'ServiceConnection',
   entityPlural: 'ServiceConnections',
   permission: 'SERVICE_CONNECTION',
-  writtenName: true,
   label: 'Service Connection',
   pluralLabel: 'Connections',
   subtitle: 'Utility services connected to a unit',
@@ -864,7 +835,6 @@ export const SERVICE_DISCONNECTION = defineLookup({
   entity: 'ServiceDisconnection',
   entityPlural: 'ServiceDisconnections',
   permission: 'SERVICE_DISCONNECTION',
-  writtenName: true,
   label: 'Service Disconnection',
   pluralLabel: 'Disconnections',
   subtitle: 'Utility services disconnected from a unit',
@@ -903,7 +873,6 @@ export const TERMINATION = defineLookup({
   entity: 'Termination',
   entityPlural: 'Terminations',
   permission: 'TERMINATION',
-  writtenName: true,
   label: 'Termination',
   pluralLabel: 'Terminations',
   subtitle: 'Occupancies brought to an end',
@@ -929,17 +898,23 @@ export const TITLE_DEED = defineLookup({
   entity: 'TitleDeed',
   entityPlural: 'TitleDeeds',
   permission: 'TITLE_DEED',
-  writtenName: true,
   label: 'Title Deed',
   pluralLabel: 'Title Deeds',
   subtitle: 'Title deeds held over a unit',
   icon: 'verified_user',
+  // The DBA dropped the coordinates and the title_deeds number, and added issued_at.
   extraGqlFields: `
-  ${coordinateGqlFields}
-  titleDeeds
+  issuedAt
 `,
-  extraFields: [...coordinateFields(), numberField('titleDeeds', 'Title deeds')],
-  extraColumns: ['titleDeeds'],
+  extraFields: [
+    {
+      key: 'issuedAt',
+      label: 'Issued at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [{ field: 'issuedAt', header: 'Issued at' }],
   // The join read from this side — which units this record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'TitleDeed', record?.id),
 });
@@ -949,7 +924,6 @@ export const UNIT_STATUS_RECORD = defineLookup({
   entity: 'UnitStatusRecord',
   entityPlural: 'UnitStatusRecords',
   permission: 'UNIT_STATUS_RECORD',
-  writtenName: true,
   label: 'Unit Status Record',
   pluralLabel: 'Unit Status Records',
   subtitle: "How a unit's status has changed over time",
@@ -1005,7 +979,6 @@ export const UNIT_FLAG = defineLookup({
   entity: 'UnitFlag',
   entityPlural: 'UnitFlags',
   permission: 'UNIT_FLAG',
-  writtenName: true,
   label: 'Unit Flag',
   pluralLabel: 'Unit Flags',
   subtitle: 'How a unit is flagged: for sale, for rent, on hire purchase',
@@ -1049,17 +1022,23 @@ export const VISIT = defineLookup({
   entity: 'Visit',
   entityPlural: 'Visits',
   permission: 'VISIT',
-  writtenName: true,
   label: 'Visit',
   pluralLabel: 'Visits',
   subtitle: 'Visits made to a unit',
   icon: 'place',
+  // The DBA dropped the coordinates and the visits number, and added visited_at.
   extraGqlFields: `
-  ${coordinateGqlFields}
-  visits
+  visitedAt
 `,
-  extraFields: [...coordinateFields(), numberField('visits', 'Visits')],
-  extraColumns: ['visits'],
+  extraFields: [
+    {
+      key: 'visitedAt',
+      label: 'Visited at',
+      type: FieldType.dateTime,
+      validations: [VALIDATOR_REQUIRED],
+    },
+  ],
+  extraColumns: [{ field: 'visitedAt', header: 'Visited at' }],
   // The join read from this side — which units this record applies to.
   extraContents: (comp, record) => recordLinkPanels(comp, 'Visit', record?.id),
 });

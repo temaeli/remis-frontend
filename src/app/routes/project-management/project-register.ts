@@ -116,9 +116,9 @@ async function openNewProjectForm(comp: BaseComponent, lookup: LookupModule): Pr
       {
         key: 'description',
         label: 'Description',
-        hint: 'Optional — the name is used when left blank',
         type: FieldType.textarea,
         rows: 3,
+        validations: [VALIDATOR_REQUIRED],
         class: 'col-span-full',
       },
       {
@@ -175,7 +175,7 @@ async function createProject(
   const input = Object.fromEntries(PROJECT_KEYS.map((key) => [key, value[key]]));
   const name = String(input['name'] ?? '').trim();
   input['name'] = name;
-  input['description'] = String(input['description'] ?? '').trim() || name;
+  input['description'] = String(input['description'] ?? '').trim();
 
   const saved = await comp.fs.fetch({
     notify: false,

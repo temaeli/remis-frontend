@@ -7,7 +7,13 @@ import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constan
 import { FieldType } from '@shared/components/generic-form/field.interface';
 import { ActionButton } from '@shared/components/action-buttons/action-buttons.inteface';
 import { responseGqlFields } from '@shared/fetch/graphql.constants';
-import { Lookup, LookupModule, openLookupForm } from '@shared/lookup';
+import {
+  descriptionField,
+  Lookup,
+  LookupModule,
+  nameField,
+  openLookupForm,
+} from '@shared/lookup';
 import { openOwnerForm } from './land-registration-panels';
 
 /**
@@ -95,7 +101,7 @@ export function assetActions(
       label: 'Verify',
       toolTip: 'Record a check of this asset — a pass moves a pending asset to Verified',
       hideFunction: (a?: Lookup) => !a || isDisposed(a),
-      // Only the asset: the backend names the record and fills in the rest.
+      // The asset is carried; the form asks for the name, description and outcome.
       click: (a: Lookup) => openOnAsset(lookups.verification, { assetUid: a?.id }),
       permissions: lookups.verification.upsertPermissions,
     },
@@ -135,7 +141,7 @@ export function assetActions(
       label: 'Dispose',
       toolTip: 'Take this asset out of the register for good',
       hideFunction: (a?: Lookup) => !a || !DISPOSABLE.includes(a?.['status']),
-      // Only the asset and the date: the backend writes the rest.
+      // The asset and the date are filled in; the form asks for the name and description.
       click: (a: Lookup) => openOnAsset(lookups.disposal, { assetUid: a?.id, disposedAt: now() }),
       permissions: lookups.disposal.upsertPermissions,
     },
@@ -147,9 +153,11 @@ function openValueForm(comp: BaseComponent, asset: LookupModule, a: Lookup) {
   const close$ = new Subject<void>();
   const formParameter: FormParameters = {
     title: `Value — ${a?.name ?? ''}`,
-    // No name: the backend issues it ("Valuation VAL-… · asset").
     model: { valuedAt: now() },
     fields: [
+      // Typed by the user: the backend no longer writes either.
+      nameField(),
+      descriptionField(),
       {
         key: 'value',
         label: 'Value',
@@ -174,14 +182,6 @@ function openValueForm(comp: BaseComponent, asset: LookupModule, a: Lookup) {
           fetchParameter: { query: ALL_PEOPLE },
         },
         validations: [VALIDATOR_REQUIRED],
-        class: 'col-span-full',
-      },
-      {
-        key: 'description',
-        label: 'Remarks',
-        hint: 'Optional — how it was valued, the method or the basis',
-        type: FieldType.textarea,
-        rows: 2,
         class: 'col-span-full',
       },
     ],
