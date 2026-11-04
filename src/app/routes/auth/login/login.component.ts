@@ -101,20 +101,14 @@ export class LoginComponent implements OnDestroy {
     this.errorMessage = msg;
   }
 
+  /** Staff to their modules, external users (isStaff === false) to their portal. */
   private redirectUser(user: User): void {
-    // Check isStaff to determine user type - this is the primary indicator
-    console.log('[Redirect] Checking user type - isStaff:', user?.isStaff, 'user:', user);
-
     if (user?.isStaff === true) {
-      console.log('[Redirect] -> /staff-landing');
       this.router.navigateByUrl('/staff-landing');
     } else if (user?.isStaff === false) {
-      // External/Client user — no dedicated external portal exists yet
-      console.log('[Redirect] -> /home');
-      this.router.navigateByUrl('/home');
+      this.router.navigateByUrl('/portal');
     } else {
-      // Fallback for unknown user type
-      console.log('[Redirect] -> /home (unknown user type)');
+      // Type unknown: home, whose guard sends an external user on to the portal.
       this.router.navigateByUrl('/home');
     }
   }

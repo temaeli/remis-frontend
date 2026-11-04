@@ -61,6 +61,8 @@ export class AdminLayout implements OnDestroy {
   private readonly userPermissionsSignal = signal<string[]>([]);
   readonly modules = computed(() =>
     this.allModules.filter((m: any) => {
+      // Staff modules are never offered to external users, whatever their roles carry.
+      if (m.visibleFor?.length && !m.visibleFor.includes(this.authService.userType())) return false;
       if (!m.permissions || m.permissions.length === 0) return true;
       const perms = this.userPermissionsSignal();
       return m.permissions.some((p: string) => perms.includes(p));
