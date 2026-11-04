@@ -296,6 +296,74 @@ export const IDENTITY_TYPE = defineLookup({
   extraContents: (comp, record) => [identityTypeIdentificationsPanel(comp, record?.id)],
 });
 
+/** The labels of `remis_core_schema.messages_types`, mirroring `MessageType` on the backend. */
+export const MESSAGE_TYPES = [
+  'GENERAL',
+  'INFORMATION',
+  'NOTIFICATION',
+  'ALERT',
+  'WARNING',
+  'ERROR',
+  'SUCCESS',
+  'REMINDER',
+  'ANNOUNCEMENT',
+  'INSTRUCTION',
+  'REQUEST',
+  'RESPONSE',
+  'APPROVAL',
+  'REJECTION',
+  'COMPLAINT',
+  'FEEDBACK',
+  'SYSTEM',
+  'SECURITY',
+  'PAYMENT',
+  'BILLING',
+  'MAINTENANCE',
+  'EMERGENCY',
+] as const;
+
+export const MESSAGE_TYPE_OPTIONS: Option[] = MESSAGE_TYPES.map((value) => ({
+  value,
+  label: getDisplayName(value) as string,
+}));
+
+/**
+ * A message and its type (`remis_core_schema.messages`). The table's number
+ * column is `assigned_code`, which the backend maps as `assignedNumber`. Name,
+ * description and code may not contain ' " & < or > — the backend says so if
+ * they do.
+ */
+export const MESSAGE = defineLookup({
+  slug: 'messages',
+  entity: 'Message',
+  entityPlural: 'Messages',
+  permission: 'MESSAGE',
+  label: 'Message',
+  pluralLabel: 'Messages',
+  subtitle: 'Messages, and what kind each one is',
+  icon: 'email',
+  extraGqlFields: `
+  messageType
+`,
+  extraFields: [
+    {
+      key: 'messageType',
+      label: 'Message Type',
+      type: FieldType.select,
+      options: MESSAGE_TYPE_OPTIONS,
+      validations: [VALIDATOR_REQUIRED],
+      class: 'col-span-full',
+    },
+  ],
+  extraColumns: [
+    {
+      field: 'messageType',
+      header: 'Type',
+      valueFn: (row) => getDisplayName(row?.messageType),
+    },
+  ],
+});
+
 /** Yes/No columns for the `local` and `verified` switches people and organisations share. */
 const localVerifiedColumns: GridKeyColumn[] = ['local', 'verified'].map(
   (field): GridKeyColumn => ({
@@ -4557,6 +4625,7 @@ export const GENERAL_LOOKUPS: LookupModule[] = [
   TIN_DATA,
   DEPARTMENT,
   DESIGNATION,
+  MESSAGE,
 ];
 
 export const BILLING_LOOKUPS: LookupModule[] = [
