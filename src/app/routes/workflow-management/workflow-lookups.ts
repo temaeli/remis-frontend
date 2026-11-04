@@ -50,11 +50,16 @@ import { WorkflowDiagramComponent } from './workflow-diagram.component';
 //  database exactly: it rejects anything else on insert rather than at startup.
 //  The fifth, `statuses`, is the shared CORE_STATUS_OPTIONS (see below).
 
-/** `remis_core_schema.action_types` — how a step or action moves a record. */
+/**
+ * `remis_core_schema.action_types` — how a step or action moves a record.
+ * APPROVE and CLOSE (added 2026-11-04) follow no edge, like JUMP.
+ */
 export enum ActionType {
   FORWARD = 'FORWARD',
   JUMP = 'JUMP',
   BACK = 'BACK',
+  APPROVE = 'APPROVE',
+  CLOSE = 'CLOSE',
 }
 
 /** `remis_core_schema.return_types` — where a BACK lands. */
