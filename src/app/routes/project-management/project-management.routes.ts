@@ -1,6 +1,9 @@
 import { TypedRoutes } from '@core';
 import { lookupRoutes } from '@shared/lookup';
 
+import { permissionGuard } from '../auth/permission.guard';
+import { PROJECT_SEARCH_PAGE, PROJECT_SEARCH_PERMISSIONS } from './project-search.config';
+
 import {
   PROJECT_CONFIGURATION_LOOKUPS,
   PROJECT_LOOKUPS,
@@ -21,6 +24,27 @@ export const PROJECT_MANAGEMENT_ROUTES: TypedRoutes = [
 
   // The register itself — projects, the links between them, their costs and plans.
   ...lookupRoutes(PROJECT_LOOKUPS),
+
+  /**
+   * Search the project, expense and status tables by one column — the DBA's
+   * findBy… and countBy… methods. The billing Search screen, given this
+   * module's tables; only tables the user may read are offered.
+   */
+  {
+    path: 'search',
+    canActivate: [permissionGuard],
+    data: {
+      isMenu: true,
+      name: 'Search',
+      icon: 'search',
+      permissions: PROJECT_SEARCH_PERMISSIONS,
+      searchPage: PROJECT_SEARCH_PAGE,
+    },
+    loadComponent: () =>
+      import('../billing/billing-search/billing-search.component').then(
+        (m) => m.BillingSearchComponent,
+      ),
+  },
 
   // The team and the links between projects: reached from the project page only.
   ...lookupRoutes(PROJECT_PAGE_ONLY_LOOKUPS).map((route) => ({

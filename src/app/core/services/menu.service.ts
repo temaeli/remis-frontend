@@ -50,6 +50,11 @@ export interface AppRouteData extends Menu {
    * and this is how each route says which table it is.
    */
   lookup?: string;
+  /**
+   * The tables a Search screen offers (a `SearchPage` from billing-search.config).
+   * The screen is billing's when a route gives none; Projects gives its own.
+   */
+  searchPage?: unknown;
 }
 
 export interface TypedRoute<TData = AppRouteData> extends Omit<Route, 'data' | 'children'> {

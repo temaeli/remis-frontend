@@ -18,12 +18,13 @@ import { MatSelectSearchComponent } from '@shared/components/generic-form/mat-se
 import { HasPermissionDirective } from '@shared/directives/has-permission.directive';
 
 import { CORE_STATUS_OPTIONS } from '../../settings/settings-lookups';
+import { PRIORITY_OPTIONS } from '../../project-management/priorities';
 import { NamedOption } from '../bill-options.graphql';
 import {
-  OPTION_QUERIES,
+  BILLING_SEARCH_PAGE,
   OptionKey,
-  SEARCH_TABLES,
   SearchColumn,
+  SearchPage,
   SearchTable,
 } from './billing-search.config';
 
@@ -36,8 +37,11 @@ const toDateTime = (value: unknown, end: boolean): string | null => {
 };
 
 /**
- * Search a billing table by one column: pick the table, the column and its
- * value, and see what matches and how many.
+ * Search a table by one column: pick the table, the column and its value, and
+ * see what matches and how many.
+ *
+ * Which tables are offered comes from the route's `searchPage` data — billing
+ * by default, the project tables under Projects.
  *
  * One column at a time, as the DBA's list of repository methods has it — each
  * column is one `findBy…` and one `countBy…` on the backend. The value control
@@ -63,15 +67,18 @@ const toDateTime = (value: unknown, end: boolean): string | null => {
   templateUrl: './billing-search.component.html',
 })
 export class BillingSearchComponent extends BaseComponent {
-  override title = 'Billing Search';
-  override subtitle =
-    'Find bills, items, statuses, amounts, expiry dates, control numbers and payments by any one column';
+  /** The screen's tables and heading, from the route; billing when it gives none. */
+  private readonly page: SearchPage =
+    (this.route.snapshot.data['searchPage'] as SearchPage | undefined) ?? BILLING_SEARCH_PAGE;
+
+  override title = this.page.title;
+  override subtitle = this.page.subtitle;
 
   private fb = inject(FormBuilder);
   private files = inject(FilesService);
 
   /** Only the tables this user may read. */
-  readonly tables = SEARCH_TABLES.filter((t) =>
+  readonly tables = this.page.tables.filter((t) =>
     HasPermissionDirective.hasPermission(t.permissions),
   );
 
@@ -100,12 +107,16 @@ export class BillingSearchComponent extends BaseComponent {
   /** The CoreStatus labels, for a status column. */
   readonly statuses = CORE_STATUS_OPTIONS;
 
+  /** The five priority levels, for a priority column. */
+  readonly priorities = PRIORITY_OPTIONS;
+
   form = this.fb.group({
     text: [''],
     number: [null as number | null],
     bool: ['true'],
     uuid: [''],
     status: [''],
+    priority: [''],
     from: [null as Date | null],
     to: [null as Date | null],
     amountFrom: [null as number | null],
@@ -118,6 +129,7 @@ export class BillingSearchComponent extends BaseComponent {
     bool: 'true',
     uuid: '',
     status: '',
+    priority: '',
     from: null,
     to: null,
     amountFrom: null,
@@ -240,6 +252,13 @@ export class BillingSearchComponent extends BaseComponent {
         }
         return { ...base, value: v.status };
       }
+      case 'priority': {
+        if (!v.priority) {
+          this.problem.set('Choose a priority.');
+          return null;
+        }
+        return { ...base, value: v.priority };
+      }
       case 'amountRange': {
         const blank = (n: unknown) => n === null || n === undefined || `${n}` === '';
         if (blank(v.amountFrom) || blank(v.amountTo)) {
@@ -274,7 +293,7 @@ export class BillingSearchComponent extends BaseComponent {
   private async loadOptions(key: OptionKey): Promise<void> {
     if (this.options()[key]) return;
     const rows = await this.fs
-      .fetch({ query: OPTION_QUERIES[key], showLoading: false })
+      .fetch({ query: this.page.options[key], showLoading: false })
       .then((r: unknown) => (Array.isArray(r) ? (r as NamedOption[]) : []))
       .catch(() => [] as NamedOption[]);
     this.options.update((all) => ({ ...all, [key]: rows }));

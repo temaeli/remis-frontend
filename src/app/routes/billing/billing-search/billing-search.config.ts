@@ -27,7 +27,8 @@ export type SearchKind =
   | 'integer'
   | 'bool'
   | 'status'
-  | 'amountRange';
+  | 'amountRange'
+  | 'priority';
 
 export interface SearchColumn {
   /** The backend enum constant, e.g. APPLIED_DATE. */
@@ -71,7 +72,7 @@ export const OPTION_QUERIES: Record<string, DocumentNode> = {
 export type OptionKey = keyof typeof OPTION_QUERIES;
 
 /** Money and amounts as they are read: thousands separated, two decimals. */
-const money = (value: unknown): string => {
+export const money =(value: unknown): string => {
   if (value === null || value === undefined || value === '') return '';
   const n = Number(value);
   return isNaN(n)
@@ -87,7 +88,7 @@ export const statusLabel = (value: unknown): string =>
  * The two queries for one table, from the backend's naming: xxxBy and countXxxBy.
  * With `amounts`, both also take amountFrom/amountTo (bill amounts only).
  */
-const queries = (
+export const queries = (
   list: string,
   count: string,
   fieldEnum: string,
@@ -134,14 +135,14 @@ const auditColumns = (table: string, withNamed = true): SearchColumn[] => [
   { value: 'IS_DELETED', label: 'Deleted', kind: 'bool' },
 ];
 
-const audit = `
+export const audit = `
   id
   uid: id
   active
   isDeleted
   createdAt
 `;
-const ref = `id uid: id name`;
+export const ref = `id uid: id name`;
 
 // ---------------------------------------------------------------- tables
 
@@ -617,3 +618,23 @@ export const SEARCH_TABLES: SearchTable[] = [
 
 /** Anyone who may search at least one of the tables may open the page. */
 export const BILLING_SEARCH_PERMISSIONS = [...new Set(SEARCH_TABLES.flatMap((t) => t.permissions))];
+
+/**
+ * What one Search screen offers: its heading, its tables, and the option lists
+ * its link columns pick from. The screen reads it from the route's
+ * `searchPage` data, and is the billing one when a route gives none.
+ */
+export interface SearchPage {
+  title: string;
+  subtitle: string;
+  tables: SearchTable[];
+  options: Record<string, DocumentNode>;
+}
+
+export const BILLING_SEARCH_PAGE: SearchPage = {
+  title: 'Billing Search',
+  subtitle:
+    'Find bills, items, statuses, amounts, expiry dates, control numbers and payments by any one column',
+  tables: SEARCH_TABLES,
+  options: OPTION_QUERIES,
+};
