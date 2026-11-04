@@ -2,7 +2,7 @@ import { Settings } from './routes/settings/settings';
 import { AuthLayoutComponent } from './routes/auth/auth-layout';
 import { TypedRoutes } from '@core';
 import { UserModuleComp } from './routes/user/user';
-import { externalUserGuard } from './routes/auth/external-user.guard';
+import { externalUserGuard, portalGuard } from './routes/auth/external-user.guard';
 import { permissionGuard } from './routes/auth/permission.guard';
 import { ResetComponent } from '@routes/auth/register/reset/reset.component';
 import { ProjectManagement } from './routes/project-management/project-management';
@@ -48,6 +48,19 @@ export const APP_ROUTES: TypedRoutes = [
     data: { isMenu: false, icon: 'user' },
     canActivate: [externalUserGuard],
     loadChildren: () => import('./routes/user/user.routes'),
+  },
+
+  /**
+   * The external user's portal (`isStaff === false`). Not a module tile: it has
+   * no isMenu, and staff are sent back to their modules by portalGuard.
+   */
+  {
+    path: 'portal',
+    title: 'Portal',
+    canActivate: [portalGuard],
+    data: { icon: 'user', visibleFor: ['external'] },
+    loadComponent: () => import('./routes/portal/portal').then((m) => m.Portal),
+    loadChildren: () => import('./routes/portal/portal.routes'),
   },
 
   {
