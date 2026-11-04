@@ -163,15 +163,6 @@ const ALL_POSITIONS = gql`
   }
 `;
 
-const ALL_SUBCATEGORIES = gql`
-  query allSubcategories {
-    allSubcategories {
-      id
-      name
-    }
-  }
-`;
-
 const SAVE_PROJECT_PERSON = gql`
   mutation saveProjectPerson($input: ProjectPersonDtoInput) {
     saveProjectPerson(input: $input) {
@@ -189,17 +180,18 @@ const pick = (key: string, label: string, query: unknown, required = true): Fiel
   class: 'col-span-full md:col-span-1',
 });
 
-/** Person, position and capacity: one member of the project team. */
+/**
+ * Person and position: one member of the project team. No capacity: the DBA
+ * dropped projects_bio_data.subcategories_id, so the position says it.
+ */
 export const teamMemberFields = (required = true): FieldConfig[] => [
   pick('personUid', 'Person', ALL_BIO_DATA, required),
   pick('positionUid', 'Position', ALL_POSITIONS, required),
-  pick('subcategoryUid', 'Capacity', ALL_SUBCATEGORIES, required),
 ];
 
 export interface TeamMember {
   personUid?: string;
   positionUid?: string;
-  subcategoryUid?: string;
 }
 
 /** Labels for the uids a member was picked by, so the row can be named after them. */
@@ -245,7 +237,6 @@ export async function addProjectPerson(
         projectUid: project.id,
         personUid: member.personUid,
         positionUid: member.positionUid,
-        subcategoryUid: member.subcategoryUid,
         name: clip(`${person} · ${position} · ${projectName}`),
         description: `${person} as ${position} on ${projectName}`,
       },
@@ -257,7 +248,7 @@ export async function addProjectPerson(
 /** Notifies the People panel that someone was added here. */
 export const projectPerson$ = new Subject<unknown>();
 
-/** Person, position and capacity only: the row's name and description are written for it. */
+/** Person and position only: the row's name and description are written for it. */
 export async function openAddPersonForm(comp: BaseComponent, project: Lookup): Promise<void> {
   const projectUid = project?.id;
   if (!projectUid) return;
