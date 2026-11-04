@@ -20,7 +20,7 @@ import {
   LookupModule,
 } from '@shared/lookup';
 import { ATTACHMENT_TYPE_OPTIONS, coreAttachmentPanels } from '@routes/settings/attachment-lookups';
-import { BILL_HEADERS_SETTING } from '@routes/settings/settings-lookups';
+import { BILL_HEADERS_SETTING, CORE_STATUS_OPTIONS } from '@routes/settings/settings-lookups';
 import { PROCESS_LINKS } from '@routes/settings/grade-process-links';
 import { WorkflowDiagramComponent } from './workflow-diagram.component';
 
@@ -46,15 +46,9 @@ import { WorkflowDiagramComponent } from './workflow-diagram.component';
  *    and its two ends. A step itself no longer names a parent or a child.
  */
 
-//  The five PostgreSQL enum types the module is built on. Labels must match the
+//  The PostgreSQL enum types the module is built on. Labels must match the
 //  database exactly: it rejects anything else on insert rather than at startup.
-
-/** `remis_core_schema.statuses`. */
-export enum WorkflowStatus {
-  DRAFT = 'DRAFT',
-  SUBMITTED = 'SUBMITTED',
-  APPROVED = 'APPROVED',
-}
+//  The fifth, `statuses`, is the shared CORE_STATUS_OPTIONS (see below).
 
 /** `remis_core_schema.action_types` — how a step or action moves a record. */
 export enum ActionType {
@@ -113,7 +107,11 @@ export enum ApplicationType {
 const toOptions = (values: Record<string, string>): Option[] =>
   Object.values(values).map((value) => ({ value, label: getDisplayName(value) as string }));
 
-export const WORKFLOW_STATUS_OPTIONS = toOptions(WorkflowStatus);
+/**
+ * `remis_core_schema.statuses`, all twenty labels: a step can confer any of
+ * them. The same list billing and the status histories use.
+ */
+export const WORKFLOW_STATUS_OPTIONS = CORE_STATUS_OPTIONS;
 export const ACTION_TYPE_OPTIONS = toOptions(ActionType);
 export const RETURN_TYPE_OPTIONS = toOptions(ReturnType);
 export const STEP_TYPE_OPTIONS = toOptions(StepType);
