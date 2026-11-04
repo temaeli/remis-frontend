@@ -112,22 +112,19 @@ const PROJECT_PEOPLE: SearchTable = {
     description
     project { ${ref} }
     person { ${ref} }
-    position { ${ref} }
-    subcategory { ${ref} }`,
+    position { ${ref} }`,
   ),
   columns: [
     ...namedColumns('Team member', 'ASSIGNED_CODE'),
     { value: 'PROJECT', label: 'Project', kind: 'uuid', options: 'projects' },
     { value: 'BIO_DATA', label: 'Person', kind: 'uuid', options: 'people' },
     { value: 'POSITION', label: 'Position', kind: 'uuid', options: 'positions' },
-    { value: 'SUBCATEGORY', label: 'Capacity (subcategory)', kind: 'uuid', options: 'subcategories' },
   ],
   keyColumns: [
     'index',
     'project.name as Project',
     'person.name as Person',
     'position.name as Position',
-    'subcategory.name as Capacity',
     'name',
     { field: 'createdAt', header: 'Created', type: 'dateTime' },
   ],

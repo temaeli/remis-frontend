@@ -248,8 +248,8 @@ function tabGroup(name: string, icon: string, children: ContentParameter[]): Con
 }
 
 /**
- * The project team. Add Person asks only for the person, the position and the
- * capacity; the row's name and description are written for it.
+ * The project team. Add Person asks only for the person and the position; the
+ * row's name and description are written for it.
  */
 function projectPeoplePanel(comp: BaseComponent, record?: Record<string, any>): ContentParameter {
   const panel = lookupChildPanel(
@@ -265,11 +265,6 @@ function projectPeoplePanel(comp: BaseComponent, record?: Record<string, any>): 
           field: 'position',
           header: 'Position',
           valueFn: (row: any) => row?.position?.name,
-        },
-        {
-          field: 'subcategory',
-          header: 'Capacity',
-          valueFn: (row: any) => row?.subcategory?.name,
         },
         'actions',
       ],
@@ -366,8 +361,8 @@ const PROJECT_SP_CODE_LINK: EntityLinkConfig[] = [
  * Not a link panel: `projects_bio_data` carries the whole audit block and a
  * code, name and description of its own, so a person's part in a project is a
  * record to be described rather than a line drawn between two ids. The
- * subcategory says in what capacity, and the position (`positions`) what they
- * are on the project as; the table will not take a row without one.
+ * position (`positions`) says what they are on the project as; the table will
+ * not take a row without one. No subcategory: the DBA dropped it (2026-11-04).
  */
 export const PROJECT_PERSON = defineLookup({
   slug: 'project-people',
@@ -379,9 +374,6 @@ export const PROJECT_PERSON = defineLookup({
   subtitle: 'Who a project belongs to',
   icon: 'user',
   extraGqlFields: `
-  subcategory {
-    ${lookupRefGqlFields}
-  }
   project {
     ${lookupRefGqlFields}
   }
@@ -410,19 +402,16 @@ export const PROJECT_PERSON = defineLookup({
       validations: [VALIDATOR_REQUIRED],
       class: 'col-span-full',
     },
-    parentSelect('subcategoryUid', 'Subcategory', ALL_SUBCATEGORIES),
     parentSelect('positionUid', 'Position', ALL_POSITIONS),
   ],
   extraColumns: [
     { field: 'project', valueFn: (row) => row?.project?.name },
     { field: 'person', header: 'Person', valueFn: (row) => personName(row?.person) },
-    { field: 'subcategory', valueFn: (row) => row?.subcategory?.name },
     { field: 'position', valueFn: (row) => row?.position?.name },
   ],
   toModel: (data) => ({
     projectUid: data?.project?.id,
     personUid: data?.person?.id,
-    subcategoryUid: data?.subcategory?.id,
     positionUid: data?.position?.id,
   }),
 });
@@ -436,9 +425,6 @@ export const PROJECT_PEOPLE_BY_PROJECT = gql`
         firstName
         secondName
         thirdName
-      }
-      subcategory {
-        ${lookupRefGqlFields}
       }
       position {
         ${lookupRefGqlFields}

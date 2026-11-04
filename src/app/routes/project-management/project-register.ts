@@ -143,7 +143,7 @@ async function openNewProjectForm(comp: BaseComponent, lookup: LookupModule): Pr
         icon: 'users',
         type: FieldType.formGroupArray,
         class: 'col-span-full',
-        hint: 'Optional. Each person needs a position and a capacity. A blank row is skipped.',
+        hint: 'Optional. Each person needs a position. A blank row is skipped.',
         // Not required: the step always shows one row, and a project with no
         // team yet must still save.
         fields: teamMemberFields(false),
@@ -157,8 +157,8 @@ async function openNewProjectForm(comp: BaseComponent, lookup: LookupModule): Pr
   comp.vs?.openModal(FormComponent, formParameter, '90%', '90vh', { maxWidth: '1000px' });
 }
 
-const isBlank = (m: TeamMember) => !m.personUid && !m.positionUid && !m.subcategoryUid;
-const isComplete = (m: TeamMember) => !!m.personUid && !!m.positionUid && !!m.subcategoryUid;
+const isBlank = (m: TeamMember) => !m.personUid && !m.positionUid;
+const isComplete = (m: TeamMember) => !!m.personUid && !!m.positionUid;
 
 async function createProject(
   comp: BaseComponent,
@@ -168,7 +168,7 @@ async function createProject(
 ): Promise<void> {
   const team = ((value['team'] as TeamMember[]) ?? []).filter((m) => m && !isBlank(m));
   if (team.some((m) => !isComplete(m))) {
-    comp.notify.error('Each team member needs a person, a position and a capacity.');
+    comp.notify.error('Each team member needs a person and a position.');
     return;
   }
 
