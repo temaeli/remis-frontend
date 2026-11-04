@@ -66,6 +66,16 @@
               </mat-select>
             </mat-form-field>
           }
+          @case ('priority') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ c.label }}</mat-label>
+              <mat-select formControlName="priority" [aria-label]="c.label">
+                @for (p of priorities; track p.value) {
+                  <mat-option [value]="p.value">{{ p.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
           @case ('amountRange') {
             <mat-form-field appearance="outline">
               <mat-label>{{ c.label }} — from</mat-label>
