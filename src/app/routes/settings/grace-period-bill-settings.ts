@@ -5,7 +5,7 @@ import { ActionButton } from '@shared/components/action-buttons/action-buttons.i
 import { BaseComponent } from '@shared/components/base-componet/base-component';
 import { GridKeyColumn } from '@shared/components/data-grid/data-grid.interfaces';
 import { MORE_BTN } from '@shared/components/data-grid/data-grid.constants';
-import { FieldConfig, FieldType, Option } from '@shared/components/generic-form/field.interface';
+import { FieldConfig, FieldType } from '@shared/components/generic-form/field.interface';
 import { FormComponent } from '@shared/components/generic-form/form.component';
 import { FormParameters } from '@shared/components/generic-form/form.interface';
 import { VALIDATOR_REQUIRED } from '@shared/components/generic-form/form-constants';
@@ -31,41 +31,28 @@ import { Lookup } from '@shared/lookup/lookup.interface';
 
 const settingReloaded$ = new Subject<unknown>();
 
-/** Named months, so "month 9" on a form reads as September. */
-const MONTH_OPTIONS: Option[] = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-].map((label, index) => ({ value: index + 1, label }));
-
-const monthName = (month?: number): string =>
-  MONTH_OPTIONS.find((option) => option.value === month)?.label ?? '';
-
+/**
+ * The month is a row of `months` (it was a number from 1 to 12), and the table
+ * no longer names a financial year — as the DBA defined it on 2026-11-05.
+ */
 const settingFieldsGql = `
   id
   uid
   name
   quantities
   day
-  month
+  month { id name }
   active
+  forFirstBill
   gracePeriod { id name }
   billHeadersSetting { id name }
   fee { id name }
   subcategory { id name }
   bioData { id name }
   renew { id name }
-  financialYear { id name }
 `;
+
+const yesNo = (value: unknown): string => (value === false ? 'No' : 'Yes');
 
 const SETTINGS_BY_GRACE_PERIOD = gql`
   query gracePeriodBillHeadersSettingsByGracePeriod($gracePeriodUid: String) {
@@ -177,7 +164,7 @@ const ALL_FLAT_AMOUNTS = gql`
     }
   }
 `;
-const ALL_FINANCIAL_YEARS = gql`query allFinancialYears { allFinancialYears { ${named} } }`;
+const ALL_MONTHS = gql`query allMonths { allMonths { ${named} } }`;
 
 const select = (key: string, label: string, query: unknown): FieldConfig => ({
   key,
@@ -232,9 +219,6 @@ const settingFormFields = (): FieldConfig[] => [
     label: `${option.name} (${option.taxesType === 'DECREASE' ? '−' : '+'}${option.amount})`,
     value: option.id,
   })),
-  // Every year, switched on or off: a setting for next year is written while
-  // that year is still switched off, since only one is in force at a time.
-  select('financialYearUid', 'Financial Year', ALL_FINANCIAL_YEARS),
   // Not the person the bill setting is generated, approved and requested by:
   // the table's trigger refuses that, and the backend says so first.
   {
@@ -252,7 +236,7 @@ const settingFormFields = (): FieldConfig[] => [
     class: 'col-span-full',
   },
   // The day and month it applies from. The backend refuses a day the chosen
-  // month does not have, as it does on a renewal.
+  // month does not have.
   {
     key: 'day',
     label: 'Applies On (Day)',
@@ -262,12 +246,13 @@ const settingFormFields = (): FieldConfig[] => [
     max: 31,
     validations: [VALIDATOR_REQUIRED],
   },
+  select('monthUid', 'Applies In (Month)', ALL_MONTHS),
   {
-    key: 'month',
-    label: 'Applies In (Month)',
-    type: FieldType.select,
-    options: MONTH_OPTIONS,
-    validations: [VALIDATOR_REQUIRED],
+    key: 'forFirstBill',
+    label: 'For First Bill',
+    hint: 'Whether it applies to a person’s first bill',
+    type: FieldType.toggle,
+    class: 'col-span-full',
   },
 ];
 
@@ -295,10 +280,10 @@ function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Loo
             subcategoryUid: row['subcategory']?.id,
             renewUid: row['renew']?.id,
             bioDataUid: row['bioData']?.id,
-            financialYearUid: row['financialYear']?.id,
             quantities: row['quantities'],
             day: row['day'],
-            month: row['month'],
+            monthUid: row['month']?.id,
+            forFirstBill: row['forFirstBill'] !== false,
             penaltyUids: (links?.penaltiesOfGracePeriodBillHeadersSetting ?? []).map(
               (link: any) => link?.penalty?.id,
             ),
@@ -309,7 +294,7 @@ function openSettingForm(comp: BaseComponent, gracePeriodUid?: string, row?: Loo
               (link: any) => link?.flatAmount?.id,
             ),
           }
-        : {},
+        : { forFirstBill: true },
       fields: settingFormFields(),
       closeAction$: close$,
 
@@ -336,10 +321,10 @@ const settingColumns: GridKeyColumn[] = [
   'fee.name as Fee',
   'renew.name as Renewal',
   'bioData.name as Charged To',
-  'financialYear.name as Financial Year',
   { field: 'quantities', header: 'Quantity' },
   { field: 'day', header: 'Day' },
-  { field: 'month', header: 'Month', valueFn: (row: any) => monthName(row?.month) },
+  'month.name as Month',
+  { field: 'forFirstBill', header: 'First Bill', valueFn: (row) => yesNo(row?.forFirstBill) },
   statusColumn,
   'actions',
 ];
@@ -460,8 +445,10 @@ export const renewBillSettingsPanel = (renewUid?: string): ContentParameter => (
     'gracePeriod.name as Grace Period',
     'billHeadersSetting.name as Bill Template',
     'fee.name as Fee',
-    'financialYear.name as Financial Year',
     { field: 'quantities', header: 'Quantity' },
+    { field: 'day', header: 'Day' },
+    'month.name as Month',
+    { field: 'forFirstBill', header: 'First Bill', valueFn: (row) => yesNo(row?.forFirstBill) },
     statusColumn,
   ],
   reloadActions$: [settingReloaded$],
