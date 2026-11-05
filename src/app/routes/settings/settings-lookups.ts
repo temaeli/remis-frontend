@@ -49,6 +49,7 @@ import { businessNameAddressPanel, personAddressPanel } from './contact-addresse
 import { personDeclarationsPanel } from './person-declarations';
 import { billSettingPeoplePanel, personBillSettingsPanel } from './bill-setting-people';
 import { billSettingFinancialYearsPanel } from './bill-setting-financial-years';
+import { billSettingIdentityTypesPanel } from './bill-setting-identity-types';
 import { runRenewalsForNewNumberBtn, runRenewalsForReuseBtn } from './renewal-run';
 import {
   raiseQuantityBillForNewNumberBtn,
@@ -4161,11 +4162,13 @@ export const BILL_HEADERS_SETTING = defineLookup({
     approvedByUid: data?.approvedBy?.id,
     requestedByUid: data?.requestedBy?.id,
   }),
-  // The financial year its bills fall in (the active one), whom this setting
-  // raises bills for, how much of it for each (bill_headers_settings_quantities),
-  // and the penalties billed from it.
+  // The financial year its bills fall in (the active one), the identification
+  // types it takes (by priority), whom this setting raises bills for, how much
+  // of it for each (bill_headers_settings_quantities), and the penalties billed
+  // from it.
   extraContents: (comp, record) => [
     billSettingFinancialYearsPanel(comp, record?.id),
+    billSettingIdentityTypesPanel(comp, record?.id),
     billSettingPeoplePanel(comp, record?.id),
     lookupChildPanel(
       comp,
