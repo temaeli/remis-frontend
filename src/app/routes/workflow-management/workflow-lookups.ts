@@ -51,8 +51,8 @@ import { WorkflowDiagramComponent } from './workflow-diagram.component';
 //  The fifth, `statuses`, is the shared CORE_STATUS_OPTIONS (see below).
 
 /**
- * `remis_core_schema.action_types` — how a step or action moves a record.
- * APPROVE and CLOSE (added 2026-11-04) follow no edge, like JUMP.
+ * `remis_core_schema.action_types` — how a step or action moves a record, as the
+ * DBA defined it on 2026-11-05. Only FORWARD and BACK follow an edge.
  */
 export enum ActionType {
   FORWARD = 'FORWARD',
@@ -60,20 +60,38 @@ export enum ActionType {
   BACK = 'BACK',
   APPROVE = 'APPROVE',
   CLOSE = 'CLOSE',
+  SUBMIT = 'SUBMIT',
+  REVIEW = 'REVIEW',
+  REJECT = 'REJECT',
+  CANCEL = 'CANCEL',
+  COMPLETE = 'COMPLETE',
+  NOTIFY = 'NOTIFY',
 }
 
 /** `remis_core_schema.return_types` — where a BACK lands. */
 export enum ReturnType {
   SELF = 'SELF',
   START = 'START',
+  NONE = 'NONE',
+  PREVIOUS_STEP = 'PREVIOUS_STEP',
+  INITIAL_STEP = 'INITIAL_STEP',
+  SPECIFIC_STEP = 'SPECIFIC_STEP',
+  APPLICANT = 'APPLICANT',
 }
 
 /**
- * `remis_core_schema.step_type`. The type declares one label on a NOT NULL
- * column, so every step is TBD until the DBA adds the real ones.
+ * `remis_core_schema.step_type` — what kind of step it is. The placeholder TBD
+ * is gone; the backend saves a step without a type as a TASK.
  */
 export enum StepType {
-  TBD = 'TBD',
+  START = 'START',
+  TASK = 'TASK',
+  REVIEW = 'REVIEW',
+  APPROVAL = 'APPROVAL',
+  DECISION = 'DECISION',
+  NOTIFICATION = 'NOTIFICATION',
+  SYSTEM = 'SYSTEM',
+  END = 'END',
 }
 
 /**
@@ -622,7 +640,7 @@ export const WORKFLOW_STEP = defineLookup({
     ),
     {
       ...enumSelect('stepType', 'Step Type', STEP_TYPE_OPTIONS),
-      hint: 'The database type declares only TBD so far',
+      hint: 'What kind of step this is — a Task when left blank',
     },
     // One step per route may be without a parent, one without a child, and one
     // each may be initial, final and first (workflow_steps37 to 41); the backend

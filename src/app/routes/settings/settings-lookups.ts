@@ -1314,8 +1314,9 @@ export const HEADERS_FOR_CN_REUSE = defineLookup({
 });
 
 /**
- * The twenty labels of the PostgreSQL enum `remis_core_schema.statuses`,
- * mirroring `CoreStatus` on the backend. The two lists have to stay in step.
+ * The thirty-six labels of the PostgreSQL enum `remis_core_schema.statuses`
+ * (as the DBA defined it on 2026-11-05), mirroring `CoreStatus` on the backend.
+ * The two lists have to stay in step.
  */
 export enum CoreStatus {
   DRAFT = 'DRAFT',
@@ -1338,6 +1339,22 @@ export enum CoreStatus {
   PASSED = 'PASSED',
   FAILED = 'FAILED',
   WIP = 'WIP',
+  VALIDATED = 'VALIDATED',
+  RETURNED = 'RETURNED',
+  INSPECTION_REQUIRED = 'INSPECTION_REQUIRED',
+  INSPECTED = 'INSPECTED',
+  REJECTED = 'REJECTED',
+  CONTROL_NUMBER_REJECTED = 'CONTROL_NUMBER_REJECTED',
+  CERTIFICATE_ISSUED = 'CERTIFICATE_ISSUED',
+  DISCREPANCY_ISSUED = 'DISCREPANCY_ISSUED',
+  CERTIFICATE_REVISED = 'CERTIFICATE_REVISED',
+  NEEDS_CORRECTION = 'NEEDS_CORRECTION',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  RESERVED = 'RESERVED',
+  DEPOSIT_PAID = 'DEPOSIT_PAID',
+  AGREEMENT_SIGNED = 'AGREEMENT_SIGNED',
+  COMPLETED = 'COMPLETED',
+  IN_REVIEW = 'IN_REVIEW',
 }
 
 export const CORE_STATUS_OPTIONS: Option[] = Object.values(CoreStatus).map((value) => ({
